@@ -1,0 +1,60 @@
+const axios = require('axios');
+
+module.exports = {
+  config: {
+    name: "imagine",
+    version: "2.0",
+    author: "🎩 𝐌𝐫.𝐒𝐦𝐨𝐤𝐞𝐲 • 𝐀𝐬𝐢𝐟 𝐌𝐚𝐡𝐦𝐮𝐝 🌠",
+    countDown: 10,
+    role: 0,
+    shortDescription: {
+      en: 'Text to Image'
+    },
+    longDescription: {
+      en: "Generate image from text prompt using AI models"
+    },
+    category: "image",
+    guide: {
+      en:
+        '{pn} your prompt | model_number\n' +
+        'Example: {pn} a beautiful girl in cyberpunk city | 17\n\n' +
+        'Supported models:\n' +
+        ' 1: Analog-Diffusion-1.0\n 2: Anything V3\n 3: Anything V4.5\n 4: AOM3A3\n 5: Deliberate V2\n 6: Dreamlike-Diffusion-1.0\n 7: Dreamlike-Diffusion-2.0\n 8: Dreamshaper 5\n 9: Dreamshaper 6\n10: Elldreths-Vivid-Mix\n11: Lyriel_V15\n12: Lyriel_V16\n13: Mechamix_V10\n14: Meinamix_Meinav9\n15: Openjourney_V4\n16: Portrait+1.0\n17: Realistic_Vision_V1.4\n18: Realistic_Vision_V2.0\n19: revAnimated_v122\n20: sdv1_4\n21: V1\n22: shoninsBeautiful_v10\n23: Theallys-MIX-II-CHURNED\n24: Timeless-1.0'
+    }
+  },
+
+  onStart: async function ({ api, event, args, message }) {
+    const text = args.join(" ");
+    if (!text) return message.reply("📝 Prompt dao bhai. E.g. imagine a cat in space | 17");
+
+    let prompt, model;
+    if (text.includes("|")) {
+      [prompt, model] = text.split("|").map(x => x.trim());
+      if (isNaN(model) || model < 1 || model > 24) return message.reply("❌ Model number 1-24 er moddhe dite hobe.");
+    } else {
+      prompt = text;
+      model = 19;
+    }
+
+    try {
+      const statusMsg = await message.reply("⏳ Tomar image toiri hocche. Ektu wait koro...");
+      api.setMessageReaction("⏳", event.messageID, () => {}, true);
+
+      const apiUrl = `https://aliestercrowley.com/api/crowgen.php?model=${model}&prompt=${encodeURIComponent(prompt)}`;
+      const response = await axios.get(apiUrl, { responseType: "arraybuffer" });
+
+      const imageStream = await global.utils.getStreamFromURL(apiUrl);
+      api.setMessageReaction("✅", event.messageID, () => {}, true);
+      message.unsend(statusMsg.messageID);
+
+      await message.reply({
+        body: `🖼️ Prompt: ${prompt}\n📌 Model: ${model}`,
+        attachment: imageStream
+      });
+
+    } catch (err) {
+      console.error(err);
+      message.reply("❌ Image generate korte problem hoise. API ba prompt check koro.");
+    }
+  }
+};
