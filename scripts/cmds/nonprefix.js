@@ -1,56 +1,72 @@
-const fs = require('fs');//please add music or video and move that all file inside scripts/cmdsnonprefix and replace that music name in the code or vdo if you want toset vdo just replace .mp3 with .mp4
+const fs = require('fs');
+const path = require('path');
+const https = require('https');
+
+const mediaList = [
+  {
+    name: "ara.mp3",
+    url: "https://file-examples.com/storage/fe84c26fe8fa51eea1ac83e/2017/11/file_example_MP3_700KB.mp3"
+  },
+  {
+    name: "yemete.mp3",
+    url: "https://file-examples.com/storage/fe84c26fe8fa51eea1ac83e/2017/11/file_example_MP3_2MG.mp3"
+  }
+];
 
 module.exports = {
   config: {
-    name: "audio",
-    version: "1.0",
-    author: "AceGun",
+    name: "audionp",
+    version: "3.0",
+    author: "AceGun + Smokey UltraPro Max Fix",
     countDown: 5,
     role: 0,
-    shortDescription: "no prefix",
-    longDescription: "no prefix",
-    category: "no prefix",
+    shortDescription: "no prefix audio/video auto-play",
+    longDescription: "writes message like 'ara' and bot will play the sound",
+    category: "no prefix"
   },
 
-  onStart: async function() {},
+  onStart: async function () {
+    const mediaDir = path.join(__dirname, 'noprefix_media');
+    if (!fs.existsSync(mediaDir)) {
+      fs.mkdirSync(mediaDir, { recursive: true });
+      console.log(`[✅] Created folder: ${mediaDir}`);
+    }
 
-  onChat: async function({ event, message, getLang, api }) {
-    if (event.body) {
-      const word = event.body.toLowerCase();
-      switch (word) {
-        case "ara":
-          message.reply({
-            body: "「 Ara Ara 」",
-            attachment: fs.createReadStream("scripts/cmds/noprefix/ara.mp3"),
+    for (const media of mediaList) {
+      const filePath = path.join(mediaDir, media.name);
+      if (!fs.existsSync(filePath)) {
+        const file = fs.createWriteStream(filePath);
+        https.get(media.url, (response) => {
+          response.pipe(file);
+          file.on('finish', () => {
+            file.close();
+            console.log(`[📥] Downloaded ${media.name}`);
           });
-          await api.setMessageReaction("😜", event.messageID, event.threadID, api);
-        break;
-case "yemete":
-          message.reply({
-            body: "「 Yemete kudasai💋😛 」",
-            attachment: fs.createReadStream("scripts/cmds/noprefix/yemete.mp3"),
-          });
-          await api.setMessageReaction("😛", event.messageID, event.threadID, api);
-   case "machikney":
-          message.reply({
-            body: "「 Machikney 」",
-            attachment: fs.createReadStream("scripts/cmds/noprefix/machikney.mp3"),
-          });
-          await api.setMessageReaction("🤨", event.messageID, event.threadID, api);
-case "haha":
-          message.reply({
-            body: "「 Na Has Hai muji 」",
-            attachment: fs.createReadStream("scripts/cmds/noprefix/haha.mp3"),
-          });
-          await api.setMessageReaction("😒", event.messageID, event.threadID, api);
-  case "lado":
-          message.reply({
-            body: "「 LADO KHA 」",
-            attachment: fs.createReadStream("scripts/cmds/noprefix/lado.mp3"),
-          });
-          await api.setMessageReaction("😡", event.messageID, event.threadID, api);
-   default:
-          return;
+        }).on("error", (err) => {
+          fs.unlinkSync(filePath);
+          console.log(`[❌] Failed to download ${media.name}: ${err.message}`);
+        });
+      }
+    }
+  },
+
+  onChat: async function ({ event, message, api }) {
+    const text = event.body;
+    if (!text) return;
+    const word = text.trim().toLowerCase();
+
+    const mediaDir = path.join(__dirname, 'noprefix_media');
+    const tryFiles = [`${word}.mp3`, `${word}.mp4`];
+
+    for (let fileName of tryFiles) {
+      const fullPath = path.join(mediaDir, fileName);
+      if (fs.existsSync(fullPath)) {
+        await message.reply({
+          body: `「 ${word} 」`,
+          attachment: fs.createReadStream(fullPath)
+        });
+        await api.setMessageReaction(fileName.endsWith('.mp4') ? "🎬" : "🔊", event.messageID, event.threadID);
+        return;
       }
     }
   }
