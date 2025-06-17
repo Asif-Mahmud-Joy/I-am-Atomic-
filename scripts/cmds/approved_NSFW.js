@@ -3,10 +3,10 @@ const path = require('path');
 
 module.exports = {
   config: {
-    name: "nsfw",
-    aliases: ["ns"],
-    version: "2.0", // ✅ Updated
-    author: "𝐀𝐬𝐢𝐟 𝐌𝐚𝐡𝐦𝐮𝐝 ",
+    name: "nsfw_approve", // ✅ Renamed to prevent conflict
+    aliases: ["ns_approve"],
+    version: "2.0",
+    author: "𝐀𝐬𝐢𝐟 𝐌𝐚𝐡𝐦𝐮𝐝",
     countDown: 5,
     category: "owner",
     role: 2,
@@ -88,7 +88,7 @@ module.exports = {
       }
 
       default:
-        return message.reply(`⚠️ Invalid command. Use: \"${p}nsfw approve/remove/disapproved/check [threadID]\"`);
+        return message.reply(`⚠️ Invalid command. Use: \"${p}nsfw_approve approve/remove/disapproved/check [threadID]\"`);
     }
   },
 };
