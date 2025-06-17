@@ -30,7 +30,7 @@ module.exports = {
         `🔹 ${i + 1}. ${group.threadName}\n🆔 TID: ${group.threadID}\n👥 Members: ${group.participantIDs.length}`
       );
 
-      const msg = `📃 Bot er Group List:
+      const msg = `📜 Bot er Group List:
 
 ${formattedList.join("\n\n")}\n\n🔢 Reply korun kon number group-e join korte chan.`;
 
