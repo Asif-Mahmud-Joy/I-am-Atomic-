@@ -1,39 +1,59 @@
+const axios = require("axios");
 const fs = require("fs-extra");
 const path = require("path");
 
 module.exports = {
   config: {
-    name: "delete",
-    aliases: ["del"],
+    name: "cry",
+    version: "2.0",
     author: "🎩 𝐌𝐫.𝐒𝐦𝐨𝐤𝐞𝐲 • 𝐀𝐬𝐢𝐟 𝐌𝐚𝐡𝐦𝐮𝐝 🌠",
-    version: "1.1",
-    role: 2,
-    shortDescription: "Delete a file from command folder",
-    longDescription: "Securely deletes a specific command file by name.",
-    category: "system",
-    guide: "{pn} <filename.js>"
+    countDown: 1,
+    role: 0,
+    shortDescription: "cry meme",
+    longDescription: "cry meme with user avatar",
+    category: "meme",
+    guide: "{pn} [tag or reply]"
   },
 
-  onStart: async function ({ api, event, args }) {
-    const fileName = args[0];
+  langs: {
+    en: {
+      noTag: "Tag koro ba reply dao karo message, naile nijer photo diye cry banabo 😢",
+      crySelf: "Tui nijer upor nijer e cry korteso 😭",
+      cryOther: "E jon tomae cry kortese 😭"
+    }
+  },
 
-    if (!fileName)
-      return api.sendMessage("⚠️ | File name dao jeita delete korte chai.", event.threadID);
-
-    if (!fileName.endsWith(".js"))
-      return api.sendMessage("⚠️ | Only .js command file delete kora jabe.", event.threadID);
-
-    const filePath = path.join(__dirname, `${fileName}`);
-
+  onStart: async function ({ event, message, usersData, getLang }) {
     try {
-      if (!fs.existsSync(filePath))
-        return api.sendMessage(`❎ | ${fileName} file pawa jay nai.`, event.threadID);
+      const mention = Object.keys(event.mentions);
+      let uid;
 
-      await fs.remove(filePath);
-      api.sendMessage(`✅ | (${fileName}) file successfully delete kora hoise.`, event.threadID);
+      if (event.type === "message_reply") {
+        uid = event.messageReply.senderID;
+      } else if (mention[0]) {
+        uid = mention[0];
+      } else {
+        uid = event.senderID;
+      }
+
+      const avatarUrl = await usersData.getAvatarUrl(uid);
+      const apiUrl = `https://some-random-api.com/canvas/cry?avatar=${encodeURIComponent(avatarUrl)}`;
+
+      const response = await axios.get(apiUrl, { responseType: "arraybuffer" });
+      const imgBuffer = Buffer.from(response.data);
+
+      const tempPath = path.join(__dirname, "tmp", `cry_${uid}.png`);
+      fs.ensureDirSync(path.dirname(tempPath));
+      fs.writeFileSync(tempPath, imgBuffer);
+
+      const body = (uid === event.senderID)
+        ? getLang("crySelf")
+        : getLang("cryOther");
+
+      message.reply({ body, attachment: fs.createReadStream(tempPath) }, () => fs.unlinkSync(tempPath));
     } catch (err) {
-      console.error(err);
-      api.sendMessage(`❌ | (${fileName}) delete kora gele error hoise.`, event.threadID);
+      console.error("[cry] error:", err);
+      message.reply("⛔ Cry command e error lagse. Try again later.");
     }
   }
 };
