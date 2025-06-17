@@ -33,7 +33,7 @@ module.exports = {
     }
 
     const imgUrl = `https://api.memegen.link/images/khaby-lame/${topText}/${bottomText}.png`;
-    const imgPath = path.join(__dirname, "cache", `khaby-${Date.now()}.png");
+    const imgPath = path.join(__dirname, "cache", `khaby-${Date.now()}.png`);
 
     try {
       const response = await axios({
@@ -46,7 +46,11 @@ module.exports = {
       response.data.pipe(writer);
 
       writer.on("finish", () => {
-        api.sendMessage({ body: "Here's your Khaby meme 🧠", attachment: fs.createReadStream(imgPath) }, event.threadID, () => fs.unlinkSync(imgPath));
+        api.sendMessage(
+          { body: "Here's your Khaby meme 🧠", attachment: fs.createReadStream(imgPath) },
+          event.threadID,
+          () => fs.unlinkSync(imgPath)
+        );
       });
 
       writer.on("error", err => {
