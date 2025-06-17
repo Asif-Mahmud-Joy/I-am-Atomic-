@@ -3,7 +3,7 @@ const path = require('path');
 
 module.exports = {
   config: {
-    name: "nsfw",
+    name: "nsfwapprove",
     version: "2.0",
     author: "𝐀𝐬𝐢𝐟 𝐌𝐚𝐡𝐦𝐮𝐝",
     countDown: 5,
