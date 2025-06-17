@@ -1,6 +1,6 @@
 module.exports = {
   config: {
-    name: 'kickall',
+    name: 'masskick',
     version: '2.2.0',
     author: "Mr.Smokey [Asif Mahmud]",
     countDown: 5,
