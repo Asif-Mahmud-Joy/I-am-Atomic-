@@ -1,6 +1,6 @@
 const fs = require("fs");
 const path = require("path");
-const axios = global.nodemodule["axios"];
+const axios = require("axios"); // ✅ Fixed: Use standard require instead of global.nodemodule
 
 module.exports = {
   config: {
