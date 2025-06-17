@@ -4,7 +4,7 @@ const { loadImage, createCanvas } = require("canvas");
 
 module.exports = {
   config: {
-    name: "pair",
+    name: "pairmatch",
     countDown: 10,
     role: 0,
     shortDescription: {
