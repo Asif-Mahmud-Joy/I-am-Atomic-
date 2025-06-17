@@ -38,7 +38,7 @@ module.exports = {
       const attachments = await Promise.all(images.map(url => getStreamFromURL(url)));
 
       api.sendMessage({
-        body: `✅ '${query}' er jonno ${images.length} ta image pawa gese:",
+        body: `✅ '${query}' er jonno ${images.length} ta image pawa gese:`,
         attachment: attachments
       }, event.threadID, event.messageID);
 
