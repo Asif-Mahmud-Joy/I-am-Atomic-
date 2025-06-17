@@ -4,8 +4,8 @@ const path = require("path");
 
 module.exports = {
   config: {
-    name: "shoti",
-    aliases: ["shoti"],
+    name: "shoti21",
+    aliases: ["shoti31"],
     version: "2.0",
     author: "Mr.Smokey [Asif Mahmud]",
     countDown: 20,
