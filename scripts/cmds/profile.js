@@ -1,6 +1,6 @@
 module.exports = {
   config: {
-    name: "profile",
+    name: "profile2",
     aliases: ["pfp"],
     version: "1.2",
     author: "✨ Mr.Smokey [Asif Mahmud] ✨",
