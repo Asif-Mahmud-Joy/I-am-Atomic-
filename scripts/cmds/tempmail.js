@@ -1,4 +1,4 @@
-const axios = global.nodemodule["axios"];
+const axios = require("axios");
 
 module.exports.config = {
   name: "tempmail",
@@ -26,12 +26,11 @@ module.exports.onStart = async ({ api, event, args }) => {
       const inboxResponse = await axios.get(inboxUrl);
 
       if (!inboxResponse.data.success || inboxResponse.data.messages.length === 0) {
-        return api.sendMessage(`📭 No messages found for ${email}.`, event.threadID);
+        return api.sendMessage(`📭 No messages found for ${email}.", event.threadID);
       }
 
       let inboxText = `📬 Inbox of ${email}:
-
-`;
+\n`;
       for (const msg of inboxResponse.data.messages) {
         inboxText += `📩 From: ${msg.from}\n📝 Subject: ${msg.subject || 'No subject'}\n📨 Body: ${msg.body.replace(/<[^>]*>/g, '')}\n---------------------\n`;
       }
@@ -46,7 +45,7 @@ module.exports.onStart = async ({ api, event, args }) => {
       }
 
       const email = tempMailResponse.data.email;
-      return api.sendMessage(`📥 Your temporary email: ${email}\nUse: {pn} inbox ${email} to check inbox.`, event.threadID);
+      return api.sendMessage(`📥 Your temporary email: ${email}\nUse: /tempmail inbox ${email} to check inbox.`, event.threadID);
     }
   } catch (err) {
     console.error("TempMail Error:", err?.response?.data || err.message);
