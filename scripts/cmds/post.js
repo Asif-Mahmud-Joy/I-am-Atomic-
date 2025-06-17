@@ -1,6 +1,6 @@
 module.exports = {
   config: {
-    name: "ping",
+    name: "pingv2",
     aliases: ["ms"],
     version: "2.0",
     author: "✨ Mr.Smokey [Asif Mahmud] ✨",
