@@ -4,7 +4,7 @@ module.exports = {
   config: {
     name: "antichangeinfobox",
     version: "2.1",
-    author: "𝐀𝐬𝐢𝐟 𝐌𝐚𝐡𝐦𝐮𝐝",
+    author: "𝐀𝐬𝐢𝐟 𝐌𝐚𝐡𝐦𝐮𝐝", 
     countDown: 5,
     role: 0,
     shortDescription: "Stop info changes in box",
