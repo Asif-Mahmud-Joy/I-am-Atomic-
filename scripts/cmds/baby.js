@@ -1,6 +1,8 @@
 const axios = require("axios");
 
-const apiURL = "https://free-api.chatgptsmokey.repl.co/api/bby";
+// ✅ Stable AI API (no key needed)
+const apiURL = "https://api.affiliateplus.xyz/api/chatbot";
+
 const preTeach = [
   // ❤️ Romantic
   { q: "tumi ke", a: ["ami tomar bby 😚💖", "ami ekta smart bot 🤖💕"] },
