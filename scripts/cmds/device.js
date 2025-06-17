@@ -6,7 +6,7 @@ module.exports = {
     name: "device",
     aliases: ["android"],
     version: "2.0",
-    author: "🎩 𝐌𝐫.𝐒𝐦𝐨𝐤𝐞𝐲 • 𝐀𝐬𝐢𝐟 𝐌𝐚𝐡𝐦𝐮𝐝 🌠",
+    author: "🎩𝐀𝐬𝐢𝐟 𝐌𝐚𝐡𝐦𝐮𝐝🌠",
     countDown: 5,
     role: 0,
     shortDescription: "Device specs dekhao",
@@ -18,7 +18,7 @@ module.exports = {
   onStart: async function ({ message, args }) {
     const name = args.join(" ");
     if (!name)
-      return message.reply(`⚠️ Device er naam dao!");
+      return message.reply(`⚠️ Device er naam dao!`);
 
     const BASE_URL = `https://api.jastin.xyz/gsmarena/device?query=${encodeURIComponent(name)}`;
 
@@ -83,7 +83,7 @@ module.exports = {
 - CPU: ${cpu}
 - GPU: ${gpu}
 
-💾 Memory
+📂 Memory
 - Internal: ${internal}
 - External: ${external}
 - RAM: ${ram}
