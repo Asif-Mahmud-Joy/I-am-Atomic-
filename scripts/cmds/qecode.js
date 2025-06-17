@@ -29,8 +29,7 @@ Example:
     const text = args.slice(1).join(" ");
 
     if (command === "make") {
-      if (!text) return message.reply("🔹 Text dao jar QR code banabo.\n
-ตัวอย่าง: qrcode make I am SiAM");
+      if (!text) return message.reply("\uD83D\uDD39 Text dao jar QR code banabo.\nউদাহরণ: qrcode make I am SiAM");
 
       const filePath = path.join(__dirname, `${Date.now()}_qr.png`);
       try {
