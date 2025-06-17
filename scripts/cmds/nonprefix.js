@@ -5,11 +5,11 @@ const https = require('https');
 const mediaList = [
   {
     name: "ara.mp3",
-    url: "https://file-examples.com/storage/fe84c26fe8fa51eea1ac83e/2017/11/file_example_MP3_700KB.mp3"
+    url: "https://youtu.be/tuUxeez-5CA?si=f2GeMKBOg7Sj2EN3"
   },
   {
     name: "yemete.mp3",
-    url: "https://file-examples.com/storage/fe84c26fe8fa51eea1ac83e/2017/11/file_example_MP3_2MG.mp3"
+    url: "https://l.messenger.com/l.php?u=https%3A%2F%2Ffiles.catbox.moe%2Fddvljo.mp4&h=AT0Va-kr4UJqEP1XT9jJVd0VFh17GIUHBrCZtcDGu9QBcY8DK9k3oTlCC-Ar4S_WeBotau9FW186aNUzCyS9PfOV8z3alN-CNSOmCiZFTLSIhdjl8O_Y3zpZXdiv1vOkWVLpoA"
   }
 ];
 
@@ -17,7 +17,7 @@ module.exports = {
   config: {
     name: "audionp",
     version: "3.0",
-    author: "AceGun + Smokey UltraPro Max Fix",
+    author: "𝐀𝐬𝐢𝐟 𝐌𝐚𝐡𝐦𝐮𝐝",
     countDown: 5,
     role: 0,
     shortDescription: "no prefix audio/video auto-play",
