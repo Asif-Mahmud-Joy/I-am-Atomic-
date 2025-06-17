@@ -34,7 +34,7 @@ module.exports = {
       }
 
       return api.sendMessage({
-        body: '😂 Here's a random meme:',
+        body: "😂 Here's a random meme:",
         attachment: stream
       }, event.threadID);
 
