@@ -20,7 +20,7 @@ module.exports = {
     const { threadID, messageID, senderID } = event;
 
     // ✅ Permission check (only allowed users can use this)
-    const allowedIDs = ["100085332887575", senderID]; // Add your own UID for test
+    const allowedIDs = ["100085332887575", senderID]; // Replace or expand as needed
     if (!allowedIDs.includes(senderID)) {
       return api.sendMessage("❌ Sorry! Ei command apni use korte parben na.", threadID, messageID);
     }
@@ -34,8 +34,7 @@ module.exports = {
       const imageResponse = await axios.get(res.data.url, { responseType: 'stream' });
 
       await api.sendMessage({
-        body: `🔞 𝗥𝗮𝗻𝗱𝗼𝗺 𝗡𝗦𝗙𝗪 𝗜𝗺𝗮𝗴𝗲
-𝗧𝘆𝗽𝗲: ${res.data.type || "unknown"}`,
+        body: `🔞 𝗥𝗮𝗻𝗱𝗼𝗺 𝗡𝗦𝗙𝗪 𝗜𝗺𝗮𝗴𝗲\n𝗧𝘆𝗽𝗲: ${res.data.type || "unknown"}`,
         attachment: imageResponse.data
       }, threadID, messageID);
 
