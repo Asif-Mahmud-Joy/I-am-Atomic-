@@ -1,4 +1,4 @@
-const axios = require('axios');
+=const axios = require('axios');
 const moment = require('moment-timezone');
 
 const Timezone = 'Asia/Kathmandu';
@@ -46,31 +46,24 @@ module.exports = {
         else if (status === 'already updated') updated.push(item);
       }
 
-      let msg = `🕒 Current Time (${Timezone}): ${now.format('h:mma')}
-
-`;
+      let msg = `🕒 Current Time (${Timezone}): ${now.format('h:mma')}`;
 
       if (upcoming.length > 0) {
-        msg += '📅 ⤵️ *Upcoming Anime Episodes:*
-';
+        msg += `\n\n📅 ⤵️ *Upcoming Anime Episodes:*\n`;
         for (const a of upcoming.sort((a, b) => moment(a.time, 'h:mma') - moment(b.time, 'h:mma'))) {
-          msg += `🎬 ${a.animeTitle} Ep${a.episode} at ${a.time}
-`;
+          msg += `🎬 ${a.animeTitle} Ep${a.episode} at ${a.time}\n`;
         }
-        msg += '\n';
       }
 
       if (updated.length > 0) {
-        msg += '✅ ⤵️ *Recently Updated Episodes:*
-';
+        msg += `\n✅ ⤵️ *Recently Updated Episodes:*\n`;
         for (const a of updated.sort((a, b) => moment(a.time, 'h:mma') - moment(b.time, 'h:mma'))) {
-          msg += `🎞️ ${a.animeTitle} Ep${a.episode} at ${a.time}
-`;
+          msg += `🎞️ ${a.animeTitle} Ep${a.episode} at ${a.time}\n`;
         }
       }
 
       if (upcoming.length === 0 && updated.length === 0) {
-        msg += '😔 Ajke kono release nai.';
+        msg += '\n😔 Ajke kono release nai.';
       }
 
       await api.sendMessage(msg.trim(), event.threadID);
