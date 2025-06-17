@@ -42,7 +42,8 @@ module.exports = {
       const response = await axios.get(apiUrl, { responseType: "arraybuffer" });
       const imgBuffer = Buffer.from(response.data);
 
-      const tempPath = path.join(__dirname, "tmp", `cry_${uid}.png");
+      // Fix: use backtick correctly
+      const tempPath = path.join(__dirname, "tmp", `cry_${uid}.png`);
       fs.ensureDirSync(path.dirname(tempPath));
       fs.writeFileSync(tempPath, imgBuffer);
 
