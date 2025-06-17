@@ -8,7 +8,7 @@ const doNotDelete = "[ Mr.Smokey ]";
 module.exports = {
   config: {
     name: "help",
-    version: "1.20",
+    version: "1.21",
     author: "🎩 𝐌𝐫.𝐒𝐦𝐨𝐤𝐞𝐲 • 𝐀𝐬𝐢𝐟 𝐌𝐚𝐡𝐦𝐮𝐝 🌠",
     countDown: 5,
     role: 0,
@@ -31,7 +31,9 @@ module.exports = {
     const prefix = getPrefix(threadID);
 
     // Auto-react to command message
-    api.setMessageReaction("📘", messageID, () => {}, true);
+    try {
+      api.setMessageReaction("📘", messageID, () => {}, true);
+    } catch {};
 
     if (args.length === 0) {
       const categories = {};
@@ -61,10 +63,20 @@ module.exports = {
       const helpListImages = ["https://i.imgur.com/a3JShJK.jpeg"];
       const helpListImage = helpListImages[Math.floor(Math.random() * helpListImages.length)];
 
-      await message.reply({
-        body: msg,
-        attachment: await global.utils.getStreamFromURL(helpListImage)
-      });
+      // Attempt to fetch image, handle 429 or other errors
+      try {
+        const stream = await global.utils.getStreamFromURL(helpListImage);
+        await message.reply({ body: msg, attachment: stream });
+      } catch (error) {
+        if (error.response?.status === 429) {
+          // Rate limited, send text-only
+          await message.reply(msg);
+        } else {
+          // Other errors, log and send text-only
+          console.error('Help image fetch error:', error.message || error);
+          await message.reply(msg);
+        }
+      }
 
     } else {
       const commandName = args[0].toLowerCase();
@@ -77,21 +89,11 @@ module.exports = {
       const configCommand = command.config;
       const roleText = roleTextToString(configCommand.role);
       const author = configCommand.author || "Unknown";
-      const longDescription = configCommand.longDescription?.en || "No description";
-      const guideBody = configCommand.guide?.en || "No guide available.";
+      const longDescription = typeof configCommand.longDescription === 'object' ? configCommand.longDescription.en : configCommand.longDescription || "No description";
+      const guideBody = typeof configCommand.guide === 'object' ? configCommand.guide.en : configCommand.guide || "No guide available.";
       const usage = guideBody.replace(/{p}/g, prefix).replace(/{n}/g, configCommand.name);
 
-      const response = `
-╭─────『 ℹ️ 𝘾𝙊𝙈𝙈𝘼𝙉𝘿 𝘿𝙀𝙏𝘼𝙄𝙇𝙎 』─────╮
-
-🔹 Command: ${configCommand.name}
-📜 Description: ${longDescription}
-👑 Author: ${author}
-📖 Guide: ${usage}
-🛠 Version: ${configCommand.version || "1.0"}
-🔒 Required Role: ${roleText}
-
-╰────────────────────────╯`;
+      const response = `╭─────『 ℹ️ 𝘾𝙊𝙈𝙈𝘼𝙉𝘿 𝘿𝙀𝙏𝘼𝙄𝙇𝙎 』─────╮\n\n🔹 Command: ${configCommand.name}\n📜 Description: ${longDescription}\n👑 Author: ${author}\n📖 Guide: ${usage}\n🛠 Version: ${configCommand.version || "1.0"}\n🔒 Required Role: ${roleText}\n\n╰────────────────────────╯`;
 
       await message.reply(response);
     }
