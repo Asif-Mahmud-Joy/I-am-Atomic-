@@ -2,7 +2,7 @@ const axios = require("axios");
 
 module.exports = {
   config: {
-    name: "hvd2",
+    name: "hvd23",
     aliases: ["hvdo"],
     version: "2.0",
     author: "🎩 𝐌𝐫.𝐒𝐦𝐨𝐤𝐞𝐲 • 𝐀𝐬𝐢𝐟 𝐌𝐚𝐡𝐦𝐮𝐝 🌠",
