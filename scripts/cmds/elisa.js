@@ -1,5 +1,7 @@
 // Banglish: Ei script prothome local data check kore, pore API use kore user info dey
 
+const fetch = require("node-fetch"); // ✅ fetch require korlam Node.js er jonno
+
 const localUsers = [
   { name: "Asif", age: 25 },
   { name: "Joy", age: 30 },
