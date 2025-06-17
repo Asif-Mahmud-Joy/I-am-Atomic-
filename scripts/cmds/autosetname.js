@@ -17,22 +17,8 @@ module.exports = {
     },
     category: "box chat",
     guide: {
-      vi: `   {pn} set <nickname>: đặt cấu hình biệt danh tự động.
-   Shortcut:
-   + {userName}: tên thành viên
-   + {userID}: ID thành viên
-   Ví dụ: {pn} set {userName} 🚀
-
-   {pn} on/off: bật/tắt tính năng
-   {pn} view/info: xem cấu hình hiện tại`,
-      en: `   {pn} set <nickname>: set nickname config.
-   Shortcut:
-   + {userName}: member name
-   + {userID}: member ID
-   Example: {pn} set {userName} 🚀
-
-   {pn} on/off: turn on/off
-   {pn} view/info: see current config`
+      vi: `   {pn} set <nickname>: đặt cấu hình biệt danh tự động.\n   Shortcut:\n   + {userName}: tên thành viên\n   + {userID}: ID thành viên\n   Ví dụ: {pn} set {userName} 🚀\n\n   {pn} on/off: bật/tắt tính năng\n   {pn} view/info: xem cấu hình hiện tại`,
+      en: `   {pn} set <nickname>: set nickname config.\n   Shortcut:\n   + {userName}: member name\n   + {userID}: member ID\n   Example: {pn} set {userName} 🚀\n\n   {pn} on/off: turn on/off\n   {pn} view/info: see current config`
     }
   },
 
@@ -40,8 +26,7 @@ module.exports = {
     vi: {
       missingConfig: "⚠️ Vui lòng nhập cấu hình cần thiết!",
       configSuccess: "✅ Đã lưu cấu hình thành công!",
-      currentConfig: "📌 Cấu hình hiện tại:
-%1",
+      currentConfig: (config) => `📌 Cấu hình hiện tại:\n${config}`,
       notSetConfig: "⚠️ Chưa có cấu hình nào được đặt!",
       syntaxError: "❌ Cú pháp sai! Chỉ dùng: {pn} on / off",
       turnOnSuccess: "✅ Đã bật autoSetName!",
@@ -51,8 +36,7 @@ module.exports = {
     en: {
       missingConfig: "⚠️ Please enter the required configuration!",
       configSuccess: "✅ Configuration saved successfully!",
-      currentConfig: "📌 Current configuration:
-%1",
+      currentConfig: (config) => `📌 Current configuration:\n${config}`,
       notSetConfig: "⚠️ No configuration set yet!",
       syntaxError: "❌ Syntax error! Use: {pn} on / off",
       turnOnSuccess: "✅ autoSetName is now ON!",
@@ -74,7 +58,7 @@ module.exports = {
 
     if (["view", "info"].includes(command)) {
       const config = await threadsData.get(event.threadID, "data.autoSetName");
-      return message.reply(config ? getLang("currentConfig", config) : getLang("notSetConfig"));
+      return message.reply(config ? getLang("currentConfig")(config) : getLang("notSetConfig"));
     }
 
     if (["on", "off"].includes(command)) {
