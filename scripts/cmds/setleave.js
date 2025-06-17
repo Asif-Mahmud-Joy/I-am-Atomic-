@@ -54,8 +54,7 @@ Shortcut:
 			turnedOn: "✅ Đã bật tin nhắn tạm biệt",
 			turnedOff: "🚫 Đã tắt tin nhắn tạm biệt",
 			missingContent: "⚠️ Nhập nội dung tin nhắn",
-			edited: "✏️ Nội dung tin nhắn mới:
-%1",
+			edited: "✏️ Nội dung tin nhắn mới:\n%1",
 			reseted: "🔄 Đã reset nội dung về mặc định",
 			noFile: "⚠️ Không có file để xóa",
 			resetedFile: "✅ Đã reset file thành công",
@@ -66,8 +65,7 @@ Shortcut:
 			turnedOn: "✅ Leave message turned on",
 			turnedOff: "🚫 Leave message turned off",
 			missingContent: "⚠️ Please enter the message content",
-			edited: "✏️ New leave message content:
-%1",
+			edited: "✏️ New leave message content:\n%1",
 			reseted: "🔄 Message content reset to default",
 			noFile: "⚠️ No file to delete",
 			resetedFile: "✅ Attachment file reset successfully",
