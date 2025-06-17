@@ -1,42 +1,8 @@
-// ✅ GoatBot Bby AI Module (UltraPro Max Final Upgrade)
-// ⚠️ No npm install needed | Just copy-paste and run | Full auto-learning enabled
+const axios = require("axios");
 
-const axios = require('axios');
-
-// ✅ Stable AI API (no key needed)
-const apiURL = "https://api.affiliateplus.xyz/api/chatbot";
-
-module.exports.config = {
-  name: "bby",
-  aliases: ["baby", "bbe", "babu", "jan", "bow", "bot", "Bby", "Jan", "Bow"],
-  version: "10.1.0",
-  author: "༺༊ཀ༊༻𝐀𝐬𝐢𝐟 𝐌𝐚𝐡𝐦𝐮𝐝༺༊ཀ༊༻",
-  role: 0,
-  description: "Smart Bby AI with love, sad, auto-teach, name reply 🥰🤖",
-  category: "chat",
-  guide: {
-    en: "{pn} <msg>"
-  }
-};
-
-// 🔁 Auto-learn system enabled
+const apiURL = "https://free-api.chatgptsmokey.repl.co/api/bby";
 const preTeach = [
   // ❤️ Romantic
-  { q: "toar gaye hath dite iccha kore", a: ["chupi chupi dao 😏"] },
-{ q: "shorir gorom lagche", a: ["ami fan hoiya boshi? 🤭"] },
-{ q: "kapor chire felbo", a: ["ami toh agge thekei ready 😈"] },
-{ q: "ekta hot kotha bol", a: ["amar moner vitor tui undergarments chhara 😳🔥"] },
-{ q: "bed e asho ekhon", a: ["kisor jonno bolto? 🫢"] },
-{ q: "chumu dite dite ghum porbo", a: ["ami toh tomar gaye lip balm hoei boshi 😘"] },
-{ q: "nicher dike jabi?", a: ["niche toh ami already... 😳"] },
-{ q: "rater 2tay kothai thakbi?", a: ["tomar bhalobashar niche 😏"] },
-{ q: "na kichu chailam na", a: ["tokhon e beshi chai 😈"] },
-{ q: "chumu diye dibo", a: ["pash e esho, lobo sob 😘"] },
-{ q: "toke kheye felbo", a: ["ami toh chocolate, melt kore kheyo 😋"] },
-{ q: "kichu special korbo", a: ["bed special naki mind special? 😉"] },
-{ q: "ashbo tomar upor", a: ["dure thako na ekdom! 😳"] },
-{ q: "bed ready", a: ["ami o ready, sheet ta tolo 😈"] },
-{ q: "kapor kothay?", a: ["bhalobashar shorire kapor lage na 😌"] },
   { q: "tumi ke", a: ["ami tomar bby 😚💖", "ami ekta smart bot 🤖💕"] },
   { q: "bhalobashi tomake", a: ["ami o tomake 😍❤️", "onek onek bhalobashi 😘🥰"] },
   { q: "ami tomake bhalobashi", a: ["ami o tomake, onek onek ❤️😚"] },
@@ -59,16 +25,6 @@ const preTeach = [
   { q: "bhalobasha shotti?", a: ["ekdom shotti, onubhobe dekho 💗✨"] },
   { q: "bhalobasa holo", a: ["mon theke valobesechi 💓🤍"] },
   { q: "shopno dekhi", a: ["sob shopno te tumi 💤❤️"] },
-   { q: "ghore keu nai", a: ["taile ektu extra prem kori? 😏❤️"] },
-  { q: "chest e betha", a: ["amar naam nileo chole jabe 😉🫣"] },
-  { q: "dure theko na", a: ["kache ashlei toh tension 😈💕"] },
-  { q: "toke chumu dite iccha kore", a: ["muahh neiye 😘💋"] },
-  { q: "toke diye ki je kori", a: ["bhalobasha diya futai 😜🔥"] },
-  { q: "rate kotha bolbi?", a: ["sara rat tomar sathe 😏🌙"] },
-  { q: "gola dhore rakhbo", a: ["ami ready 🤤🤭"] },
-  { q: "bed e asho", a: ["ghumai bolchi toh? 😴 na hole... 😉"] },
-  { q: "kiss chai", a: ["onek beshi 😘😘😘"] },
-  { q: "kicho valobashi", a: ["eto prem nite parbo toh? 😳🫶"] },
 
   // 😔 Sad
   { q: "mon kharap", a: ["cholo coffee khai ☕🥺", "ami achi tomar pashe 🤗"] },
@@ -140,54 +96,52 @@ const preTeach = [
   { q: "Prem korba", a: ["𝗮𝗺𝗶 𝗽𝗿𝗲𝗺 𝗸𝗼𝗿𝗶 𝗻𝗮😟💔"] }
 ];
 
+module.exports = {
+  config: {
+    name: "bby",
+    version: "2.0",
+    author: "Smokey x GPT",
+    countDown: 3,
+    role: 0,
+    shortDescription: {
+      en: "Bby chatbot"
+    },
+    longDescription: {
+      en: "Friendly chatbot jeta tomake flirty, cute reply dibe"
+    },
+    category: "fun",
+    guide: {
+      en: "Just message with words like bby, jan, baby etc."
+    }
+  },
 
-// ✅ বট চালু হলে teach + রেডি মেসেজ
-module.exports.onStart = async function ({ api, event, args }) {
-  const input = args.join(" ").trim();
+  onStart: async function () {},
 
-  if (!input) {
-    for (const item of preTeach) {
-      for (const reply of item.a) {
-        try {
-          await axios.get(`${apiURL}?message=${encodeURIComponent(item.q)}&botname=bby&ownername=Asif&user=${event.senderID}`);
-        } catch (_) {}
+  onChat: async function ({ api, event }) {
+    try {
+      const text = (event.body || "").toLowerCase();
+      const triggerWords = ["bby", "baby", "jan", "babu", "bbe", "bow", "bot"];
+
+      if (triggerWords.some(word => text.includes(word))) {
+        // 🔗 API request
+        const res = await axios.get(`${apiURL}?message=${encodeURIComponent(text)}&botname=bby&ownername=Asif&user=${event.senderID}`);
+        if (res.data && res.data.message) {
+          const nameRes = await api.getUserInfo(event.senderID);
+          const senderName = nameRes[event.senderID]?.name || "Babu";
+          const replyMsg = res.data.message.replace(/^(.*)$/gm, `✨ ${senderName}: $1 ✨`);
+          return api.sendMessage(replyMsg, event.threadID);
+        }
       }
-    }
-    return api.sendMessage("🤖 Bby ready! Lekho kichu... 🥰", event.threadID);
-  }
 
-  try {
-    const res = await axios.get(`${apiURL}?message=${encodeURIComponent(input)}&botname=bby&ownername=Asif&user=${event.senderID}`);
-    if (res.data && res.data.message) {
-      const nameRes = await api.getUserInfo(event.senderID);
-      const senderName = nameRes[event.senderID]?.name || "Babu";
-      const replyMsg = res.data.message.replace(/^(.*)$/gm, `✨ ${senderName}: $1 ✨`);
-      return api.sendMessage(replyMsg, event.threadID, event.messageID);
-    } else {
-      return api.sendMessage("😢 Bby kichu bolar moto kichu khuje pailo na. Try again later!", event.threadID);
-    }
-  } catch (err) {
-    console.error("BBY Error:", err);
-    return api.sendMessage("❌ Bby er sathe contact e error hoise. Try again.\n\n🚫 Somossa hoyeche, ekto pore abar try koro.", event.threadID);
-  }
-};
-
-// ✅ Chat-e Bby ke mention korle auto response dibe with learning
-module.exports.onChat = async function ({ api, event }) {
-  try {
-    const text = (event.body || "").toLowerCase();
-    const triggerWords = ["bby", "baby", "jan", "babu", "bbe", "bow", "bot"];
-    if (triggerWords.some(word => text.startsWith(word))) {
-      const msg = text.replace(/^[^\s]+\s*/, "");
-      const res = await axios.get(`${apiURL}?message=${encodeURIComponent(msg)}&botname=bby&ownername=Asif&user=${event.senderID}`);
-      if (res.data && res.data.message) {
-        const nameRes = await api.getUserInfo(event.senderID);
-        const senderName = nameRes[event.senderID]?.name || "Babu";
-        const replyMsg = res.data.message.replace(/^(.*)$/gm, `✨ ${senderName}: $1 ✨`);
-        return api.sendMessage(replyMsg, event.threadID);
+      // ✅ Fallback from preTeach if no trigger word but matched line
+      const matched = preTeach.find(item => text.includes(item.q));
+      if (matched) {
+        const reply = matched.a[Math.floor(Math.random() * matched.a.length)];
+        return api.sendMessage(reply, event.threadID);
       }
+
+    } catch (err) {
+      return api.sendMessage("❌ Bby Chat error: " + err.message, event.threadID);
     }
-  } catch (err) {
-    return api.sendMessage("❌ Chat error: " + err.message, event.threadID);
   }
 };
