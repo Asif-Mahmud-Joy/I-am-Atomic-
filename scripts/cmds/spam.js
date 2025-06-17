@@ -16,8 +16,7 @@ module.exports = {
     // 🔍 Validation check
     if (isNaN(amount) || amount <= 0 || !msg) {
       return api.sendMessage(
-        "⚠️ | Use er format thik na bhai!
-📌 Format: /spam [amount] [message]\n🔁 Example: /spam 5 Hello!",
+        "⚠️ | Use er format thik na bhai!\n📌 Format: /spam [amount] [message]\n🔁 Example: /spam 5 Hello!",
         event.threadID
       );
     }
