@@ -1,4 +1,4 @@
-// Banglish: Ei command diye text ke online API diye encrypt/decrypt kora jabe
+// Banglish: Ei command text ke base64 diye online encrypt/decrypt kore
 
 const axios = require("axios");
 
@@ -6,54 +6,42 @@ module.exports = {
   config: {
     name: "encrypt",
     aliases: ["enc", "dec"],
-    version: "2.0",
-    author: "🔥 Asif Mahmud + ChatGPT Fix",
+    version: "2.1",
+    author: "𝐀𝐬𝐢𝐟 𝐌𝐚𝐡𝐦𝐮𝐝",
     countDown: 3,
     role: 0,
-    shortDescription: "Text encrypt/decrypt with API",
-    longDescription: "Simple text encryption/decryption using online API",
+    shortDescription: "🔐 Base64 Encrypt/Decrypt text",
+    longDescription: "Online API diye simple base64 encode/decode",
     category: "utility",
     guide: {
-      en: "{pn} enc <text> - encrypt\n{pn} dec <text> - decrypt"
+      en: "{pn} enc <text>\n{pn} dec <base64 text>"
     }
   },
 
   onStart: async function ({ message, args }) {
-    const action = args[0];
-    const input = args.slice(1).join(" ");
+    const type = args[0];
+    const text = args.slice(1).join(" ");
 
-    if (!["enc", "dec"].includes(action) || !input)
-      return message.reply("⚠️ Use: `{pn} enc <text>` or `{pn} dec <encrypted text>`");
+    if (!["enc", "dec"].includes(type) || !text)
+      return message.reply("📌 Use:\n• enc <text>\n• dec <base64>");
 
     try {
-      // API call for encryption/decryption
-      const url = `https://codebeautify.org/encrypt-decrypt-text-json`;
+      const url = type === "enc"
+        ? `https://api.codersvault.live/api/encode?text=${encodeURIComponent(text)}`
+        : `https://api.codersvault.live/api/decode?text=${encodeURIComponent(text)}`;
 
-      const payload = {
-        type: action === "enc" ? "encrypt" : "decrypt",
-        key: "GoatUltraSecure🔥", // Banglish: API-r password, mone moto change korte paro
-        input: input
-      };
+      const res = await axios.get(url);
+      const result = res.data?.result;
 
-      const res = await axios.post("https://api.codetabs.com/v1/proxy", {
-        url,
-        payload: JSON.stringify(payload)
-      });
+      if (!result) return message.reply("❌ API response e kichu nai.");
 
-      if (!res.data || !res.data.output) {
-        return message.reply("❌ API response e kichu nai, try abar.");
-      }
-
-      const result = res.data.output;
-
-      message.reply(
-        action === "enc"
-          ? `🔐 Encrypted text:\n${result}`
-          : `🔓 Decrypted text:\n${result}`
+      return message.reply(
+        type === "enc"
+          ? `🔐 Encrypted:\n${result}`
+          : `🔓 Decrypted:\n${result}`
       );
-    } catch (err) {
-      console.error(err);
-      message.reply("❌ API error hoyeche. Server down ba connection fail.");
+    } catch (e) {
+      return message.reply("❌ API error hoyeche. Server e problem.");
     }
   }
 };
