@@ -1,4 +1,4 @@
-const axios = global.nodemodule["axios"];
+const axios = require("axios"); // ✅ Direct require to avoid undefined error
 
 module.exports = {
   config: {
@@ -38,9 +38,7 @@ module.exports = {
       const response = await axios.get(apiUrl);
 
       if (response.data.success) {
-        return api.sendMessage(`✅ Sammy has been taught!
-📥 Ask: ${question}
-📤 Answer: ${answer}`, threadID, messageID);
+        return api.sendMessage(`✅ Sammy has been taught!\n📥 Ask: ${question}\n📤 Answer: ${answer}`, threadID, messageID);
       } else {
         return api.sendMessage("❌ Failed to teach Sammy. Try again later.", threadID, messageID);
       }
