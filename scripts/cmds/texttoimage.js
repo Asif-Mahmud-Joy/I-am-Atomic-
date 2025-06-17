@@ -1,6 +1,6 @@
 const fs = require("fs");
 const path = require("path");
-const axios = global.nodemodule["axios"];
+const axios = require("axios"); // ✅ Fixed: use direct axios import
 
 module.exports = {
   config: {
@@ -51,7 +51,9 @@ module.exports = {
       const imagePath = path.join(__dirname, "texttoimage_output.jpg");
       fs.writeFileSync(imagePath, imageBuffer);
 
-      return message.reply({ attachment: fs.createReadStream(imagePath) });
+      return message.reply({ attachment: fs.createReadStream(imagePath) }, () => {
+        fs.unlinkSync(imagePath); // ✅ Clean up after sending
+      });
     } catch (err) {
       console.error("Image generation error:", err?.response?.data || err.message);
       if (err?.response?.status === 503)
