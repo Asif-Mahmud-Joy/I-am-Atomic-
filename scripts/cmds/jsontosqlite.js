@@ -22,8 +22,8 @@ module.exports = {
       invalidDatabase: "❌ Please switch database to sqlite in config then restart bot",
       missingFile: "❌ Missing data file: %1",
       formatInvalid: "❌ Invalid JSON format",
-      error: "❌ Error:
-%1: %2",
+      error: `❌ Error:
+%1: %2`,
       successThread: "✅ Thread data synced successfully!",
       successUser: "✅ User data synced successfully!",
       successDashboard: "✅ Dashboard data synced successfully!",
