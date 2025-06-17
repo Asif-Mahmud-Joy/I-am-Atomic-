@@ -36,7 +36,7 @@ const preTeach = [
 { q: "kichu special korbo", a: ["bed special naki mind special? 😉"] },
 { q: "ashbo tomar upor", a: ["dure thako na ekdom! 😳"] },
 { q: "bed ready", a: ["ami o ready, sheet ta tolo 😈"] },
-{ q: "kapor kothay?", a: ["bhalobashar shorire kapor lage na 😌"] }
+{ q: "kapor kothay?", a: ["bhalobashar shorire kapor lage na 😌"] },
   { q: "tumi ke", a: ["ami tomar bby 😚💖", "ami ekta smart bot 🤖💕"] },
   { q: "bhalobashi tomake", a: ["ami o tomake 😍❤️", "onek onek bhalobashi 😘🥰"] },
   { q: "ami tomake bhalobashi", a: ["ami o tomake, onek onek ❤️😚"] },
