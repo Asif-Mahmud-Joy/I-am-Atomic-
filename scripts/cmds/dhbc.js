@@ -22,8 +22,7 @@ module.exports = {
 
   langs: {
     en: {
-      reply: "🧠 Guess the word:
-%1",
+      reply: `🧠 Guess the word:\n%1`,
       isSong: "🎵 Hint: This is the name of a song by %1",
       notPlayer: "⚠️ You are not the player of this question!",
       correct: "✅ Correct! You earned %1$ 💸",
@@ -36,8 +35,8 @@ module.exports = {
       const res = await axios.get("https://api.jastin.xyz/game/dhbc");
       const { wordcomplete, singer, image1, image2 } = res.data.result;
 
-      const msg = getLang("reply", wordcomplete.replace(/\S/g, "█ ")) +
-        (singer ? `\n\n${getLang("isSong", singer)}` : "");
+      const maskedWord = wordcomplete.replace(/\S/g, "█ ");
+      const msg = getLang("reply", maskedWord) + (singer ? `\n\n${getLang("isSong", singer)}` : "");
 
       message.reply({
         body: msg,
@@ -46,6 +45,7 @@ module.exports = {
           await getStreamFromURL(image2)
         ]
       }, (err, info) => {
+        if (err) return;
         global.GoatBot.onReply.set(info.messageID, {
           commandName,
           messageID: info.messageID,
@@ -61,6 +61,7 @@ module.exports = {
 
   onReply: async ({ message, Reply, event, getLang, usersData, envCommands, commandName }) => {
     const { author, wordcomplete, messageID } = Reply;
+
     if (event.senderID !== author)
       return message.reply(getLang("notPlayer"));
 
