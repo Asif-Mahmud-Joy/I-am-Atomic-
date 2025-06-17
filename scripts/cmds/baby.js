@@ -1,8 +1,5 @@
 const axios = require("axios");
 
-// ✅ Stable AI API (no key needed)
-const apiURL = "https://api.affiliateplus.xyz/api/chatbot";
-
 const preTeach = [
   // ❤️ Romantic
   { q: "tumi ke", a: ["ami tomar bby 😚💖", "ami ekta smart bot 🤖💕"] },
@@ -101,19 +98,19 @@ const preTeach = [
 module.exports = {
   config: {
     name: "bby",
-    version: "2.0",
-    author: "Smokey x GPT",
+    version: "3.0",
+    author: "Smokey x ChatGPT",
     countDown: 3,
     role: 0,
     shortDescription: {
-      en: "Bby chatbot"
+      en: "Cute & flirty bby chatbot"
     },
     longDescription: {
-      en: "Friendly chatbot jeta tomake flirty, cute reply dibe"
+      en: "Friendly AI chatbot jeta tomake flirty, cute & sweet reply dibe with a smart response system"
     },
     category: "fun",
     guide: {
-      en: "Just message with words like bby, jan, baby etc."
+      en: "Just type 'bby', 'jan', 'baby', etc. and enjoy!"
     }
   },
 
@@ -123,27 +120,40 @@ module.exports = {
     try {
       const text = (event.body || "").toLowerCase();
       const triggerWords = ["bby", "baby", "jan", "babu", "bbe", "bow", "bot"];
+      const senderID = event.senderID;
 
+      const nameRes = await api.getUserInfo(senderID);
+      const senderName = nameRes[senderID]?.name || "Babu";
+
+      // 🎯 AI API
       if (triggerWords.some(word => text.includes(word))) {
-        // 🔗 API request
-        const res = await axios.get(`${apiURL}?message=${encodeURIComponent(text)}&botname=bby&ownername=Asif&user=${event.senderID}`);
-        if (res.data && res.data.message) {
-          const nameRes = await api.getUserInfo(event.senderID);
-          const senderName = nameRes[event.senderID]?.name || "Babu";
-          const replyMsg = res.data.message.replace(/^(.*)$/gm, `✨ ${senderName}: $1 ✨`);
-          return api.sendMessage(replyMsg, event.threadID);
-        }
+        const res = await axios.get("https://api.affiliateplus.xyz/api/chatbot", {
+          params: {
+            message: text,
+            name: "Bby",
+            gender: "female",
+            ownername: "Asif",
+            user: senderID
+          }
+        });
+
+        const botReply = res.data?.message || "🤖 Sorry jan, kichu vul hoise.";
+
+        const styledReply = `╭────── ⋆⋅☆⋅⋆ ──────╮\n✨ ${senderName},\n💬 ${botReply}\n╰────── ⋆⋅☆⋅⋆ ──────╯`;
+        return api.sendMessage(styledReply, event.threadID);
       }
 
-      // ✅ Fallback from preTeach if no trigger word but matched line
+      // 🔁 fallback preTeach
       const matched = preTeach.find(item => text.includes(item.q));
       if (matched) {
         const reply = matched.a[Math.floor(Math.random() * matched.a.length)];
-        return api.sendMessage(reply, event.threadID);
+        const fallbackReply = `💖 ${senderName}, ${reply}`;
+        return api.sendMessage(fallbackReply, event.threadID);
       }
-
+    
     } catch (err) {
-      return api.sendMessage("❌ Bby Chat error: " + err.message, event.threadID);
+      console.error("Bby error:", err.message);
+      return api.sendMessage("❌ Bby bot error: " + err.message, event.threadID);
     }
   }
 };
