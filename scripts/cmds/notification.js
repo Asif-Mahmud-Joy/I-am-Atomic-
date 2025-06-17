@@ -4,7 +4,7 @@ const axios = require("axios");
 module.exports = {
   config: {
     name: "notification",
-    aliases: ["notify", "noti"],
+    aliases: ["notify"], // ✅ Removed duplicate alias "noti" to avoid conflict
     version: "1.7",
     author: "✨ Mr.Smokey [Asif Mahmud] ✨",
     countDown: 5,
@@ -53,7 +53,7 @@ module.exports = {
     if (!args[0]) return message.reply(lang("missingMessage"));
 
     const formSend = {
-      body: `${lang("notification")}\n────────────────\n${args.join(" ")}`,
+      body: `${lang("notification")}\n───────────────\n${args.join(" ")}`,
       attachment: await getStreamsFromAttachment(
         [
           ...event.attachments,
@@ -105,7 +105,7 @@ module.exports = {
         sendError.reduce((a, b) => a + b.threadIDs.length, 0),
         sendError.map(err => `\n - ${err.errorDescription}\n  + ${err.threadIDs.join("\n  + ")}`).join("")
       );
-    
+
     message.reply(msg);
   }
 };
