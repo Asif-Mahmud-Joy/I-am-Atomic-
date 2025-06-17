@@ -20,8 +20,7 @@ module.exports = {
   onStart: async function ({ message, args, event, api }) {
     const info = args.join(" ");
     if (!info.includes("|")) {
-      return message.reply("📝 Format thik moto din:
-{pn} Character Name or ID | Main Text | Sub Text");
+      return message.reply("📝 Format thik moto din:\n{pn} Character Name or ID | Main Text | Sub Text");
     }
 
     const parts = info.split("|").map(p => p.trim());
