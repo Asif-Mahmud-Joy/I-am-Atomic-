@@ -36,7 +36,7 @@ module.exports = {
     }
 
     const imageUrl = `https://apiv3.imageapi.tech/avatarwibu?id=${id}&chu_nen=${backgroundText}&chu_ky=${signatureText}`;
-    const imgPath = path.join(__dirname, "cache", `avt1_${Date.now()}.png");
+    const imgPath = path.join(__dirname, "cache", `avt1_${Date.now()}.png`);
 
     try {
       message.reply("[⏳] Please wait, creating your avatar...");
