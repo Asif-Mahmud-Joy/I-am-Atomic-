@@ -17,12 +17,11 @@ module.exports = {
       const input = event.body?.toLowerCase().trim();
       if (input === "gf") {
         return message.reply({
-          body:
-            "💌 *BESSAR BUKE*
+          body: `💌 *BESSAR BUKE*
 
 👑 ═════════════════
 ✨  𝗕𝗢𝗧 𝗢𝗪𝗡𝗘𝗥:  
-🌫  𝐌𝐫.𝐒𝐦𝐨𝐤𝐞𝐲 🌾",
+🌫  𝐌𝐫.𝐒𝐦𝐨𝐤𝐞𝐲 🌾`,
           attachment: [
             await global.utils.getStreamFromURL(
               "https://files.catbox.moe/k8kwue.jpg"
