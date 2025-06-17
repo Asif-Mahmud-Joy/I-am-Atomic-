@@ -76,8 +76,7 @@ module.exports = {
       }
 
       default:
-        return message.reply('❓Command bujhi nai.
-📥 Use `{pn} add` or `{pn} send`');
+        return message.reply(`❓Command bujhi nai.\n📥 Use {pn} add or {pn} send`);
     }
   }
 };
