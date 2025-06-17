@@ -31,7 +31,7 @@ module.exports = {
       });
 
       const imgBuffer = Buffer.from(res.data, "binary");
-      const imgPath = path.join(__dirname, "tmp", `${uid}_affect.png");
+      const imgPath = path.join(__dirname, "tmp", `${uid}_affect.png`);
 
       await fs.ensureDir(path.dirname(imgPath));
       fs.writeFileSync(imgPath, imgBuffer);
