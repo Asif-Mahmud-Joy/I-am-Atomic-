@@ -3,7 +3,7 @@ const mediaTypes = ["photo", "png", "animated_image", "video", "audio"];
 
 module.exports = {
   config: {
-    name: "callad",
+    name: "calladmin",
     version: "2.0",
     author: "🎩 𝐌𝐫.𝐒𝐦𝐨𝐤𝐞𝐲 • 𝐀𝐬𝐢𝐟 𝐌𝐚𝐡𝐦𝐮𝐝 🌠",
     countDown: 5,
