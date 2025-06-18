@@ -31,7 +31,7 @@ module.exports = {
   config: {
     name: "bby",
     version: "6.9.0",
-    author: "🎩 𝐌𝐫.𝐒𝐦𝐨𝐤𝐞𝐲 • 𝐀𝐬𝐢𝐟 𝐌𝐚𝐡𝐦𝐮𝐝 🌠",
+    author: "Smokey x ChatGPT & Dipto",
     countDown: 2,
     role: 0,
     description: "Ultimate Bby chatbot with AI, images, and dynamic responses",
@@ -47,7 +47,7 @@ module.exports = {
     try {
       const text = (event.body || "").toLowerCase();
       const triggerWords = ["bby", "baby", "jan", "babu", "bbe", "bow", "bot"];
-      const senderInfo = await api.getUser Info(event.senderID);
+      const senderInfo = await api.getUser Info(event.senderID); // Fixed method name
       const senderName = senderInfo[event.senderID]?.name || "Babu";
 
       // Check for image keyword trigger
