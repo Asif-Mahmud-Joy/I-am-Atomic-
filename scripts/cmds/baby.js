@@ -1,6 +1,10 @@
 const axios = require("axios");
 
 const apiURL = "https://api.affiliateplus.xyz/api/chatbot";
+const baseApiUrl = async () => {
+    return "https://noobs-api.top/dipto";
+};
+
 const preTeach = [
   { q: "tumi ke", a: ["ami tomar bby 😚", "ami ekta smart bot"] },
   { q: "bhalobashi tomake", a: ["ami o tomake 😍", "onek onek bhalobashi"] },
@@ -26,29 +30,24 @@ const imageTriggers = {
 module.exports = {
   config: {
     name: "bby",
-    version: "2.5",
-    author: "Smokey x ChatGPT",
+    version: "6.9.0",
+    author: "🎩 𝐌𝐫.𝐒𝐦𝐨𝐤𝐞𝐲 • 𝐀𝐬𝐢𝐟 𝐌𝐚𝐡𝐦𝐮𝐝 🌠",
     countDown: 2,
     role: 0,
-    shortDescription: {
-      en: "Bby chatbot with AI and images"
-    },
-    longDescription: {
-      en: "Flirty, cute chatbot with text + image response support"
-    },
+    description: "Ultimate Bby chatbot with AI, images, and dynamic responses",
     category: "fun",
     guide: {
-      en: "Just say something like: bby tumi ki korcho?"
+      en: "{pn} [anyMessage] OR\nteach [YourMessage] - [Reply1], [Reply2], [Reply3]... OR\nremove [YourMessage] OR\nlist OR\nedit [YourMessage] - [NewMessage]"
     }
   },
 
   onStart: async function () {},
 
-  onChat: async function ({ api, event }) {
+  onChat: async function ({ api, event, args, usersData }) {
     try {
       const text = (event.body || "").toLowerCase();
       const triggerWords = ["bby", "baby", "jan", "babu", "bbe", "bow", "bot"];
-      const senderInfo = await api.getUserInfo(event.senderID);
+      const senderInfo = await api.getUser Info(event.senderID);
       const senderName = senderInfo[event.senderID]?.name || "Babu";
 
       // Check for image keyword trigger
@@ -77,12 +76,49 @@ module.exports = {
         }
       }
 
-      // fallback preTeach
+      // Fallback preTeach
       const matched = preTeach.find(item => text.includes(item.q));
       if (matched) {
         const reply = matched.a[Math.floor(Math.random() * matched.a.length)];
         return api.sendMessage(`💌 ${senderName}, ${reply}`, event.threadID);
       }
+
+      // Command handling for teaching and managing responses
+      const link = `${await baseApiUrl()}/baby`;
+      const uid = event.senderID;
+      let command, comd, final;
+
+      if (args[0] === 'remove') {
+        const fina = text.replace("remove ", "");
+        const dat = (await axios.get(`${link}?remove=${fina}&senderID=${uid}`)).data.message;
+        return api.sendMessage(dat, event.threadID);
+      }
+
+      if (args[0] === 'list') {
+        const data = (await axios.get(`${link}?list=all`)).data;
+        return api.sendMessage(`❇️ | Total Teach = ${data.length || "api off"}`, event.threadID);
+      }
+
+      if (args[0] === 'edit') {
+        const command = text.split(/\s*-\s*/)[1];
+        if (command.length < 2) return api.sendMessage('❌ | Invalid format! Use edit [YourMessage] - [NewReply]', event.threadID);
+        const dA = (await axios.get(`${link}?edit=${args[1]}&replace=${command}&senderID=${uid}`)).data.message;
+        return api.sendMessage(`changed ${dA}`, event.threadID);
+      }
+
+      if (args[0] === 'teach') {
+        [comd, command] = text.split(/\s*-\s*/);
+        final = comd.replace("teach ", "");
+        if (command.length < 2) return api.sendMessage('❌ | Invalid format!', event.threadID);
+        const re = await axios.get(`${link}?teach=${final}&reply=${command}&senderID=${uid}&threadID=${event.threadID}`);
+        const tex = re.data.message;
+        const teacher = (await usersData.get(re.data.teacher)).name;
+        return api.sendMessage(`✅ Replies added ${tex}\nTeacher: ${teacher}`, event.threadID);
+      }
+
+      // Default response if no commands match
+      const d = (await axios.get(`${link}?text=${text}&senderID=${uid}&font=1`)).data.reply;
+      api.sendMessage(d, event.threadID);
 
     } catch (err) {
       console.error("Bby Chatbot Error:", err);
