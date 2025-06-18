@@ -1,6 +1,5 @@
 const axios = require("axios");
 
-const apiURL = "https://api.affiliateplus.xyz/api/chatbot";
 const baseApiUrl = async () => {
     return "https://noobs-api.top/dipto";
 };
@@ -31,10 +30,10 @@ module.exports = {
   config: {
     name: "bby",
     version: "6.9.0",
-    author: "Smokey x ChatGPT & Dipto",
+    author: "Smokey & Dipto",
     countDown: 2,
     role: 0,
-    description: "Ultimate Bby chatbot with AI, images, and dynamic responses",
+    description: "Ultimate Bby chatbot with images and dynamic responses",
     category: "fun",
     guide: {
       en: "{pn} [anyMessage] OR\nteach [YourMessage] - [Reply1], [Reply2], [Reply3]... OR\nremove [YourMessage] OR\nlist OR\nedit [YourMessage] - [NewMessage]"
@@ -47,7 +46,7 @@ module.exports = {
     try {
       const text = (event.body || "").toLowerCase();
       const triggerWords = ["bby", "baby", "jan", "babu", "bbe", "bow", "bot"];
-      const senderInfo = await api.getUser Info(event.senderID); // Corrected method name
+      const senderInfo = await api.getUser Info(event.senderID); // Ensure this method is correct
       const senderName = senderInfo[event.senderID]?.name || "Babu";
 
       // Check for image keyword trigger
@@ -57,22 +56,6 @@ module.exports = {
             body: `❤️ ${senderName}, ami o toke ${key} 😘`,
             attachment: await global.utils.getStreamFromURL(imageTriggers[key])
           }, event.threadID);
-        }
-      }
-
-      // Check for keyword prefix
-      if (triggerWords.some(word => text.includes(word))) {
-        const response = await axios.get(apiURL, {
-          params: {
-            message: text,
-            botname: "Bby",
-            ownername: "Asif",
-            userid: event.senderID
-          }
-        });
-
-        if (response.data && response.data.message) {
-          return api.sendMessage(`💬 ${senderName}: ${response.data.message}`, event.threadID);
         }
       }
 
@@ -86,7 +69,6 @@ module.exports = {
       // Command handling for teaching and managing responses
       const link = `${await baseApiUrl()}/baby`;
       const uid = event.senderID;
-      let command, comd, final;
 
       if (args[0] === 'remove') {
         const fina = text.replace("remove ", "");
@@ -107,8 +89,8 @@ module.exports = {
       }
 
       if (args[0] === 'teach') {
-        [comd, command] = text.split(/\s*-\s*/);
-        final = comd.replace("teach ", "");
+        const [comd, command] = text.split(/\s*-\s*/);
+        const final = comd.replace("teach ", "");
         if (command.length < 2) return api.sendMessage('❌ | Invalid format!', event.threadID);
         const re = await axios.get(`${link}?teach=${final}&reply=${command}&senderID=${uid}&threadID=${event.threadID}`);
         const tex = re.data.message;
@@ -117,8 +99,7 @@ module.exports = {
       }
 
       // Default response if no commands match
-      const d = (await axios.get(`${link}?text=${text}&senderID=${uid}&font=1`)).data.reply;
-      api.sendMessage(d, event.threadID);
+      api.sendMessage("❓ Sorry, I didn't understand that.", event.threadID);
 
     } catch (err) {
       console.error("Bby Chatbot Error:", err);
@@ -126,4 +107,3 @@ module.exports = {
     }
   }
 };
-            
