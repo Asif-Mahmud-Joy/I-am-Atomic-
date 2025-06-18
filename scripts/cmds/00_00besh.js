@@ -1,54 +1,62 @@
-const axios = require('axios');
+const axios = require("axios");
 
 module.exports = {
   config: {
     name: "besh24",
     author: "𝐀𝐬𝐢𝐟 𝐌𝐚𝐡𝐦𝐮𝐝",
-    version: "3.2",
-    cooldowns: 0,
+    version: "5.0",
+    cooldowns: 5,
     role: 0,
-    shortDescription: {
-      en: "Talk with besh",
-      bn: "Besh er shathe kotha bolo"
-    },
-    longDescription: {
-      en: "Chat with your gossip-loving bestie Besh!",
-      bn: "Tomar gossip friend Besh er shathe moja moja kotha bolo!"
-    },
+    shortDescription: "Chat with Besh using OpenAI",
+    longDescription: "Chat with your gossip bestie Besh powered by OpenAI!",
     category: "ai",
-    guide: {
-      en: "{p}besh <your text>",
-      bn: "{p}besh <tomar text>"
-    }
+    guide: "{p}besh24 <your text>"
   },
 
   onStart: async function ({ api, event, args }) {
-    const input = args.join(" ");
+    const input = args.join(" ").trim();
+    const lang = /[^\x00-\x7F]/.test(input) ? "bn" : "en";
 
     if (!input || input.length < 2) {
-      const responses = [
-        "Uy bes, keno abar miss korcho amake? 😏",
-        "Ami ekhanei asi bes, tomar jonno 😌",
-        "Kemon aso bes? 😊",
-        "Kono gossip ase naki bes? Bolo bolo! 😆",
-        "Bes, cholo chaa khete khete chismis kori 😜"
+      const lines = [
+        "oii-🥺🥹-ek🥄 chamoch bhalobasha diba-🤏🏻🙂",
+        "janu-😇💕-ekta chumu debe-💋🥰",
+        "babu-🌙✨-rater shopne dekha dibe-😴💖",
+        "jaan-🌹🥰-ek fota hasi pathabe-😊✉️",
+        "tumi-🌟😌-amar bhalobashar karon-🥰🎶",
+        "love-😍🔥-tumi chhara nishash ta theme jai-😮‍💨💖",
+        "love-❤️🥺-chokhe chokh rakhle hariye jabo-😍🌟",
+        "😌-ami shudhu tomar kotha vabbo-💭🌟"
       ];
-      const randomResponse = responses[Math.floor(Math.random() * responses.length)];
-      return api.sendMessage(randomResponse, event.threadID, event.messageID);
+      const resp = lines[Math.floor(Math.random() * lines.length)];
+      return api.sendMessage(resp, event.threadID, event.messageID);
     }
 
     try {
-      const apiUrl = `https://aemt.me/besh?q=${encodeURIComponent(input)}`;
-      const response = await axios.get(apiUrl);
+      // ✅ Free Public OpenAI proxy API (no key needed)
+      const completion = await axios.post(
+        "https://openai.angfuzsoft.com/v1/chat/completions",
+        {
+          model: "gpt-3.5-turbo",
+          messages: [
+            { role: "system", content: `Tumi ekta flirty gossip Bangladeshi bestie. Banglish e moja moja replay diba.` },
+            { role: "user", content: input }
+          ],
+          max_tokens: 150,
+          temperature: 0.9
+        },
+        {
+          headers: {
+            "Content-Type": "application/json"
+          }
+        }
+      );
 
-      if (response.data && response.data.message) {
-        api.sendMessage(response.data.message, event.threadID, event.messageID);
-      } else {
-        api.sendMessage("❌ Besh akhon kichu bolte parchhe na. Ektu pore try koro!\n\n🔄 Besh confused mone hochhe. Pore abar dekha kor!", event.threadID, event.messageID);
-      }
+      const reply = completion.data.choices[0].message.content;
+      return api.sendMessage(reply, event.threadID, event.messageID);
     } catch (err) {
-      console.error("Besh API error:", err.message);
-      api.sendMessage("❌ Error hoise Besh er response pawar somoy.\n\n🚫 Network ba API problem hoite pare. Ektu por abar try koro!", event.threadID, event.messageID);
+      console.error("🛑 OpenAI Proxy API error:", err.message);
+      return api.sendMessage("❌ Sorry jaan, API e problem hoise. Ektu pore abar try koro!", event.threadID, event.messageID);
     }
   }
 };
