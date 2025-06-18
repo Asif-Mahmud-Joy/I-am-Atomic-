@@ -47,7 +47,7 @@ module.exports = {
     try {
       const text = (event.body || "").toLowerCase();
       const triggerWords = ["bby", "baby", "jan", "babu", "bbe", "bow", "bot"];
-      const senderInfo = await api.getUser Info(event.senderID); // Fixed method name
+      const senderInfo = await api.getUser Info(event.senderID); // Corrected method name
       const senderName = senderInfo[event.senderID]?.name || "Babu";
 
       // Check for image keyword trigger
