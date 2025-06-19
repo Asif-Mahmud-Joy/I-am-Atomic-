@@ -1,171 +1,291 @@
-// Fixed & Upgraded Album Command with working API injected
-
 const axios = require("axios");
+const fs = require("fs");
 const path = require("path");
 
-module.exports = {
-  config: {
-    name: "album",
-    version: "2.0.0",
-    role: 0,
-    author: "𝐀𝐬𝐢𝐟 𝐌𝐚𝐡𝐦𝐮𝐝",
-    description: "Stream media from various categories with real-time API support.",
-    category: "Media",
-    countDown: 5,
-    guide: {
-      en: "{p}{n} [cartoon/photo/lofi/sad/islamic/funny/horny/anime/love/lyrics/sigma/aesthetic/cat/ff/sex/football/girl/friend/music/gaming] or reply with number",
-    },
+// ============================== ⚡️ CONFIGURATION ⚡️ ============================== //
+const ADMIN_ID = "61571630409265"; // Replace with your admin ID
+const IMGUR_TOKEN = "Bearer edd3135472e670b475101491d1b0e489d319940f";
+const BANNER_IMAGE = "https://files.catbox.moe/qptlr8.mp4"; // Optional decorative banner
+// ================================================================================= //
+
+const baseApiUrl = async () => {
+  try {
+    const response = await axios.get("https://raw.githubusercontent.com/mahmudx7/exe/main/baseApiUrl.json");
+    return response.data.mahmud;
+  } catch (error) {
+    console.error("Failed to fetch API URL:", error);
+    return "https://fallback-api.example.com";
+  }
+};
+
+// =============================== 🎨 DESIGN SYSTEM 🎨 ============================== //
+const design = {
+  header: "✨ 𝗔𝗟𝗕𝗨𝗠 𝗖𝗢𝗠𝗠𝗔𝗡𝗗 𝗦𝗬𝗦𝗧𝗘𝗠 ✨",
+  footer: "♾️ 𝗣𝗼𝘄𝗲𝗿𝗲𝗱 𝗯𝘆 𝐀𝐬𝐢𝐟 𝗧𝗲𝗰𝗵𝗻𝗼𝗹𝗼𝗴𝗶𝗲𝘀",
+  separator: "▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰",
+  emoji: {
+    success: "✅",
+    error: "❌",
+    warning: "⚠️",
+    info: "ℹ️",
+    media: "🎬",
+    add: "➕",
+    list: "📋",
+    next: "⏭️",
+    admin: "👑"
+  },
+  styles: {
+    category: "▸",
+    highlight: "🌟",
+    page: "📄"
+  }
+};
+
+const formatMessage = (content) => {
+  return `${design.emoji.info} ${design.header}\n${design.separator}\n${content}\n${design.separator}\n${design.footer}`;
+};
+// ================================================================================= //
+
+module.exports = { 
+  config: { 
+    name: "album", 
+    version: "2.0", 
+    role: 0, 
+    author: "Asif", 
+    category: "media", 
+    guide: { 
+      en: "{p}{n} [page]\n{p}{n} add [category] [URL]\n{p}{n} list"
+    }, 
   },
 
-  onStart: async function ({ api, event, args }) {
-    const validCommands = [
-      "cartoon", "photo", "lofi", "sad", "islamic", "funny", "horny", "anime",
-      "love", "lyrics", "sigma", "aesthetic", "cat", "ff", "sex", "football",
-      "girl", "friend", "music", "gaming"
-    ];
-    const adminID = "61571630409265";
-    const baseApiUrl = "https://ultraproapi.onrender.com";
-    const jikanApiUrl = "https://api.jikan.moe/v4";
+  onStart: async function ({ api, event, args }) { 
+    try {
+      const apiUrl = await baseApiUrl();
+      const command = args[0]?.toLowerCase();
 
-    if (!args[0]) {
-      api.setMessageReaction("😘", event.messageID, () => {}, true);
-      const albumOptions = [
-        "Funny Video", "Islamic Video", "Sad Video", "Anime Video",
-        "Cartoon Video", "LoFi Video", "Horny Video (Admin Only)", "Love Video",
-        "Flower Video", "Random Photo", "Aesthetic Video", "Sigma Rule",
-        "Lyrics Video", "Cat Video", "18+ Video (Admin Only)", "Free Fire Video",
-        "Football Video", "Girl Video", "Friends Video", "Music Video", "Gaming Video"
-      ];
-      const message = 
-        "❤️‍🩹 Bhai, ekta option choose kor! <💝\n" +
-        "✿━━━━━━━━━━━━━━━━━━━━━━━━━━━━━✿\n" +
-        albumOptions.map((option, i) => `${i + 1}. ${option} 🐤`).join("\n") +
-        "\n✿━━━━━━━━━━━━━━━━━━━━━━━━━━━━━✿\n" +
-        "Reply kor number (1–21) diye!";
-
-      await api.sendMessage(message, event.threadID, (err, info) => {
-        global.GoatBot.onReply.set(info.messageID, {
-          commandName: this.config.name,
-          type: "reply",
-          messageID: info.messageID,
-          author: event.senderID,
-          link: albumOptions,
-        });
-      }, event.messageID);
-      return;
-    }
-
-    if (["list", "listAll"].includes(args[0])) {
-      try {
-        const res = await axios.get(`${baseApiUrl}/album?list=dipto`);
-        const data = res.data.data;
-        const videoCount = data.match(/\d+/g)?.reduce((acc, num) => acc + parseInt(num), 0) || 0;
-        if (args[0] === "list") {
-          api.sendMessage(`🎥 Total video count: ${videoCount}`, event.threadID, event.messageID);
-        } else {
-          api.sendMessage(
-            `💼 Sob video list dekh! 🩵\n\n${data}\n\n🎥 Total video count: ${videoCount}`,
+      // ➕ ADD MEDIA COMMAND
+      if (command === "add") {
+        if (!args[1]) {
+          return api.sendMessage(
+            formatMessage(`𝗣𝗹𝗲𝗮𝘀𝗲 𝘀𝗽𝗲𝗰𝗶𝗳𝘆 𝗮 𝗰𝗮𝘁𝗲𝗴𝗼𝗿𝘆!\n${design.emoji.info} 𝗨𝘀𝗮𝗴𝗲: !album add [category]`),
             event.threadID, event.messageID
           );
         }
-      } catch (error) {
-        api.sendMessage("⚠️ API down, bhai! Try again later.", event.threadID, event.messageID);
-      }
-      return;
-    }
 
-    const d1 = args[1]?.toLowerCase();
-    if (validCommands.includes(d1) && event.messageReply?.attachments?.[0]?.url) {
-      api.setMessageReaction("👀", event.messageID, () => {}, true);
-      const attachmentUrl = event.messageReply.attachments[0].url;
-      let query = d1.replace("photo", "addPhoto");
-
-      try {
-        const imgurRes = await axios.get(`${baseApiUrl}/imgur?url=${encodeURIComponent(attachmentUrl)}`);
-        const imgurLink = imgurRes.data.data;
-        const ext = path.extname(imgurLink).toLowerCase();
-        let query2 = ext.match(/\.jpg|\.jpeg|\.png/) ? "addPhoto" : `add${d1.charAt(0).toUpperCase() + d1.slice(1)}`;
-        if (!ext.match(/\.jpg|\.jpeg|\.png|\.mp4/)) {
-          return api.sendMessage("⚠️ Ei file format support kori na, bhai! (.jpg, .jpeg, .png, .mp4)", event.threadID, event.messageID);
+        const category = args[1].toLowerCase();
+        const restricted = ["18+", "horny"];
+        
+        // 👑 ADMIN CHECK FOR RESTRICTED CATEGORIES
+        if (restricted.includes(category) && event.senderID !== ADMIN_ID) {
+          return api.sendMessage(
+            formatMessage(`${design.emoji.admin} 𝗥𝗲𝘀𝘁𝗿𝗶𝗰𝘁𝗲𝗱 𝗰𝗮𝘁𝗲𝗴𝗼𝗿𝘆! 𝗢𝗻𝗹𝘆 𝗮𝗱𝗺𝗶𝗻𝘀 𝗰𝗮𝗻 𝗮𝗱𝗱 𝘁𝗼 ${category}`),
+            event.threadID, event.messageID
+          );
         }
-        const uploadRes = await axios.get(`${baseApiUrl}/album?add=${query2}&url=${encodeURIComponent(imgurLink)}`);
-        api.sendMessage(
-          `✅ ${uploadRes.data.data}\n🔰 ${uploadRes.data.data2}\n🔥 URL: ${imgurLink}`,
+
+        let mediaUrl = "";
+
+        // 🖼️ HANDLE ATTACHMENT
+        if (event.messageReply?.attachments?.[0]) {
+          const attachment = event.messageReply.attachments[0];
+          if (attachment.type !== "video") {
+            return api.sendMessage(
+              formatMessage(`${design.emoji.error} 𝗢𝗻𝗹𝘆 𝘃𝗶𝗱𝗲𝗼 𝗮𝘁𝘁𝗮𝗰𝗵𝗺𝗲𝗻𝘁𝘀 𝗮𝗿𝗲 𝗮𝗹𝗹𝗼𝘄𝗲𝗱!`),
+              event.threadID, event.messageID
+            );
+          }
+          mediaUrl = attachment.url;
+        } 
+        // 🔗 HANDLE URL
+        else if (args[2]) {
+          mediaUrl = args[2];
+        } 
+        else {
+          return api.sendMessage(
+            formatMessage(`${design.emoji.error} 𝗣𝗹𝗲𝗮𝘀𝗲 𝗽𝗿𝗼𝘃𝗶𝗱𝗲 𝗮 𝘃𝗶𝗱𝗲𝗼 𝗨𝗥𝗟 𝗼𝗿 𝗿𝗲𝗽𝗹𝘆 𝘁𝗼 𝗮 𝘃𝗶𝗱𝗲𝗼 𝗺𝗲𝘀𝘀𝗮𝗴𝗲!`),
+            event.threadID, event.messageID
+          );
+        }
+
+        // ☁️ UPLOAD TO IMGUR
+        try {
+          const imgurResponse = await axios.post(
+            "https://api.imgur.com/3/upload", 
+            { image: mediaUrl }, 
+            { headers: { Authorization: IMGUR_TOKEN, "Content-Type": "application/json" } }
+          );
+          
+          const imgurLink = imgurResponse.data?.data?.link;
+          if (!imgurLink) throw new Error("Imgur upload failed");
+
+          // 📤 ADD TO ALBUM
+          const uploadResponse = await axios.post(`${apiUrl}/api/album/add`, { category, videoUrl: imgurLink });
+          return api.sendMessage(
+            formatMessage(`${design.emoji.success} ${uploadResponse.data.message}\n🔗 ${imgurLink}`),
+            event.threadID, event.messageID
+          );
+        } catch (error) {
+          console.error("Upload error:", error);
+          return api.sendMessage(
+            formatMessage(`${design.emoji.error} 𝗨𝗽𝗹𝗼𝗮𝗱 𝗳𝗮𝗶𝗹𝗲𝗱!\n${error.response?.data?.error || error.message}`),
+            event.threadID, event.messageID
+          );
+        }
+      }
+
+      // 📋 LIST COMMAND
+      if (command === "list") {
+        try {
+          const response = await axios.get(`${apiUrl}/api/album/list`);
+          return api.sendMessage(
+            formatMessage(`📊 𝗩𝗶𝗱𝗲𝗼 𝗦𝘁𝗮𝘁𝗶𝘀𝘁𝗶𝗰𝘀:\n${response.data.message}`),
+            event.threadID, event.messageID
+          );
+        } catch (error) {
+          return api.sendMessage(
+            formatMessage(`${design.emoji.error} 𝗙𝗮𝗶𝗹𝗲𝗱 𝘁𝗼 𝗳𝗲𝘁𝗰𝗵 𝘃𝗶𝗱𝗲𝗼 𝗹𝗶𝘀𝘁!`),
+            event.threadID, event.messageID
+          );
+        }
+      }
+
+      // 🌟 CATEGORY SELECTION UI
+      const displayNames = [
+        "𝐅𝐮𝐧𝐧𝐲 𝐕𝐢𝐝𝐞𝐨", "𝐈𝐬𝐥𝐚𝐦𝐢𝐜 𝐕𝐢𝐝𝐞𝐨", "𝐒𝐚𝐝 𝐕𝐢𝐝𝐞𝐨", "𝐀𝐧𝐢𝐦𝐞 𝐕𝐢𝐝𝐞𝐨", "𝐋𝐨𝐅𝐈 𝐕𝐢𝐝𝐞𝐨",
+        "𝐀𝐭𝐭𝐢𝐭𝐮𝐝𝐞 𝐕𝐢𝐝𝐞𝐨", "𝐇𝐨𝐫𝐧𝐲 𝐕𝐢𝐝𝐞𝐨", "𝐂𝐨𝐮𝐩𝐥𝐞 𝐕𝐢𝐝𝐞𝐨", "𝐅𝐥𝐨𝐰𝐞𝐫 𝐕𝐢𝐝𝐞𝐨", "𝐁𝐢𝐤𝐞 & 𝐂𝐚𝐫 𝐕𝐢𝐝𝐞𝐨",
+        "𝐋𝐨𝐯𝐞 𝐕𝐢𝐝𝐞𝐨", "𝐋𝐲𝐫𝐢𝐜𝐬 𝐕𝐢𝐝𝐞𝐨", "𝐂𝐚𝐭 𝐕𝐢𝐝𝐞𝐨", "𝟏𝟖+ 𝐕𝐢𝐝𝐞𝐨", "𝐅𝐫𝐞𝐞 𝐅𝐢𝐫𝐞 𝐕𝐢𝐝𝐞𝐨",
+        "𝐅𝐨𝐨𝐭𝐛𝐚𝐥𝐥 𝐕𝐢𝐝𝐞𝐨", "𝐁𝐚𝐛𝐲 𝐕𝐢𝐝𝐞𝐨", "𝐅𝐫𝐢𝐞𝐧𝐝𝐬 𝐕𝐢𝐝𝐞𝐨", "𝐏𝐮𝐛𝐠 𝐯𝐢𝐝𝐞𝐨", "𝐀𝐞𝐬𝐭𝐡𝐞𝐭𝐢𝐜 𝐕𝐢𝐝𝐞𝐨"
+      ];
+      
+      const itemsPerPage = 8;
+      const page = parseInt(args[0]) || 1;
+      const totalPages = Math.ceil(displayNames.length / itemsPerPage);
+
+      if (page < 1 || page > totalPages) {
+        return api.sendMessage(
+          formatMessage(`${design.emoji.error} 𝗜𝗻𝘃𝗮𝗹𝗶𝗱 𝗽𝗮𝗴𝗲! 𝗣𝗹𝗲𝗮𝘀𝗲 𝘀𝗲𝗹𝗲𝗰𝘁 𝗯𝗲𝘁𝘄𝗲𝗲𝗻 𝟭-${totalPages}`),
           event.threadID, event.messageID
         );
-      } catch (error) {
-        api.sendMessage(`⚠️ Upload failed! Error: ${error.message}`, event.threadID, event.messageID);
       }
-      return;
-    }
 
-    if (validCommands.includes(args[0].toLowerCase())) {
-      let query = args[0].toLowerCase();
-      let cp = `🎥 Naw Baby ${query.charAt(0).toUpperCase() + query.slice(1)} Video`;
-      if (query === "anime") {
-        try {
-          const res = await axios.get(`${jikanApiUrl}/random/anime`);
-          const anime = res.data.data;
-          const stream = await axios.get(anime.images.jpg.image_url, { responseType: "stream" });
-          api.sendMessage({ body: `🎌 Anime: ${anime.title}`, attachment: stream.data }, event.threadID, event.messageID);
-        } catch {
-          api.sendMessage("⚠️ Anime API nosto!", event.threadID, event.messageID);
-        }
-      } else {
-        try {
-          const res = await axios.get(`${baseApiUrl}/album?type=${query}`);
-          const stream = await axios.get(res.data.data, { responseType: "stream" });
-          api.sendMessage({ body: `${cp}\n🔗 URL: ${res.data.data}`, attachment: stream.data }, event.threadID, event.messageID);
-        } catch {
-          api.sendMessage("⚠️ Media load holo na, bhai!", event.threadID, event.messageID);
-        }
+      const startIndex = (page - 1) * itemsPerPage;
+      const displayedCategories = displayNames.slice(startIndex, startIndex + itemsPerPage);
+
+      // 🎨 VISUAL DESIGN FOR CATEGORY LIST
+      let message = `📁 𝗔𝘃𝗮𝗶𝗹𝗮𝗯𝗹𝗲 𝗖𝗮𝘁𝗲𝗴𝗼𝗿𝗶𝗲𝘀:\n${design.separator}\n`;
+      message += displayedCategories.map((cat, i) => 
+        `${design.styles.highlight} ${startIndex + i + 1}. ${cat} ${design.styles.category}`
+      ).join("\n");
+      
+      message += `\n${design.separator}\n`;
+      message += `${design.styles.page} 𝗣𝗮𝗴𝗲 ${page}/${totalPages}`;
+      
+      if (page < totalPages) {
+        message += `\n${design.emoji.next} 𝗧𝘆𝗽𝗲 "!album ${page + 1}" 𝗳𝗼𝗿 𝗻𝗲𝘅𝘁 𝗽𝗮𝗴𝗲`;
       }
+
+      // ✨ SEND WITH TYPER EFFECT
+      api.sendMessage(formatMessage(message), event.threadID, (error, info) => {
+        global.GoatBot.onReply.set(info.messageID, {
+          commandName: this.config.name,
+          messageID: info.messageID,
+          author: event.senderID,
+          page,
+          startIndex,
+          displayNames,
+          realCategories: [
+            "funny", "islamic", "sad", "anime", "lofi", "attitude", "horny", "couple",
+            "flower", "bikecar", "love", "lyrics", "cat", "18+", "freefire",
+            "football", "baby", "friend", "pubg", "aesthetic"
+          ],
+          captions: [
+            "😂 𝗛𝗲𝗿𝗲'𝘀 𝘆𝗼𝘂𝗿 𝗳𝘂𝗻𝗻𝘆 𝘃𝗶𝗱𝗲𝗼!",
+            "🕌 𝗜𝘀𝗹𝗮𝗺𝗶𝗰 𝘃𝗶𝗱𝗲𝗼 𝗱𝗲𝗹𝗶𝘃𝗲𝗿𝗲𝗱!",
+            "😢 𝗦𝗮𝗱 𝘃𝗶𝗱𝗲𝗼 𝗶𝗻𝗰𝗼𝗺𝗶𝗻𝗴...",
+            "🎌 𝗔𝗻𝗶𝗺𝗲 𝗺𝗮𝗴𝗶𝗰 𝗳𝗼𝗿 𝘆𝗼𝘂!",
+            "🎧 𝗟𝗼𝗙𝗜 𝘃𝗶𝗯𝗲𝘀 𝗮𝘁𝘁𝗮𝗰𝗵𝗲𝗱!",
+            "😎 𝗔𝘁𝘁𝗶𝘁𝘂𝗱𝗲 𝘃𝗶𝗱𝗲𝗼 𝗿𝗲𝗮𝗱𝘆!",
+            "🔥 𝗛𝗼𝘁 𝗰𝗼𝗻𝘁𝗲𝗻𝘁 𝗶𝗻𝗰𝗼𝗺𝗶𝗻𝗴!",
+            "💑 𝗖𝗼𝘂𝗽𝗹𝗲 𝗴𝗼𝗮𝗹𝘀 𝗮𝗰𝗵𝗶𝗲𝘃𝗲𝗱!",
+            "🌸 𝗙𝗹𝗼𝘄𝗲𝗿 𝗽𝗼𝘄𝗲𝗿 𝗮𝗰𝘁𝗶𝘃𝗮𝘁𝗲𝗱!",
+            "🚗 𝗕𝗶𝗸𝗲 & 𝗖𝗮𝗿 𝗮𝗱𝘃𝗲𝗻𝘁𝘂𝗿𝗲!",
+            "💘 𝗟𝗼𝘃𝗲 𝗶𝘀 𝗶𝗻 𝘁𝗵𝗲 𝗮𝗶𝗿!",
+            "🎶 𝗟𝘆𝗿𝗶𝗰𝘀 𝘃𝗶𝗱𝗲𝗼 𝗳𝗼𝗿 𝘆𝗼𝘂!",
+            "🐱 𝗖𝗮𝘁 𝘃𝗶𝗱𝗲𝗼 𝗱𝗲𝗹𝗶𝘃𝗲𝗿𝗲𝗱!",
+            "🔞 𝗘𝘅𝗰𝗹𝘂𝘀𝗶𝘃𝗲 𝗰𝗼𝗻𝘁𝗲𝗻𝘁!",
+            "🎮 𝗙𝗿𝗲𝗲𝗙𝗶𝗿𝗲 𝗴𝗮𝗺𝗲𝗽𝗹𝗮𝘆!",
+            "⚽ 𝗙𝗼𝗼𝘁𝗯𝗮𝗹𝗹 𝗵𝗶𝗴𝗵𝗹𝗶𝗴𝗵𝘁𝘀!",
+            "👶 𝗖𝘂𝘁𝗲 𝗯𝗮𝗯𝘆 𝘃𝗶𝗱𝗲𝗼!",
+            "👫 𝗙𝗿𝗶𝗲𝗻𝗱𝘀𝗵𝗶𝗽 𝗴𝗼𝗮𝗹𝘀!",
+            "📱 𝗣𝗨𝗕𝗚 𝗺𝗼𝗺𝗲𝗻𝘁𝘀!",
+            "🎨 𝗔𝗲𝘀𝘁𝗵𝗲𝘁𝗶𝗰 𝘃𝗶𝘀𝘂𝗮𝗹𝘀!"
+          ]
+        });
+      }, event.messageID);
+
+    } catch (error) {
+      console.error("Command error:", error);
+      api.sendMessage(
+        formatMessage(`${design.emoji.error} 𝗦𝘆𝘀𝘁𝗲𝗺 𝗲𝗿𝗿𝗼𝗿! 𝗣𝗹𝗲𝗮𝘀𝗲 𝘁𝗿𝘆 𝗮𝗴𝗮𝗶𝗻 𝗹𝗮𝘁𝗲𝗿.`),
+        event.threadID, event.messageID
+      );
     }
   },
 
   onReply: async function ({ api, event, Reply }) {
-    const adminID = "61571630409265";
-    api.unsendMessage(Reply.messageID);
-    const reply = parseInt(event.body);
-    if (isNaN(reply) || reply < 1 || reply > 21) {
-      return api.sendMessage("🔰 Bhai, 1–21 er moddhe reply kor!", event.threadID, event.messageID);
-    }
-
-    const baseApiUrl = "https://ultraproapi.onrender.com";
-    const jikanApiUrl = "https://api.jikan.moe/v4";
-    const options = [
-      "funny", "islamic", "sad", "anime", "video", "lofi", "horny", "love", "baby",
-      "photo", "aesthetic", "sigma", "lyrics", "cat", "sex", "ff", "football",
-      "girl", "friend", "music", "gaming"
-    ];
-    const captions = [
-      "🤣 Naw Baby Funny Video", "😇 Naw Baby Islamic Video", "🥺 Naw Baby Sad Video",
-      "😘 Naw Baby Anime Video", "😇 Naw Baby Cartoon Video", "😇 Naw Baby LoFi Video",
-      "🥵 Naw Baby Horny Video", "😍 Naw Baby Love Video", "🧑‍🍼 Naw Baby Flower Video",
-      "😙 Naw Baby Random Photo", "😙 Naw Baby Aesthetic Video", "🐤 Naw Baby Sigma Rule",
-      "🥰 Naw Baby Lyrics Video", "😙 Naw Baby Cat Video", "😙 Naw Baby 18+ Video",
-      "😙 Naw Baby Free Fire Video", "😙 Naw Baby Football Video", "😙 Naw Baby Girl Video",
-      "😙 Naw Baby Friends Video", "🎶 Naw Baby Music Video", "🎮 Naw Baby Gaming Video"
-    ];
-
-    const query = options[reply - 1];
-    const cp = captions[reply - 1];
-    if (["horny", "sex"].includes(query) && event.senderID !== adminID) {
-      return api.sendMessage("⚠️ Ei option shudhu admin er jonno!", event.threadID, event.messageID);
-    }
-
     try {
-      if (query === "anime") {
-        const res = await axios.get(`${jikanApiUrl}/random/anime`);
-        const stream = await axios.get(res.data.data.images.jpg.image_url, { responseType: "stream" });
-        api.sendMessage({ body: `🎌 Anime: ${res.data.data.title}`, attachment: stream.data }, event.threadID, event.messageID);
-      } else {
-        const res = await axios.get(`${baseApiUrl}/album?type=${query}`);
-        const stream = await axios.get(res.data.data, { responseType: "stream" });
-        api.sendMessage({ body: `${cp}\n🔗 URL: ${res.data.data}`, attachment: stream.data }, event.threadID, event.messageID);
+      api.unsendMessage(Reply.messageID);
+      const choice = parseInt(event.body);
+      const index = choice - 1;
+
+      if (isNaN(choice) || index < 0 || index >= Reply.realCategories.length) {
+        return api.sendMessage(
+          formatMessage(`${design.emoji.error} 𝗣𝗹𝗲𝗮𝘀𝗲 𝗿𝗲𝗽𝗹𝘆 𝘄𝗶𝘁𝗵 𝗮 𝘃𝗮𝗹𝗶𝗱 𝗻𝘂𝗺𝗯𝗲𝗿!`),
+          event.threadID, event.messageID
+        );
       }
-    } catch {
-      api.sendMessage("⚠️ Media load holo na, bhai!", event.threadID, event.messageID);
+
+      const category = Reply.realCategories[index];
+      const caption = Reply.captions[index];
+      const restricted = ["18+", "horny"];
+      
+      // 👑 ADMIN CHECK FOR RESTRICTED CONTENT
+      if (restricted.includes(category) && event.senderID !== ADMIN_ID) {
+        return api.sendMessage(
+          formatMessage(`${design.emoji.admin} 𝗥𝗲𝘀𝘁𝗿𝗶𝗰𝘁𝗲𝗱 𝗰𝗼𝗻𝘁𝗲𝗻𝘁! 𝗢𝗻𝗹𝘆 𝗮𝗱𝗺𝗶𝗻𝘀 𝗰𝗮𝗻 𝗮𝗰𝗰𝗲𝘀𝘀 ${category}`),
+          event.threadID, event.messageID
+        );
+      }
+
+      const apiUrl = await baseApiUrl();
+      const response = await axios.get(`${apiUrl}/api/album/videos/${category}?userID=${event.senderID}`);
+
+      if (!response.data.success || !response.data.videos?.length) {
+        return api.sendMessage(
+          formatMessage(`${design.emoji.error} 𝗡𝗼 𝘃𝗶𝗱𝗲𝗼𝘀 𝗳𝗼𝘂𝗻𝗱 𝗶𝗻 ${category} 𝗰𝗮𝘁𝗲𝗴𝗼𝗿𝘆!`),
+          event.threadID, event.messageID
+        );
+      }
+
+      const randomVideoUrl = response.data.videos[Math.floor(Math.random() * response.data.videos.length)];
+      
+      // 🎥 STREAM VIDEO WITHOUT SAVING
+      const videoResponse = await axios.get(randomVideoUrl, { 
+        responseType: "stream",
+        headers: { 'User-Agent': 'Mozilla/5.0' }
+      });
+
+      api.sendMessage({
+        body: `${design.emoji.media} ${caption}\n🔗 ${randomVideoUrl}`,
+        attachment: videoResponse.data
+      }, event.threadID, event.messageID);
+
+    } catch (error) {
+      console.error("Reply error:", error);
+      api.sendMessage(
+        formatMessage(`${design.emoji.error} 𝗙𝗮𝗶𝗹𝗲𝗱 𝘁𝗼 𝗹𝗼𝗮𝗱 𝘃𝗶𝗱𝗲𝗼! 𝗘𝗿𝗿𝗼𝗿: ${error.message}`),
+        event.threadID, event.messageID
+      );
     }
   }
 };
