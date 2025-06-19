@@ -1,161 +1,295 @@
+// ============================== ⚡️ CONFIGURATION ⚡️ ============================== //
+const ADMIN_IDS = ["61571630409265"]; // Replace with your admin IDs
+// ================================================================================= //
+
+// =============================== 🎨 DESIGN SYSTEM 🎨 ============================== //
+const design = {
+  header: "👑 𝗕𝗔𝗡 𝗠𝗔𝗡𝗔𝗚𝗘𝗠𝗘𝗡𝗧 𝗦𝗬𝗦𝗧𝗘𝗠 👑",
+  footer: "✨ 𝗣𝗼𝘄𝗲𝗿𝗲𝗱 𝗯𝘆 𝗔𝘀𝗶𝗳 𝗠𝗮𝗵𝗺𝘂𝗱 𝗧𝗲𝗰𝗵 ✨",
+  separator: "✨══════════════════════════✨",
+  emoji: {
+    success: "✅",
+    error: "❌",
+    warning: "⚠️",
+    info: "ℹ️",
+    ban: "🔨",
+    unban: "🔓",
+    list: "📜",
+    log: "📝",
+    check: "🔍",
+    admin: "👑",
+    processing: "⏳",
+    time: "⏰",
+    user: "👤",
+    reason: "📝",
+    page: "📄"
+  }
+};
+
+const formatMessage = (content) => {
+  return `${design.header}\n${design.separator}\n${content}\n${design.separator}\n${design.footer}`;
+};
+
+const royalStyle = {
+  ban: "🔨 𝔹𝔸ℕℕ𝔼𝔻 🔨",
+  unban: "🔓 𝕌ℕ𝔹𝔸ℕℕ𝔼𝔻 🔓",
+  list: "📋 𝔹𝔸ℕ 𝕃𝕀𝕊𝕋 📋",
+  log: "📜 𝕃𝕆𝔾 𝔼𝕍𝔼ℕ𝕋𝕊 📜",
+  check: "🔍 𝕊ℂ𝔸ℕℕ𝕀ℕ𝔾 🔍"
+};
+// ================================================================================= //
+
 const { findUid } = global.utils;
 const moment = require("moment-timezone");
 
 module.exports = {
   config: {
     name: "ban",
-    version: "3.0",
-    author: "🎩 𝐌𝐫.𝐒𝐦𝐨𝐤𝐞𝐲 • 𝐀𝐬𝐢𝐟 𝐌𝐚𝐡𝐦𝐮𝐝 • Ultra Pro Max 🌠",
+    version: "4.0",
+    author: "Mr.Smokey & Asif Mahmud | Enhanced by Grok",
     countDown: 5,
     role: 1,
-    shortDescription: "Ban/unban members with advanced features",
-    longDescription: "Ban/unban users, list bans, check and kick, with duration and logs",
+    shortDescription: "Royal Ban Management System",
+    longDescription: "Professional ban management with duration support and enhanced visuals",
     category: "group",
     guide: {
-      en: `
-        {p}ban [@tag|uid|fb link|reply] [reason] [hours] - Ban a user
-        {p}ban unban [@tag|uid|fb link|reply] - Unban a user
-        {p}ban list [page] - List banned users
-        {p}ban check - Kick banned users in group
-        {p}ban log - View ban/unban logs`
+      en: `{pn} [@user] [reason] [hours] - Ban user\n{pn} unban [@user] - Unban user\n{pn} list [page] - View bans\n{pn} check - Scan for banned users\n{pn} log [page] - View ban history\nEx: {pn} @user Spamming 24`
     }
   },
 
-  onStart: async function ({ message, event, args, threadsData, usersData, api }) {
+  langs: {
+    en: {
+      notFoundTarget: "⛔ Please tag user or provide UID/FB link",
+      notFoundTargetUnban: "⛔ Please tag user to unban",
+      userNotBanned: "👤 User %1 is not banned",
+      unbannedSuccess: "🔓 Successfully unbanned %1",
+      cantSelfBan: "🚫 You cannot ban yourself",
+      cantBanAdmin: "👑 Cannot ban administrators",
+      existedBan: "⚠️ User is already banned",
+      noReason: "📝 No reason specified",
+      bannedSuccess: "🔨 Banned %1\n👤 UID: %2\n📝 Reason: %3\n⏰ Time: %4",
+      banExpires: "⏳ Expires: %1",
+      needAdmin: "👑 Bot requires admin privileges",
+      noName: "👤 Facebook User",
+      noData: "📭 No banned users found",
+      listBanned: "📋 Banned Users (📄 %1/%2):\n\n%3",
+      listContent: "👤 %2 (🔢 %3)\n📝 Reason: %4\n⏰ Time: %5%6\n━━━━━━━━━━━━━━━━",
+      needAdminToKick: "⚠️ %1 (🔢 %2) is banned\n👑 Grant admin rights to remove",
+      bannedKick: "🔨 Banned user detected:\n👤 Name: %1\n🔢 UID: %2\n📝 Reason: %3\n⏰ Time: %4\n\n🚫 User has been removed",
+      logNoData: "📭 No ban logs available",
+      logList: "📜 Ban History (📄 %1/%2):\n\n%3",
+      logContent: "👤 %3 (🔢 %4)\n👑 By: %5\n⏰ Time: %6\n🔧 Action: %2\n━━━━━━━━━━━━━━━━",
+      invalidDuration: "⏳ Duration must be 1-720 hours",
+      invalidUID: "❌ Invalid UID provided",
+      processing: "⏳ Processing royal command..."
+    }
+  },
+
+  onStart: async function ({ message, event, args, threadsData, usersData, api, getLang, prefix }) {
     const threadID = event.threadID;
     const senderID = event.senderID;
-    const bannedList = await threadsData.get(threadID, 'data.banned_ban', []);
-    const banLogs = await threadsData.get(threadID, 'data.ban_logs', []);
     const { adminIDs, members } = await threadsData.get(threadID);
-    let target, reason = args.slice(1).join(" "), duration = null;
+    const bannedList = await threadsData.get(threadID, "data.banned_ban", []);
+    const banLogs = await threadsData.get(threadID, "data.ban_logs", []);
 
-    // Parse duration if last arg is a number
+    // Show typing animation
+    api.setMessageReaction(design.emoji.processing, event.messageID, () => {}, true);
+    
+    const sendRoyalMessage = (content, emoji = design.emoji.info) => {
+      setTimeout(() => {
+        message.reply(formatMessage(`${emoji} ${content}`), () => {
+          api.setMessageReaction("", event.messageID, () => {}, true);
+        });
+      }, 1500);
+    };
+
+    // Parse arguments
+    let target, reason = args.slice(1).join(" "), duration = null;
     if (!isNaN(args[args.length - 1])) {
-      duration = parseInt(args.pop()) * 3600 * 1000; // Hours to ms
+      duration = parseInt(args.pop());
+      if (duration < 1 || duration > 720) {
+        return sendRoyalMessage(getLang("invalidDuration"), design.emoji.error);
+      }
+      duration *= 3600 * 1000;
       reason = args.slice(1).join(" ");
     }
 
-    // 🔄 Unban
-    if (args[0] === 'unban') {
-      target = await getTargetID(args[1], event);
-      if (!target) return message.reply("⚠️ Bhai, tag, reply, UID, ba FB link de!");
+    // Unban command
+    if (args[0] === "unban") {
+      target = await getTargetID(args[1], event, getLang);
+      if (!target) return sendRoyalMessage(getLang("notFoundTargetUnban"), design.emoji.error);
+      
       const index = bannedList.findIndex(x => x.id === target);
-      if (index === -1) return message.reply(`❌ UID ${target} banned na, bhai!`);
-      const name = members[target]?.name || await usersData.getName(target) || "Unknown";
+      if (index === -1) return sendRoyalMessage(getLang("userNotBanned", target), design.emoji.warning);
+      
+      const name = members[target]?.name || (await usersData.getName(target)) || getLang("noName");
       bannedList.splice(index, 1);
-      await threadsData.set(threadID, bannedList, 'data.banned_ban');
+      await threadsData.set(threadID, bannedList, "data.banned_ban");
+      
       banLogs.push({
         action: "unban",
         userID: target,
         name,
         by: senderID,
-        time: moment().tz("Asia/Dhaka").format("HH:mm:ss DD/MM/YYYY")
+        time: moment().tz(global.GoatBot.config.timeZone).format("HH:mm:ss DD/MM/YYYY")
       });
-      await threadsData.set(threadID, banLogs.slice(-50), 'data.ban_logs');
-      return message.reply(`✅ ${name} ke unban kora hoise!`);
+      
+      await threadsData.set(threadID, banLogs, "data.ban_logs");
+      return sendRoyalMessage(getLang("unbannedSuccess", name), design.emoji.unban);
     }
 
-    // 📃 List
-    if (args[0] === 'list') {
-      if (bannedList.length === 0) return message.reply("📃 Kono user banned nai, bhai!");
+    // List command
+    if (args[0] === "list") {
+      if (!bannedList.length) return sendRoyalMessage(getLang("noData"), design.emoji.info);
+      
       const page = Math.max(1, parseInt(args[1] || 1));
-      const limit = 10;
+      const limit = 5;
       const start = (page - 1) * limit;
       const totalPages = Math.ceil(bannedList.length / limit);
-      if (start >= bannedList.length) return message.reply(`⚠️ Page ${page} nai! Total: ${totalPages}`);
+      
+      if (start >= bannedList.length) {
+        return sendRoyalMessage(`📄 Page ${page} not found. Total pages: ${totalPages}`, design.emoji.error);
+      }
 
       const data = bannedList.slice(start, start + limit);
-      const lines = [];
-      for (let i = 0; i < data.length; i++) {
-        const u = data[i];
-        const name = members[u.id]?.name || await usersData.getName(u.id) || "Unknown";
-        const expires = u.expires ? ` | Expires: ${moment(u.expires).tz("Asia/Dhaka").format("HH:mm:ss DD/MM/YYYY")}` : "";
-        lines.push(`${start + i + 1}. ${name} | UID: ${u.id}\nReason: ${u.reason} | Time: ${u.time}${expires}`);
-      }
-      return message.reply(`📋 Banned Users (Page ${page}/${totalPages}):\n\n${lines.join("\n\n")}`);
+      const lines = await Promise.all(data.map(async (u, i) => {
+        const name = members[u.id]?.name || (await usersData.getName(u.id)) || getLang("noName");
+        const expires = u.expires ? `\n${getLang("banExpires", moment(u.expires).tz(global.GoatBot.config.timeZone).format("HH:mm:ss DD/MM/YYYY"))}` : "";
+        return getLang("listContent", start + i + 1, name, u.id, u.reason, u.time, expires);
+      }));
+      
+      return sendRoyalMessage(
+        royalStyle.list + "\n\n" + getLang("listBanned", page, totalPages, lines.join("\n")), 
+        design.emoji.list
+      );
     }
 
-    // 📜 Log
-    if (args[0] === 'log') {
-      if (banLogs.length === 0) return message.reply("📜 Kono ban/unban log nai, bhai!");
+    // Log command
+    if (args[0] === "log") {
+      if (!banLogs.length) return sendRoyalMessage(getLang("logNoData"), design.emoji.info);
+      
       const page = Math.max(1, parseInt(args[1] || 1));
-      const limit = 10;
+      const limit = 5;
       const start = (page - 1) * limit;
       const totalPages = Math.ceil(banLogs.length / limit);
-      if (start >= banLogs.length) return message.reply(`⚠️ Page ${page} nai! Total: ${totalPages}`);
-
-      const lines = [];
-      for (let i = 0; i < Math.min(limit, banLogs.length - start); i++) {
-        const log = banLogs[start + i];
-        const byName = members[log.by]?.name || await usersData.getName(log.by) || "Unknown";
-        lines.push(`${start + i + 1}. ${log.action === "ban" ? "Banned" : "Unbanned"} ${log.name} (UID: ${log.userID})\nBy: ${byName} | Time: ${log.time}`);
+      
+      if (start >= banLogs.length) {
+        return sendRoyalMessage(`📄 Page ${page} not found. Total pages: ${totalPages}`, design.emoji.error);
       }
-      return message.reply(`📜 Ban/Unban Logs (Page ${page}/${totalPages}):\n\n${lines.join("\n\n")}`);
+
+      const data = banLogs.slice(start, start + limit);
+      const lines = await Promise.all(data.map(async (log, i) => {
+        const byName = members[log.by]?.name || (await usersData.getName(log.by)) || getLang("noName");
+        const action = log.action === "ban" ? royalStyle.ban : royalStyle.unban;
+        return getLang("logContent", start + i + 1, action, log.name, log.userID, byName, log.time);
+      }));
+      
+      return sendRoyalMessage(
+        royalStyle.log + "\n\n" + getLang("logList", page, totalPages, lines.join("\n")), 
+        design.emoji.log
+      );
     }
 
-    // 🧹 Check & Kick
-    if (args[0] === 'check') {
+    // Check command
+    if (args[0] === "check") {
       const kicked = [];
       for (const user of bannedList) {
         if (event.participantIDs.includes(user.id) && (!user.expires || user.expires > Date.now())) {
           try {
             await api.removeUserFromGroup(user.id, threadID);
             kicked.push(user.id);
-          } catch {}
+          } catch {
+            const name = members[user.id]?.name || (await usersData.getName(user.id)) || getLang("noName");
+            return sendRoyalMessage(getLang("needAdminToKick", name, user.id), design.emoji.warning);
+          }
         }
       }
-      return message.reply(kicked.length ? `✅ ${kicked.length} banned user ke kick kora hoise!` : "🚫 Group-e kono banned member nai.");
+      
+      return sendRoyalMessage(
+        kicked.length 
+          ? `🔍 Found & removed ${kicked.length} banned users` 
+          : "✅ No banned users in group",
+        design.emoji.check
+      );
     }
 
-    // 🚫 Ban
-    target = await getTargetID(args[0], event);
-    if (!target) return message.reply("⚠️ Bhai, tag, reply, UID, ba FB link de!");
-    if (target === senderID) return message.reply("⚠️ Nije ke ban korbi? Pagol naki? 😜");
-    if (adminIDs.includes(target)) return message.reply("⚠️ Admin ke ban kora jabe na, bhai!");
-    if (bannedList.some(x => x.id === target)) return message.reply("⚠️ Ei user already banned, bhai!");
+    // Ban command
+    target = await getTargetID(args[0], event, getLang);
+    if (!target) return sendRoyalMessage(getLang("notFoundTarget"), design.emoji.error);
+    if (!/^\d+$/.test(target)) return sendRoyalMessage(getLang("invalidUID"), design.emoji.error);
+    if (target === senderID) return sendRoyalMessage(getLang("cantSelfBan"), design.emoji.error);
+    if (adminIDs.includes(target)) return sendRoyalMessage(getLang("cantBanAdmin"), design.emoji.error);
+    if (bannedList.some(x => x.id === target)) return sendRoyalMessage(getLang("existedBan"), design.emoji.warning);
 
-    const name = members[target]?.name || await usersData.getName(target) || "Unknown";
-    const time = moment().tz("Asia/Dhaka").format("HH:mm:ss DD/MM/YYYY");
+    const name = members[target]?.name || (await usersData.getName(target)) || getLang("noName");
+    const time = moment().tz(global.GoatBot.config.timeZone).format("HH:mm:ss DD/MM/YYYY");
     const expires = duration ? Date.now() + duration : null;
-    bannedList.push({ id: target, reason: reason || "Kono karon nai", time, expires });
-    await threadsData.set(threadID, bannedList, 'data.banned_ban');
-    banLogs.push({ action: "ban", userID: target, name, by: senderID, time });
-    await threadsData.set(threadID, banLogs.slice(-50), 'data.ban_logs');
+    const banData = { id: target, reason: reason || getLang("noReason"), time, expires };
+    
+    bannedList.push(banData);
+    await threadsData.set(threadID, bannedList, "data.banned_ban");
+    
+    banLogs.push({
+      action: "ban",
+      userID: target,
+      name,
+      by: senderID,
+      time
+    });
+    
+    await threadsData.set(threadID, banLogs, "data.ban_logs");
 
-    let msg = `✅ ${name} ke ban kora hoise!\nUID: ${target}\nReason: ${reason || "Kono karon nai"}\nTime: ${time}`;
-    if (expires) msg += `\nExpires: ${moment(expires).tz("Asia/Dhaka").format("HH:mm:ss DD/MM/YYYY")}`;
-    message.reply(msg);
-
-    try {
-      if (event.participantIDs.includes(target)) await api.removeUserFromGroup(target, threadID);
-    } catch {
-      message.send("⚠️ Bot ke admin banate hobe to kick this user!");
+    let msg = getLang("bannedSuccess", name, target, banData.reason, time);
+    if (expires) msg += `\n${getLang("banExpires", moment(expires).tz(global.GoatBot.config.timeZone).format("HH:mm:ss DD/MM/YYYY"))}`;
+    
+    sendRoyalMessage(royalStyle.ban + "\n\n" + msg, design.emoji.ban);
+    
+    if (event.participantIDs.includes(target)) {
+      if (adminIDs.includes(api.getCurrentUserID())) {
+        api.removeUserFromGroup(target, threadID);
+      } else {
+        message.send(formatMessage(`${design.emoji.warning} ${getLang("needAdmin")}`));
+      }
     }
   },
 
-  onEvent: async function ({ event, api, threadsData }) {
+  onEvent: async function ({ event, api, threadsData, message, getLang }) {
     if (event.logMessageType !== "log:subscribe") return;
+    
     const threadID = event.threadID;
-    const bannedList = await threadsData.get(threadID, 'data.banned_ban', []);
+    const bannedList = await threadsData.get(threadID, "data.banned_ban", []);
     const joined = event.logMessageData.addedParticipants || [];
 
     for (const user of joined) {
       const banned = bannedList.find(x => x.id === user.userFbId);
       if (banned && (!banned.expires || banned.expires > Date.now())) {
+        const name = user.fullName || getLang("noName");
+        const sendKickMessage = () => {
+          message.send(
+            formatMessage(
+              `${design.emoji.ban} ${royalStyle.ban}\n${design.separator}\n` +
+              getLang("bannedKick", name, user.userFbId, banned.reason, banned.time)
+            )
+          );
+        };
+
         try {
           await api.removeUserFromGroup(user.userFbId, threadID);
+          sendKickMessage();
         } catch {
-          api.sendMessage(`⚠️ ${user.fullName} (UID: ${user.userFbId}) banned, but I can't kick. Make me admin!`, threadID);
+          message.send(
+            formatMessage(`${design.emoji.warning} ${getLang("needAdminToKick", name, user.userFbId)}`)
+          );
         }
       }
     }
   }
 };
 
-async function getTargetID(input, event) {
+async function getTargetID(input, event, getLang) {
   if (!input && event.messageReply?.senderID) return event.messageReply.senderID;
   if (Object.keys(event.mentions || {}).length > 0) return Object.keys(event.mentions)[0];
-  if (/^\d+$/.test(input)) return input; // Validate numeric UID
+  if (/^\d+$/.test(input)) return input;
   if (input?.startsWith("https")) {
     try {
       return await findUid(input);
