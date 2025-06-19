@@ -3,7 +3,7 @@ const fs = require("fs-extra");
 
 module.exports = {
   config: {
-    name: "4k",
+    name: "4kpro",
     aliases: ["upscale"],
     version: "2.0",
     role: 0,
