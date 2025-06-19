@@ -4,59 +4,79 @@ const path = require('path');
 
 module.exports = {
   config: {
-    name: "owner",
+    name: "ownerinfo",
     author: "𝐀𝐬𝐢𝐟 𝐌𝐚𝐡𝐦𝐮𝐝 🌠",
     role: 0,
     shortDescription: "Owner and bot info with video",
-    longDescription: "Sends owner details with image and video attachment",
+    longDescription: "Real-time styled owner & bot info with animated flair",
     category: "admin",
     guide: "{pn}"
   },
 
   onStart: async function ({ api, event }) {
     try {
-      const ownerInfo = {
+      const owner = {
         name: '𝐀𝐬𝐢𝐟 𝐌𝐚𝐡𝐦𝐮𝐝',
-        gender: '𝐌𝐚𝐥𝐞',
+        gender: 'Male ♂️',
         age: '18±',
-        height: '5+',
-        choise: 'islam',
+        height: '5+ft 📏',
+        choice: 'Islam ☪️',
         nick: '𝐉𝐚𝐦𝐚𝐢',
-        facebook: 'https://www.facebook.com/share/1HPjorq8ce/',
+        fb: 'https://www.facebook.com/share/1HPjorq8ce/',
         bot: '🌫 𝐌𝐫.𝐒𝐦𝐨𝐤𝐞𝐲 🎩',
         uid: '61571630409265'
       };
 
       const videoUrl = 'https://files.catbox.moe/qptlr8.mp4';
-      const imageUrl = 'https://files.catbox.moe/k8kwue.jpg';
-      const tmpFolderPath = path.join(__dirname, 'tmp');
-      if (!fs.existsSync(tmpFolderPath)) fs.mkdirSync(tmpFolderPath);
+      const tmpFolder = path.join(__dirname, 'tmp');
+      if (!fs.existsSync(tmpFolder)) fs.mkdirSync(tmpFolder);
 
-      const videoResponse = await axios.get(videoUrl, { responseType: 'arraybuffer' });
-      const videoPath = path.join(tmpFolderPath, 'owner_video.mp4');
-      fs.writeFileSync(videoPath, Buffer.from(videoResponse.data, 'binary'));
+      const videoBuffer = await axios.get(videoUrl, { responseType: 'arraybuffer' });
+      const videoPath = path.join(tmpFolder, 'owner_video.mp4');
+      fs.writeFileSync(videoPath, Buffer.from(videoBuffer.data, 'binary'));
 
-      const response = `
-╭── ⭑ 𝐎𝐰𝐧𝐞𝐫 𝐈𝐧𝐟𝐨 ⭑ ──╮
-├ 📛 Name: ${ownerInfo.name}
-├ 🚹 Gender: ${ownerInfo.gender}
-├ 🎂 Age: ${ownerInfo.age}
-├ 🐾 Nickname: ${ownerInfo.nick}
-├ 🎯 Choice: ${ownerInfo.choise}
-├ 📏 Height: ${ownerInfo.height}
-├ 🤖 Bot: ${ownerInfo.bot}
-├ 🔗 FB: ${ownerInfo.facebook}
-├ 🆔 UID: ${ownerInfo.uid}
-╰────────────────────╯`;
+      const now = new Date();
+      const options = {
+        timeZone: 'Asia/Dhaka',
+        hour12: true,
+        weekday: 'long',
+        year: 'numeric',
+        month: 'short',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit'
+      };
+      const timestamp = now.toLocaleString('en-BD', options);
+
+      // Typing feel
+      await new Promise(res => setTimeout(res, 600));
+
+      const message = `
+╭━━━━━━━⌈ ⚡ 𝗢𝗪𝗡𝗘𝗥 𝗗𝗘𝗧𝗔𝗜𝗟𝗦 ⚡ ⌋━━━━━━━╮
+┃
+┃ ❖ 📛 𝗡𝗮𝗺𝗲: ${owner.name}
+┃ ❖ 🚹 𝗚𝗲𝗻𝗱𝗲𝗿: ${owner.gender}
+┃ ❖ 🎂 𝗔𝗴𝗲: ${owner.age}
+┃ ❖ 🐾 𝗡𝗶𝗰𝗸: ${owner.nick}
+┃ ❖ 💫 𝗖𝗵𝗼𝗶𝗰𝗲: ${owner.choice}
+┃ ❖ 📏 𝗛𝗲𝗶𝗴𝗵𝘁: ${owner.height}
+┃ ❖ 🤖 𝗕𝗼𝘁: ${owner.bot}
+┃ ❖ 🔗 𝗙𝗕: ${owner.fb}
+┃ ❖ 🆔 𝗨𝗜𝗗: ${owner.uid}
+┃
+╰━━━━━━━⌈ 🕓 ${timestamp} ⌋━━━━━━━╯
+
+✨ Stay Smoke-tastic! Bot powered by your jamai 😎
+`;
 
       await api.sendMessage({
-        body: response,
+        body: message,
         attachment: fs.createReadStream(videoPath)
       }, event.threadID, event.messageID);
 
-    } catch (error) {
-      console.error('❌ Error in owner command:', error);
-      return api.sendMessage('❌ Somossa hoise. Bot owner info pathate parlam na.', event.threadID);
+    } catch (e) {
+      console.log('❌ Owner info error:', e.message);
+      return api.sendMessage('❌ Somossa hoise. Try again later.', event.threadID);
     }
   }
 };
