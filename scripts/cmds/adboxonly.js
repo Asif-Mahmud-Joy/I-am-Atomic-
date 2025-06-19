@@ -1,47 +1,38 @@
-// ✅ Fixed Version of onlyadminbox
-// ✅ Banglish Guide, Real World Working
-// ✅ Fully GoatBot Compatible, No Extra API Needed
-
 module.exports = {
 	config: {
 		name: "onlyadminbox",
 		aliases: ["onlyadbox", "adboxonly", "adminboxonly"],
-		version: "2.0-ultramax",
-		author: "𝐀𝐬𝐢𝐟 𝐌𝐚𝐡𝐦𝐮𝐝",
+		version: "1.3",
+		author: "Asif",
 		countDown: 5,
 		role: 1,
 		description: {
-			vi: "bật/tắt chế độ chỉ quản trị viên nhóm mới có thể sử dụng bot",
-			en: "Turn ON/OFF admin-only mode for using bot"
+			vi: "bật/tắt chế độ chỉ quản trị của viên nhóm mới có thể sử dụng bot",
+			en: "turn on/off only admin box can use bot"
 		},
 		category: "box chat",
 		guide: {
-			vi: "{pn} [on | off] \n{pn} noti [on | off]",
-			en: "{pn} [on | off] \n{pn} noti [on | off]"
+			vi: "   {pn} [on | off]: bật/tắt chế độ chỉ quản trị viên nhóm mới có thể sử dụng bot"
+				+ "\n   {pn} noti [on | off]: bật/tắt thông báo khi người dùng không phải là quản trị viên nhóm sử dụng bot",
+			en: "   {pn} [on | off]: turn on/off the mode only admin of group can use bot"
+				+ "\n   {pn} noti [on | off]: turn on/off the notification when user is not admin of group use bot"
 		}
 	},
 
 	langs: {
-		vi: {
-			turnedOn: "✅ Đã bật chế độ chỉ quản trị viên nhóm mới có thể sử dụng bot",
-			turnedOff: "✅ Đã tắt chế độ này",
-			turnedOnNoti: "🔔 Đã bật thông báo khi người dùng không phải admin",
-			turnedOffNoti: "🔕 Đã tắt thông báo khi người dùng không phải admin",
-			syntaxError: "⚠️ Sai cú pháp, dùng: {pn} [on | off] hoặc {pn} noti [on | off]"
-		},
-		en: {
-			turnedOn: "✅ Admin-only mode activated",
-			turnedOff: "✅ Admin-only mode deactivated",
-			turnedOnNoti: "🔔 Notification ON for non-admin users",
-			turnedOffNoti: "🔕 Notification OFF for non-admin users",
-			syntaxError: "⚠️ Syntax error! Use: {pn} [on | off] or {pn} noti [on | off]"
-		},
 		bn: {
 			turnedOn: "✅ এখন শুধু Group Admin bot use korte parbe",
 			turnedOff: "✅ সবার জন্য bot use allow করা হয়েছে",
 			turnedOnNoti: "🔔 Admin na hole warning message দেখাবে",
 			turnedOffNoti: "🔕 Admin না হলেও এখন message আসবে না",
 			syntaxError: "⚠️ ভুল syntax! Use: {pn} on/off বা {pn} noti on/off"
+		},
+		en: {
+			turnedOn: "Turned on the mode only admin of group can use bot",
+			turnedOff: "Turned off the mode only admin of group can use bot",
+			turnedOnNoti: "Turned on the notification when user is not admin of group use bot",
+			turnedOffNoti: "Turned off the notification when user is not admin of group use bot",
+			syntaxError: "Syntax error, only use {pn} on or {pn} off"
 		}
 	},
 
@@ -51,22 +42,24 @@ module.exports = {
 		let keySetData = "data.onlyAdminBox";
 		let indexGetVal = 0;
 
-		if (args[0] === "noti") {
+		if (args[0] == "noti") {
 			isSetNoti = true;
 			indexGetVal = 1;
 			keySetData = "data.hideNotiMessageOnlyAdminBox";
 		}
 
-		if (args[indexGetVal] === "on") value = true;
-		else if (args[indexGetVal] === "off") value = false;
-		else return message.reply(getLang("syntaxError"));
+		if (args[indexGetVal] == "on")
+			value = true;
+		else if (args[indexGetVal] == "off")
+			value = false;
+		else
+			return message.reply(getLang("syntaxError"));
 
 		await threadsData.set(event.threadID, isSetNoti ? !value : value, keySetData);
 
-		return message.reply(
-			isSetNoti
-				? value ? getLang("turnedOnNoti") : getLang("turnedOffNoti")
-				: value ? getLang("turnedOn") : getLang("turnedOff")
-		);
+		if (isSetNoti)
+			return message.reply(value ? getLang("turnedOnNoti") : getLang("turnedOffNoti"));
+		else
+			return message.reply(value ? getLang("turnedOn") : getLang("turnedOff"));
 	}
 };
