@@ -1,110 +1,104 @@
-const fs = require("fs-extra");
-const axios = require("axios");
-const path = require("path");
-const { getPrefix } = global.utils;
-const { commands, aliases } = global.GoatBot;
-const doNotDelete = "[ Mr.Smokey ]";
+const { commands } = global.GoatBot;
+
+const ADMIN_UID = "61571630409265";
+const IMAGE_URL = "https://files.catbox.moe/k8kwue.jpg";
+const ITEMS_PER_PAGE = 10;
 
 module.exports = {
   config: {
     name: "help",
-    version: "1.21",
-    author: "🎩 𝐌𝐫.𝐒𝐦𝐨𝐤𝐞𝐲 • 𝐀𝐬𝐢𝐟 𝐌𝐚𝐡𝐦𝐮𝐝 🌠",
-    countDown: 5,
+    version: "2.1",
+    author: "Mr.Smokey✨",
     role: 0,
-    shortDescription: {
-      en: "📜 View command usage and list all commands"
-    },
-    longDescription: {
-      en: "📚 Display details for a specific command or list all available ones with categories"
-    },
     category: "info",
-    guide: {
-      en: "{pn} [command name]"
-    },
-    priority: 1
+    priority: 1,
   },
 
-  onStart: async function ({ message, args, event, threadsData, role, api }) {
-    const { threadID, messageID } = event;
-    const threadData = await threadsData.get(threadID);
-    const prefix = getPrefix(threadID);
+  onChat: async function ({ event, message }) {
+    const text = (message.body || "").trim().toLowerCase();
+    if (!text.startsWith("help") && !text.startsWith("menu")) return;
+    if (event.senderID !== ADMIN_UID) return;
+    const args = text.split(/\s+/).slice(1);
+    return this.onStart({ message, args, event, role: 2 });
+  },
 
-    // Auto-react to command message
-    try {
-      api.setMessageReaction("📘", messageID, () => {}, true);
-    } catch {};
+  onStart: async function ({ message, args, event, role }) {
+    const deco = "❖";
+    const top = `╭━━━━━━━ ${deco} HELP MENU ${deco} ━━━━━━━╮`;
+    const mid = "┃";
+    const sep = "┃━━━━━━━━━━━━━━━━━━━━━━";
+    const bottom = "╰━━━━━━━━━━━━━━━━━━━━━━━━━━╯";
 
-    if (args.length === 0) {
-      const categories = {};
-      let msg = "╭───『 🧾 𝙈𝙍.𝙎𝙈𝙊𝙆𝙀𝙔 𝘾𝙈𝘿 𝙇𝙄𝙎𝙏 』───╮";
+    const arg = args[0]?.toLowerCase();
 
-      for (const [name, value] of commands) {
-        if (value.config.role > 1 && role < value.config.role) continue;
-        const category = value.config.category || "Uncategorized";
-        if (!categories[category]) categories[category] = { commands: [] };
-        categories[category].commands.push(name);
+    const categories = {};
+    for (const [name, cmd] of commands.entries()) {
+      if (cmd.config?.role <= role) {
+        const cat = (cmd.config.category || "Uncategorized").trim().toUpperCase();
+        if (!categories[cat]) categories[cat] = [];
+        categories[cat].push(name);
       }
+    }
 
-      Object.keys(categories).forEach((category) => {
-        msg += `\n\n🔹 *${category.toUpperCase()}*\n`;
-        const names = categories[category].commands.sort();
-        for (let i = 0; i < names.length; i += 3) {
-          const cmds = names.slice(i, i + 3).map((item) => `🔸 ${item}`);
-          msg += `🧩 ${cmds.join("   ")}\n`;
-        }
+    if (!arg || /^\d+$/.test(arg)) {
+      const page = arg ? Math.max(1, parseInt(arg)) : 1;
+      const catNames = Object.keys(categories).sort();
+      const totalPages = Math.ceil(catNames.length / ITEMS_PER_PAGE);
+
+      if (page > totalPages)
+        return message.reply(`❌ Page ${page} does not exist. Total pages: ${totalPages}`);
+
+      const start = (page - 1) * ITEMS_PER_PAGE;
+      const selected = catNames.slice(start, start + ITEMS_PER_PAGE);
+
+      let body = `${top}\n${mid} ✦ Page: ${page}/${totalPages}\n${mid} ✦ Prefix: -\n${mid} ✦ Total Commands: ${commands.size}\n${sep}\n`;
+
+      selected.forEach((cat) => {
+        const cmds = categories[cat];
+        body += `${mid} 🗂 ${cat} [${cmds.length}]\n`;
+        cmds.forEach((n) => body += `${mid} ${deco} ${n}\n`);
+        body += `${sep}\n`;
       });
 
-      const totalCommands = commands.size;
-      msg += `\n📦 Total Commands: ${totalCommands}`;
-      msg += `\n📌 Type: ${prefix}help [command] to get usage`;
-      msg += `\n\n🔰 Powered by ${doNotDelete}`;
+      body += `${mid} 🤖 BOTNAME: Mr.Smokey 💠\n${bottom}`;
 
-      const helpListImages = ["https://i.imgur.com/a3JShJK.jpeg"];
-      const helpListImage = helpListImages[Math.floor(Math.random() * helpListImages.length)];
-
-      // Attempt to fetch image, handle 429 or other errors
-      try {
-        const stream = await global.utils.getStreamFromURL(helpListImage);
-        await message.reply({ body: msg, attachment: stream });
-      } catch (error) {
-        if (error.response?.status === 429) {
-          // Rate limited, send text-only
-          await message.reply(msg);
-        } else {
-          // Other errors, log and send text-only
-          console.error('Help image fetch error:', error.message || error);
-          await message.reply(msg);
-        }
-      }
-
-    } else {
-      const commandName = args[0].toLowerCase();
-      const command = commands.get(commandName) || commands.get(aliases.get(commandName));
-
-      if (!command) {
-        return message.reply(`❌ Command "${commandName}" not found.`);
-      }
-
-      const configCommand = command.config;
-      const roleText = roleTextToString(configCommand.role);
-      const author = configCommand.author || "Unknown";
-      const longDescription = typeof configCommand.longDescription === 'object' ? configCommand.longDescription.en : configCommand.longDescription || "No description";
-      const guideBody = typeof configCommand.guide === 'object' ? configCommand.guide.en : configCommand.guide || "No guide available.";
-      const usage = guideBody.replace(/{p}/g, prefix).replace(/{n}/g, configCommand.name);
-
-      const response = `╭─────『 ℹ️ 𝘾𝙊𝙈𝙈𝘼𝙉𝘿 𝘿𝙀𝙏𝘼𝙄𝙇𝙎 』─────╮\n\n🔹 Command: ${configCommand.name}\n📜 Description: ${longDescription}\n👑 Author: ${author}\n📖 Guide: ${usage}\n🛠 Version: ${configCommand.version || "1.0"}\n🔒 Required Role: ${roleText}\n\n╰────────────────────────╯`;
-
-      await message.reply(response);
+      return message.reply({ body, attachment: await global.utils.getStreamFromURL(IMAGE_URL) });
     }
-  }
-};
 
-function roleTextToString(role) {
-  switch (role) {
-    case 0: return "0 - All Users 👥";
-    case 1: return "1 - Group Admins 👮";
-    case 2: return "2 - Bot Admins 🧑‍💻";
-    default: return `${role} - Unknown Role`;
-  }
-}
+    if (arg.startsWith("-")) {
+      const catName = arg.slice(1).toUpperCase();
+      const cmdsInCat = [];
+      for (const [name, cmd] of commands.entries()) {
+        const cat = (cmd.config.category || "Uncategorized").trim().toUpperCase();
+        if (cat === catName && cmd.config.role <= role) cmdsInCat.push(`${mid} ${deco} ${name}`);
+      }
+
+      if (!cmdsInCat.length)
+        return message.reply(`❌ Category "${catName}" not found.`);
+
+      return message.reply(`${top}\n${mid} 📁 CATEGORY: ${catName}\n${sep}\n${cmdsInCat.join("\n")}\n${bottom}`);
+    }
+
+    const cmdObj = commands.get(arg) || commands.get(global.GoatBot.aliases.get(arg));
+    if (!cmdObj || cmdObj.config.role > role)
+      return message.reply(`❌ Command "${arg}" not found or you don't have permission.`);
+
+    const cfg = cmdObj.config;
+    const shortDesc = cfg.shortDescription?.en || "No short description.";
+    const longDesc = cfg.longDescription?.en || "No long description.";
+    const usage = cfg.guide?.en || "No usage provided.";
+
+    const details =
+      `${top}\n` +
+      `${mid} 🧾 COMMAND DETAILS\n${sep}\n` +
+      `${mid} ❖ Name: ${cfg.name}\n` +
+      `${mid} ❖ Category: ${cfg.category || "Uncategorized"}\n` +
+      `${mid} ❖ Short: ${shortDesc}\n` +
+      `${mid} ❖ Description: ${longDesc.replace(/\n/g, `\n${mid} `)}\n` +
+      `${mid} ❖ Usage: ${usage.replace(/{p}/g, "-").replace(/{n}/g, cfg.name)}\n` +
+      `${mid} ❖ Author: ${cfg.author || "Unknown"}\n` +
+      `${bottom}`;
+
+    return message.reply(details);
+  },
+};
