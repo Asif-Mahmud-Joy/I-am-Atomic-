@@ -1,130 +1,196 @@
 const fs = require("fs-extra");
 const path = require("path");
 const axios = require("axios");
+const { createReadStream } = require("fs");
 
-const audioList = {
+// ⚛️ Atomic Constants
+const ATOMIC_CACHE = path.join(__dirname, "atomic_audio_cache");
+
+// 🔊 Atomic Audio Library
+const ATOMIC_AUDIO = {
   women: {
     message: "☕「 Women 」",
     file: "women.mp3",
     url: "https://files.catbox.moe/3ifzpn.mp3",
+    emoji: "👩‍🦰"
   },
   yamate: {
     message: "🥵「 Yamate 」",
     file: "yamate.mp3",
     url: "https://files.catbox.moe/07hmj9.mp3",
+    emoji: "🇯🇵"
   },
   dazai: {
     message: "😌「 ahhh~ 」",
     file: "Dazai.mp3",
     url: "https://files.catbox.moe/q83azf.mp3",
+    emoji: "🎎"
   },
   ara: {
     message: "😉「 ara ara 」",
     file: "ara.mp3",
     url: "https://files.catbox.moe/kl3pbc.mp3",
+    emoji: "😏"
   },
   "good night": {
     message: "🌉「 Good Night 」",
     file: "night.mp3",
     url: "https://files.catbox.moe/15vs8u.mp3",
+    emoji: "🌙"
   },
   sus: {
     message: "🦎「 sus 」",
     file: "sus.mp3",
     url: "https://files.catbox.moe/0xpi2z.mp3",
+    emoji: "🕵️"
   },
   "good morning": {
     message: "🌄「 Good Morning 」",
     file: "gm.mp3",
     url: "https://files.catbox.moe/d79j8g.mp3",
+    emoji: "☀️"
   },
   yourmom: {
     message: "😏「 Bujis ki nai? 」",
     file: "yourmom.mp3",
     url: "https://files.catbox.moe/hpc70p.mp3",
+    emoji: "👩‍👦"
   },
   machikney: {
     message: "🔥「 Machikney 」",
     file: "machikney.mp3",
     url: "https://files.catbox.moe/c1grxy.mp3",
+    emoji: "💥"
   },
   randi: {
     message: "😡「 Randi ko Chora 」",
     file: "randi.mp3",
     url: "https://files.catbox.moe/czk9ij.mp3",
+    emoji: "⚠️"
   },
   sachiin: {
     message: "🌈「 GAYY 」",
     file: "sachiin.mp3",
     url: "https://files.catbox.moe/4n7jzq.mp3",
+    emoji: "🏳️‍🌈"
   },
   omg: {
     message: "😳「 OMG WoW 」",
     file: "omg.mp3",
     url: "https://files.catbox.moe/0q5jru.mp3",
+    emoji: "✨"
   },
+  help: {
+    message: "🎧 Available Audio Commands:",
+    emoji: "📜"
+  }
 };
 
-const cacheDir = path.join(__dirname, "cache");
+// ✨ UI Components
+const AtomicUI = {
+  header: "╔══════════════════════════════╗\n║   🔊 ATOMIC AUDIO SYSTEM    ║\n╚══════════════════════════════╝",
+  divider: "▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬",
+  
+  formatAudioList() {
+    let list = "🎧 Available Audio Triggers:\n\n";
+    Object.entries(ATOMIC_AUDIO).forEach(([trigger, { emoji }]) => {
+      if (trigger !== "help") {
+        list += `▸ ${emoji} ${trigger}\n`;
+      }
+    });
+    return `${this.header}\n${list}\n${this.divider}\n✨ Type any trigger to play audio!`;
+  }
+};
 
-async function ensureCacheDir() {
-  try {
-    await fs.ensureDir(cacheDir);
-  } catch (err) {
-    console.error("❌ ক্যাশ ডিরেক্টরি তৈরি করতে সমস্যা:", err);
+// 🔧 Audio Manager
+class AtomicAudioManager {
+  static async ensureCache() {
+    try {
+      await fs.ensureDir(ATOMIC_CACHE);
+      return true;
+    } catch (err) {
+      console.error("☢️ [ATOMIC CACHE ERROR]", err);
+      return false;
+    }
+  }
+
+  static async downloadAudio(url, filePath) {
+    try {
+      const response = await axios.get(url, { responseType: "arraybuffer" });
+      await fs.writeFile(filePath, Buffer.from(response.data));
+      return true;
+    } catch (err) {
+      console.error("☢️ [ATOMIC DOWNLOAD ERROR]", err);
+      return false;
+    }
+  }
+
+  static async getAudio(keyword) {
+    if (!ATOMIC_AUDIO[keyword]) return null;
+
+    const audio = ATOMIC_AUDIO[keyword];
+    const filePath = path.join(ATOMIC_CACHE, audio.file);
+
+    try {
+      if (!(await fs.pathExists(filePath))) {
+        if (!(await this.downloadAudio(audio.url, filePath))) {
+          return null;
+        }
+      }
+      return { ...audio, filePath };
+    } catch (err) {
+      console.error("☢️ [ATOMIC AUDIO ERROR]", err);
+      return null;
+    }
   }
 }
 
 module.exports = {
   config: {
     name: "audio_new",
-    version: "2.1",
+    version: "3.0",
     author: "𝐀𝐬𝐢𝐟 𝐌𝐚𝐡𝐦𝐮𝐝",
-    countDown: 3,
+    countDown: 1,
     role: 0,
-    shortDescription: "🔊 স্পেসিফিক শব্দে অডিও প্লে করো",
-    longDescription:
-      "যখন কেউ নির্দিষ্ট শব্দ টাইপ করবে, তখন সেই অডিও প্লে করবে।",
-    category: "no prefix",
+    shortDescription: "🔊 Play atomic audio on trigger",
+    longDescription: "⚛️ Play specific sounds when triggers are typed - atomic audio system",
+    category: "atomic",
+    guide: {
+      en: "Just type any audio trigger to play sound"
+    }
   },
 
   onStart: async () => {
-    await ensureCacheDir();
+    await AtomicAudioManager.ensureCache();
   },
 
-  onChat: async function ({ event, message }) {
+  onChat: async function ({ event, message, getLang }) {
     try {
       if (!event.body) return;
 
-      // টাইপিং অ্যানিমেশন
-      if (message.replyTyping) await message.replyTyping();
+      // ⏳ Always show typing indicator
+      await message.replyTyping();
 
-      const keyword = event.body.toLowerCase().trim();
-      if (!audioList.hasOwnProperty(keyword)) return;
-
-      const { message: text, file, url } = audioList[keyword];
-      const filePath = path.join(cacheDir, file);
-
-      // ফাইল না থাকলে ডাউনলোড করো
-      if (!(await fs.pathExists(filePath))) {
-        try {
-          const response = await axios.get(url, { responseType: "arraybuffer" });
-          await fs.writeFile(filePath, Buffer.from(response.data));
-          console.log(`✅ "${file}" ডাউনলোড সম্পন্ন হয়েছে।`);
-        } catch (err) {
-          console.error(`❌ ফাইল ডাউনলোডে সমস্যা (${file}):`, err);
-          return message.reply(`❌ Sorry, "${keyword}" অডিও ডাউনলোড করতে পারছি না। পরে চেষ্টা করো।`);
-        }
+      const input = event.body.toLowerCase().trim();
+      
+      // Handle help command
+      if (input === "audiohelp") {
+        return message.reply(AtomicUI.formatAudioList());
       }
 
-      // অডিও প্লে করো
+      // Handle audio triggers
+      const audio = await AtomicAudioManager.getAudio(input);
+      if (!audio) return;
+
       return message.reply({
-        body: text,
-        attachment: fs.createReadStream(filePath),
+        body: `⚛️ ${audio.message}`,
+        attachment: createReadStream(audio.filePath)
       });
     } catch (error) {
-      console.error("❌ অডিও কমান্ডে সমস্যা:", error);
-      return message.reply("❌ কোন কিছু সমস্যা হয়েছে, দয়া করে পরে আবার চেষ্টা করুন।");
+      console.error("☢️ [ATOMIC CHAT ERROR]", error);
+      return message.reply({
+        body: "⚠️ Audio system error! Please try again later."
+      });
     }
   },
 };
