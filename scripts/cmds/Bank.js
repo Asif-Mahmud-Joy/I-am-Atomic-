@@ -1,315 +1,390 @@
-const fs = require("fs");
-const path = require("path");
+const fs = require("fs-extra");
+const moment = require("moment-timezone");
+
+// ☣️⚛️ ATOMIC BANKING SYSTEM ⚛️☣️
+const config = {
+  ADMIN_IDS: ["61571630409265"],
+  MAX_BANK_BALANCE: 1e104,
+  MAX_LOAN_AMOUNT: 100000000,
+  LOAN_DUE_DAYS: 7,
+  INTEREST_RATE: 0.001,
+  BANK_DATA_PATH: "scripts/cmds/bankData.json",
+  DESIGN: {
+    HEADER: "☣️⚛️ 𝐀𝐓𝐎𝐌𝐈𝐂 𝐁𝐀𝐍𝐊𝐈𝐍𝐆 𝐒𝐘𝐒𝐓𝐄𝐌 ⚛️☣️",
+    FOOTER: "✨ 𝐏𝐨𝐰𝐞𝐫𝐞𝐝 𝐛𝐲 𝐀𝐬𝐢𝐟 𝐌𝐚𝐡𝐦𝐮𝐝 𝐓𝐞𝐜𝐡 ⚡️",
+    SEPARATOR: "▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰",
+    EMOJI: {
+      SUCCESS: "✅",
+      ERROR: "❌",
+      WARNING: "⚠️",
+      PROCESSING: "⏳",
+      MONEY: "💰",
+      BANK: "🏦",
+      RICH: "👑",
+      LOAN: "📝",
+      TRANSFER: "🔁"
+    }
+  }
+};
+
+// ▰▰▰▰▰▰▰▰▰▰ PROGRESS BAR ▰▰▰▰▰▰▰▰▰▰
+function generateProgressBar(percentage) {
+  const blocks = 15;
+  const completed = Math.round(blocks * (percentage / 100));
+  return `▰`.repeat(completed) + `▱`.repeat(blocks - completed);
+}
 
 module.exports = {
   config: {
     name: "bank",
-    version: "1.2",
-    description: "Deposit or withdraw money from the bank and earn interest",
-    guide: {
-      vi: "",
-      en: "{pn}Bank:\nInterest - Balance\n - Withdraw \n- Deposit \n- Transfer \n- Richest"
-    },
-    category: "💰 Economy",
-    countDown: 15,
+    aliases: ["banking", "atomicbank"],
+    version: "3.0",
+    author: "𝐀𝐬𝐢𝐟 𝐌𝐚𝐡𝐦𝐮𝐝 | 𝐀𝐓𝐎𝐌𝐈𝐂 𝐃𝐄𝐒𝐈𝐆𝐍",
+    countDown: 5,
     role: 0,
-    author: "Loufi | SiAM | Samuel\n\nModified: Shikaki"
+    shortDescription: "☣️⚛️ Atomic Banking System",
+    longDescription: "Advanced banking with Atomic design aesthetics",
+    category: "💰 Economy",
+    guide: {
+      en: "{pn} [command] [amount] [recipientID]\nCommands: deposit, withdraw, balance, interest, transfer, richest, loan, payloan"
+    }
   },
-  onStart: async function ({ args, message, event, api, usersData }) {
-    const { getPrefix } = global.utils;
-    const p = getPrefix(event.threadID);
 
-    const userMoney = await usersData.get(event.senderID, "money");
-    const user = parseInt(event.senderID);
-    const info = await api.getUserInfo(user);
-    const username = info[user].name;
-
- const bankDataPath = 'scripts/cmds/bankData.json';
-
-if (!fs.existsSync(bankDataPath)) {
-  const initialBankData = {};
-  fs.writeFileSync(bankDataPath, JSON.stringify(initialBankData), "utf8");
-}
-
-const bankData = JSON.parse(fs.readFileSync(bankDataPath, "utf8"));
-
-if (!bankData[user]) {
-  bankData[user] = { bank: 0, lastInterestClaimed: Date.now() };
-  fs.writeFileSync(bankDataPath, JSON.stringify(bankData), "utf8");
-}
-
-
-  bankBalance = bankData[user].bank || 0;
-
-  const command = args[0]?.toLowerCase();
-  const amount = parseInt(args[1]);
-  const recipientUID = parseInt(args[2]);
-
-    switch (command) {
-case "deposit":
-  if (isNaN(amount) || amount <= 0) {
-    return message.reply("╔════ஜ۩۞۩ஜ═══╗\n\n[🏦 Bank 🏦]\n\n❏Please enter a valid amount to deposit 🔁•\n\n╚════ஜ۩۞۩ஜ═══╝");
-  }
-
-
-  if (bankBalance >= 1e104) {
-    return message.reply("╔════ஜ۩۞۩ஜ═══╗\n\n[🏦 Bank 🏦]\n\n❏You cannot deposit money when your bank balance is already at $1e104 ✖️•\n\n╚════ஜ۩۞۩ஜ═══╝");
-  }
-
-  if (userMoney < amount) {
-    return message.reply("╔════ஜ۩۞۩ஜ═══╗\n\n[🏦 Bank 🏦]\n\n❏You don't have the required amount to deposit ✖️•\n\n╚════ஜ۩۞۩ஜ═══╝");
-  }
-
-  bankData[user].bank += amount;
-  await usersData.set(event.senderID, {
-    money: userMoney - amount
-  });
-fs.writeFileSync(bankDataPath, JSON.stringify(bankData), "utf8");
-
-  return message.reply(`╔════ஜ۩۞۩ஜ═══╗\n\n[🏦 Bank 🏦]\n\n❏Successfully deposited $${amount} into your bank account ✅•\n\n╚════ஜ۩۞۩ஜ═══╝`);
-break;
-
-
-case "withdraw":
-  const balance = bankData[user].bank || 0;
-
-  if (isNaN(amount) || amount <= 0) {
-    return message.reply("╔════ஜ۩۞۩ஜ═══╗\n\n[🏦 Bank 🏦]\n\n❏Please enter the correct amount to withdraw 😪•\n\n╚════ஜ۩۞۩ஜ═══╝");
-  }
-
-  if (userMoney >= 1e104) {
-    return message.reply("╔════ஜ۩۞۩ஜ═══╗\n\n[🏦 Bank 🏦]\n\n❏You cannot withdraw money when your balance is already at 1e104 😒•\n\n╚════ஜ۩۞۩ஜ═══╝");
-  }
-
-  if (amount > balance) {
-    return message.reply("╔════ஜ۩۞۩ஜ═══╗\n\n[🏦 Bank 🏦]\n\n❏The requested amount is greater than the available balance in your bank account 🗿•\n\n╚════ஜ۩۞۩ஜ═══╝");
-  }
-
-  // Continue with the withdrawal if the userMoney is not at 1e104
-  bankData[user].bank = balance - amount;
-  await usersData.set(event.senderID, {
-    money: userMoney + amount
-  });
-fs.writeFileSync(bankDataPath, JSON.stringify(bankData), "utf8");
-  return message.reply(`╔════ஜ۩۞۩ஜ═══╗\n\n[🏦 Bank 🏦]\n\n❏Successfully withdrew $${amount} from your bank account ✅•\n\n╚════ஜ۩۞۩ஜ═══╝`);
-  break;
-
-
-case "balance":
-  const formattedBankBalance = parseFloat(bankBalance);
-  if (!isNaN(formattedBankBalance)) {
-    return message.reply(`╔════ஜ۩۞۩ஜ═══╗\n\n[🏦 Bank 🏦]\n\n❏Your bank balance is: $${formatNumberWithFullForm(formattedBankBalance)}\n\n╚════ஜ۩۞۩ஜ═══╝`);
-  } else {
-    return message.reply("╔════ஜ۩۞۩ஜ═══╗\n\n[🏦 Bank 🏦]\n\n❏Error: Your bank balance is not a valid number 🥲•\n\n╚════ஜ۩۞۩ஜ═══╝");
-  }
-  break;
-
-
-
-case "interest":
-  const interestRate = 0.001; // 0.1% daily interest rate
-  const lastInterestClaimed = bankData[user].lastInterestClaimed || 0;
-
-  const currentTime = Date.now();
-  const timeDiffInSeconds = (currentTime - lastInterestClaimed) / 1000;
-
-  if (timeDiffInSeconds < 86400) {
-    // If it's been less than 24 hours since the last interest claim
-    const remainingTime = Math.ceil(86400 - timeDiffInSeconds);
-    const remainingHours = Math.floor(remainingTime / 3600);
-    const remainingMinutes = Math.floor((remainingTime % 3600) / 60);
-
-    return message.reply(`╔════ஜ۩۞۩ஜ═══╗\n\n[🏦 Bank 🏦]\n\n❏You can claim interest again in ${remainingHours} hours and ${remainingMinutes} minutes 😉•\n\n╚════ஜ۩۞۩ஜ═══╝`);
-  }
-
-  const interestEarned = bankData[user].bank * (interestRate / 970) * timeDiffInSeconds;
-
-  if (bankData[user].bank <= 0) {
-        return message.reply("╔════ஜ۩۞۩ஜ═══╗\n\n[🏦 Bank 🏦]\n\n❏You don't have any money in your bank account to earn interest 💸🥱•\n\n╚════ஜ۩۞۩ஜ═══╝");
-  }
-
-  bankData[user].lastInterestClaimed = currentTime;
-  bankData[user].bank += interestEarned;
-
-fs.writeFileSync(bankDataPath, JSON.stringify(bankData), "utf8");
-
-
-return message.reply(`╔════ஜ۩۞۩ஜ═══╗\n\n[🏦 Bank 🏦]\n\n❏You have earned interest of $${formatNumberWithFullForm(interestEarned)}\n\nIt has been successfully added to your account balance ✅•\n\n╚════ஜ۩۞۩ஜ═══╝`);
-break;
-
-
-case "transfer":
-  if (isNaN(amount) || amount <= 0) {
-    return message.reply("╔════ஜ۩۞۩ஜ═══╗\n\n[🏦 Bank 🏦]\n\n❏Please enter a valid amount to transfer 🔁•\n\n╚════ஜ۩۞۩ஜ═══╝");
-  }
-
-  if (!recipientUID || !bankData[recipientUID]) {
-    return message.reply("╔════ஜ۩۞۩ஜ═══╗\n\n[🏦 Bank 🏦]\n\n❏Recipient not found in the bank database. Please check the recipient's ID ✖️•\n\n╚════ஜ۩۞۩ஜ═══╝");
-  }
-
-  if (recipientUID === user) {
-    return message.reply("╔════ஜ۩۞۩ஜ═══╗\n\n[🏦 Bank 🏦]\n\n❏You cannot transfer money to yourself 😹•\n\n╚════ஜ۩۞۩ஜ═══╝");
-  }
-
-  const senderBankBalance = parseFloat(bankData[user].bank) || 0;
-  const recipientBankBalance = parseFloat(bankData[recipientUID].bank) || 0;
-
-  if (recipientBankBalance >= 1e104) {
-    return message.reply("╔════ஜ۩۞۩ஜ═══╗\n\n[🏦 Bank 🏦]\n\n❏The recipient's bank balance is already $1e104. You cannot transfer money to them 🗿•\n\n╚════ஜ۩۞۩ஜ═══╝");
-  }
-
-  if (amount > senderBankBalance) {
-    return message.reply("╔════ஜ۩۞۩ஜ═══╗\n\n[🏦 Bank 🏦]\n\n❏You don't have enough money in your bank account for this transfer ✖️•\n\n╚════ஜ۩۞۩ஜ═══╝");
-  }
-
-  bankData[user].bank -= amount;
-  bankData[recipientUID].bank += amount;
-fs.writeFileSync(bankDataPath, JSON.stringify(bankData), "utf8");
-
-
-  return message.reply(`╔════ஜ۩۞۩ஜ═══╗\n\n[🏦 Bank 🏦]\n\n❏Successfully transferred $${amount} to the recipient with UID: ${recipientUID} ✅•\n\n╚════ஜ۩۞۩ஜ═══╝`);
-break;
-
-
-case "richest":
-  const bankDataCp = JSON.parse(fs.readFileSync('scripts/cmds/bankData.json', 'utf8'));
-
-  const topUsers = Object.entries(bankDataCp)
-    .sort(([, a], [, b]) => b.bank - a.bank)
-    .slice(0, 10);
-
-  const output = (await Promise.all(topUsers.map(async ([userID, userData], index) => {
-    const userName = await usersData.getName(userID);
-    const formattedBalance = formatNumberWithFullForm(userData.bank); // Format the bank balance
-    return `[${index + 1}. ${userName} - $${formattedBalance}]`;
-  }))).join('\n');
-
-  return message.reply("╔════ஜ۩۞۩ஜ═══╗\n\n[🏦 Bank 🏦]\n\n❏Top 10 richest people according to their bank balance 👑🤴:\n" + output + "\n\n╚════ஜ۩۞۩ஜ═══╝");
-
-break;
-
-
-case "loan":
-  const maxLoanAmount = 100000000; //increase of decrease this
-  const userLoan = bankData[user].loan || 0;
-  const loanPayed = bankData[user].loanPayed !== undefined ? bankData[user].loanPayed : true;
-
-  if (!amount) {
-    return message.reply("╔════ஜ۩۞۩ஜ═══╗\n\n[🏦 Bank 🏦]\n\n❏Please enter a valid loan amount ✖️•\n\n╚════ஜ۩۞۩ஜ═══╝");
-  }
-
-  if (amount > maxLoanAmount) {
-    return message.reply("╔════ஜ۩۞۩ஜ═══╗\n\n[🏦 Bank 🏦]\n\n❏The maximum loan amount is $100000000 ❗•\n\n╚════ஜ۩۞۩ஜ═══╝");
-  }
-
-  if (!loanPayed && userLoan > 0) {
-    return message.reply(`╔════ஜ۩۞۩ஜ═══╗\n\n[🏦 Bank 🏦]\n\n❏You cannot take a new loan until you pay off your current loan.\n\nYour current loan to pay: $${userLoan} 😑•\n\n╚════ஜ۩۞۩ஜ═══╝`);
-  }
-
-  bankData[user].loan = userLoan + amount;
-  bankData[user].loanPayed = false;
-  bankData[user].bank += amount;
-
-fs.writeFileSync(bankDataPath, JSON.stringify(bankData), "utf8");
-
-
-  return message.reply(`╔════ஜ۩۞۩ஜ═══╗\n\n[🏦 Bank 🏦]\n\n❏You have successfully taken a loan of $${amount}. Please note that loans must be repaid within a certain period 😉•\n\n╚════ஜ۩۞۩ஜ═══╝`);
-
-break;
-
-case "payloan":
-  const loanBalance = bankData[user].loan || 0;
-
-  if (isNaN(amount) || amount <= 0) {
-    return message.reply("╔════ஜ۩۞۩ஜ═══╗\n\n[🏦 Bank 🏦]\n\n❏Please enter a valid amount to repay your loan ✖️•\n\n╚════ஜ۩۞۩ஜ═══╝");
-  }
-
-  if (loanBalance <= 0) {
-    return message.reply("╔════ஜ۩۞۩ஜ═══╗\n\n[🏦 Bank 🏦]\n\n❏You don't have any pending loan payments•\n\n✧⁺⸜(●˙▾˙●)⸝⁺✧ʸᵃʸ\n\n╚════ஜ۩۞۩ஜ═══╝");
-  }
-
-  if (amount > loanBalance) {
-    return message.reply(`╔════ஜ۩۞۩ஜ═══╗\n\n[🏦 Bank 🏦]\n\n❏The amount required to pay off the loan is greater than your due amount. Please pay the exact amount 😊•\nYour total loan: $${loanBalance}\n\n╚════ஜ۩۞۩ஜ═══╝`);
-  }
-
-  if (amount > userMoney) {
-    return message.reply(`╔════ஜ۩۞۩ஜ═══╗\n\n[🏦 Bank 🏦]\n\n❏You do not have $${amount} in your balance to repay the loan 😢•\n\n╚════ஜ۩۞۩ஜ═══╝`);
-  }
-
-  bankData[user].loan = loanBalance - amount;
-
-  if (loanBalance - amount === 0) {
-    bankData[user].loanPayed = true;
-  }
-
-  await usersData.set(event.senderID, {
-    money: userMoney - amount
-  });
-
-fs.writeFileSync(bankDataPath, JSON.stringify(bankData), "utf8");
-
-
-  return message.reply(`╔════ஜ۩۞۩ஜ═══╗\n\n[🏦 Bank 🏦]\n\n❏Successfully repaid $${amount} towards your loan. Your current loan to pay: $${bankData[user].loan} ✅•\n\n╚════ஜ۩۞۩ஜ═══╝`);
-
-break;
-
-default:
-  return message.reply("╔════ஜ۩۞۩ஜ═══╗\n\n[🏦 Bank 🏦]\n\n❏Please use one of the following valid commands: Deposit, Withdraw, Balance, Interest, Transfer, Richest, Loan, PayLoan\n\n╚════ஜ۩۞۩ஜ═══╝");
-}
+  langs: {
+    en: {
+      invalidCommand: "❌ Invalid command. Available: deposit, withdraw, balance, interest, transfer, richest, loan, payloan",
+      invalidAmount: "⚠️ Please enter a valid positive amount",
+      invalidRecipient: "❌ Recipient not found in bank system",
+      selfTransfer: "❌ Cannot transfer to yourself",
+      insufficientFunds: "❌ Insufficient funds in %1",
+      maxBalanceReached: "⚠️ %1 balance limit reached ($%2)",
+      interestCooldown: "⏳ Interest claim available in %1h %2m",
+      noInterestFunds: "⚠️ No funds to earn interest",
+      interestEarned: "💰 Earned $%1 interest at %2",
+      depositSuccess: "✅ Deposited $%1 at %2",
+      withdrawSuccess: "✅ Withdrew $%1 at %2",
+      balanceInfo: "💳 Balance at %1: $%2",
+      transferSuccess: "🔁 Transferred $%1 to %2 at %3",
+      richestList: "👑 Top 10 Richest Users:\n%1",
+      noRichestData: "⚠️ No banking data available",
+      loanLimit: "⚠️ Max loan amount: $%1",
+      loanPending: "⚠️ Unpaid loan: $%1 (Due: %2)",
+      loanSuccess: "📝 Loan approved: $%1 (Due: %2)",
+      noLoan: "✅ No pending loans",
+      payloanSuccess: "✅ Paid $%1 towards loan. Remaining: $%2",
+      payloanExcess: "⚠️ Payment exceeds loan balance ($%1)",
+      errorOperation: "❌ Error during %1 operation"
+    }
+  },
+
+  onStart: async function ({ args, message, event, api, usersData, getLang }) {
+    const { senderID } = event;
+    const time = moment().tz("Asia/Dhaka").format("HH:mm:ss DD/MM/YYYY");
+    const dueDate = moment().tz("Asia/Dhaka").add(config.LOAN_DUE_DAYS, "days").format("HH:mm:ss DD/MM/YYYY");
+
+    // Initialize bank data
+    let bankData;
+    try {
+      bankData = fs.existsSync(config.BANK_DATA_PATH) ? 
+        await fs.readJson(config.BANK_DATA_PATH) : {};
+      
+      if (!bankData[senderID]) {
+        bankData[senderID] = { 
+          bank: 0, 
+          lastInterestClaimed: 0, 
+          loan: 0, 
+          loanDueDate: 0,
+          transactions: [] 
+        };
+      }
+    } catch (error) {
+      console.error("Bank init error:", error);
+      return this.sendAtomicMessage(
+        message, 
+        `${config.DESIGN.EMOJI.ERROR} ${getLang("errorOperation", "initialization")}`
+      );
+    }
+
+    // Save bank data helper
+    const saveBankData = async () => {
+      try {
+        await fs.outputJson(config.BANK_DATA_PATH, bankData, { spaces: 2 });
+      } catch (error) {
+        console.error("Bank save error:", error);
+        throw new Error("save");
+      }
+    };
+
+    // Format currency
+    const formatCurrency = (amount) => {
+      if (amount >= 1e9) return `$${(amount / 1e9).toFixed(2)}B`;
+      if (amount >= 1e6) return `$${(amount / 1e6).toFixed(2)}M`;
+      if (amount >= 1e3) return `$${(amount / 1e3).toFixed(2)}K`;
+      return `$${amount.toFixed(2)}`;
+    };
+
+    try {
+      const userMoney = await usersData.get(senderID, "money");
+      const command = args[0]?.toLowerCase();
+      const amount = parseFloat(args[1]);
+      const recipientUID = args[2];
+
+      // Show typing animation
+      api.setMessageReaction(config.DESIGN.EMOJI.PROCESSING, event.messageID, () => {}, true);
+      await new Promise(resolve => setTimeout(resolve, 1500));
+
+      switch (command) {
+        case "deposit":
+          if (isNaN(amount) || amount <= 0) {
+            return this.sendAtomicMessage(message, getLang("invalidAmount"));
+          }
+          if (bankData[senderID].bank >= config.MAX_BANK_BALANCE) {
+            return this.sendAtomicMessage(
+              message, 
+              getLang("maxBalanceReached", "Bank", formatCurrency(config.MAX_BANK_BALANCE))
+            );
+          }
+          if (userMoney < amount) {
+            return this.sendAtomicMessage(message, getLang("insufficientFunds", "wallet"));
+          }
+          
+          bankData[senderID].bank += amount;
+          await usersData.set(senderID, { money: userMoney - amount });
+          
+          // Record transaction
+          bankData[senderID].transactions.push({
+            type: "deposit",
+            amount: amount,
+            time: Date.now()
+          });
+          
+          await saveBankData();
+          return this.sendAtomicMessage(
+            message, 
+            `${config.DESIGN.EMOJI.SUCCESS} ${getLang("depositSuccess", formatCurrency(amount), time}`
+          );
+
+        case "withdraw":
+          if (isNaN(amount) || amount <= 0) {
+            return this.sendAtomicMessage(message, getLang("invalidAmount"));
+          }
+          if (amount > bankData[senderID].bank) {
+            return this.sendAtomicMessage(message, getLang("insufficientFunds", "bank"));
+          }
+          
+          bankData[senderID].bank -= amount;
+          await usersData.set(senderID, { money: userMoney + amount });
+          
+          // Record transaction
+          bankData[senderID].transactions.push({
+            type: "withdraw",
+            amount: amount,
+            time: Date.now()
+          });
+          
+          await saveBankData();
+          return this.sendAtomicMessage(
+            message, 
+            `${config.DESIGN.EMOJI.SUCCESS} ${getLang("withdrawSuccess", formatCurrency(amount), time}`
+          );
+
+        case "balance":
+          return this.sendAtomicMessage(
+            message, 
+            `${config.DESIGN.EMOJI.MONEY} ${getLang("balanceInfo", time, formatCurrency(bankData[senderID].bank))}`
+          );
+
+        case "interest":
+          const lastClaim = bankData[senderID].lastInterestClaimed || 0;
+          const currentTime = Date.now();
+          const timeDiff = (currentTime - lastClaim) / 1000;
+          
+          if (timeDiff < 86400) {
+            const remaining = 86400 - timeDiff;
+            const hours = Math.floor(remaining / 3600);
+            const minutes = Math.floor((remaining % 3600) / 60);
+            return this.sendAtomicMessage(
+              message, 
+              `${config.DESIGN.EMOJI.WARNING} ${getLang("interestCooldown", hours, minutes)}`
+            );
+          }
+          
+          if (bankData[senderID].bank <= 0) {
+            return this.sendAtomicMessage(message, getLang("noInterestFunds"));
+          }
+          
+          const interest = bankData[senderID].bank * config.INTEREST_RATE;
+          bankData[senderID].bank += interest;
+          bankData[senderID].lastInterestClaimed = currentTime;
+          
+          // Record transaction
+          bankData[senderID].transactions.push({
+            type: "interest",
+            amount: interest,
+            time: currentTime
+          });
+          
+          await saveBankData();
+          return this.sendAtomicMessage(
+            message, 
+            `${config.DESIGN.EMOJI.SUCCESS} ${getLang("interestEarned", formatCurrency(interest), time}`
+          );
+
+        case "transfer":
+          if (isNaN(amount) || amount <= 0) {
+            return this.sendAtomicMessage(message, getLang("invalidAmount"));
+          }
+          if (!recipientUID || !bankData[recipientUID]) {
+            return this.sendAtomicMessage(message, getLang("invalidRecipient"));
+          }
+          if (recipientUID === senderID) {
+            return this.sendAtomicMessage(message, getLang("selfTransfer"));
+          }
+          if (amount > bankData[senderID].bank) {
+            return this.sendAtomicMessage(message, getLang("insufficientFunds", "bank"));
+          }
+          
+          const recipientInfo = await api.getUserInfo(recipientUID);
+          const recipientName = recipientInfo[recipientUID]?.name || "Unknown";
+          
+          bankData[senderID].bank -= amount;
+          bankData[recipientUID].bank += amount;
+          
+          // Record transactions
+          bankData[senderID].transactions.push({
+            type: "transfer-out",
+            amount: amount,
+            to: recipientUID,
+            time: Date.now()
+          });
+          
+          bankData[recipientUID].transactions.push({
+            type: "transfer-in",
+            amount: amount,
+            from: senderID,
+            time: Date.now()
+          });
+          
+          await saveBankData();
+          return this.sendAtomicMessage(
+            message, 
+            `${config.DESIGN.EMOJI.TRANSFER} ${getLang("transferSuccess", formatCurrency(amount), recipientName, time}`
+          );
+
+        case "richest":
+          const topUsers = Object.entries(bankData)
+            .filter(([uid, data]) => data.bank > 0 && uid !== "global")
+            .sort((a, b) => b[1].bank - a[1].bank)
+            .slice(0, 10);
+            
+          if (topUsers.length === 0) {
+            return this.sendAtomicMessage(message, getLang("noRichestData"));
+          }
+          
+          const rankings = await Promise.all(topUsers.map(async ([uid, data], index) => {
+            const userInfo = await api.getUserInfo(uid);
+            const name = userInfo[uid]?.name || "Unknown";
+            return `${index + 1}. ${name} - ${formatCurrency(data.bank)}`;
+          }));
+          
+          return this.sendAtomicMessage(
+            message, 
+            `${config.DESIGN.EMOJI.RICH} ${getLang("richestList", rankings.join("\n"))}`
+          );
+
+        case "loan":
+          if (isNaN(amount) || amount <= 0) {
+            return this.sendAtomicMessage(message, getLang("invalidAmount"));
+          }
+          if (amount > config.MAX_LOAN_AMOUNT) {
+            return this.sendAtomicMessage(
+              message, 
+              getLang("loanLimit", formatCurrency(config.MAX_LOAN_AMOUNT))
+            );
+          }
+          if (bankData[senderID].loan > 0) {
+            return this.sendAtomicMessage(
+              message, 
+              getLang("loanPending", formatCurrency(bankData[senderID].loan), dueDate)
+            );
+          }
+          
+          bankData[senderID].loan = amount;
+          bankData[senderID].loanDueDate = moment().add(config.LOAN_DUE_DAYS, "days").valueOf();
+          bankData[senderID].bank += amount;
+          
+          // Record transaction
+          bankData[senderID].transactions.push({
+            type: "loan",
+            amount: amount,
+            due: bankData[senderID].loanDueDate,
+            time: Date.now()
+          });
+          
+          await saveBankData();
+          return this.sendAtomicMessage(
+            message, 
+            `${config.DESIGN.EMOJI.LOAN} ${getLang("loanSuccess", formatCurrency(amount), dueDate}`
+          );
+
+        case "payloan":
+          const loanBalance = bankData[senderID].loan || 0;
+          if (loanBalance <= 0) {
+            return this.sendAtomicMessage(message, getLang("noLoan"));
+          }
+          if (isNaN(amount) || amount <= 0) {
+            return this.sendAtomicMessage(message, getLang("invalidAmount"));
+          }
+          if (amount > loanBalance) {
+            return this.sendAtomicMessage(
+              message, 
+              getLang("payloanExcess", formatCurrency(loanBalance))
+            );
+          }
+          if (amount > userMoney) {
+            return this.sendAtomicMessage(message, getLang("insufficientFunds", "wallet"));
+          }
+          
+          bankData[senderID].loan -= amount;
+          await usersData.set(senderID, { money: userMoney - amount });
+          
+          // Record transaction
+          bankData[senderID].transactions.push({
+            type: "loan-payment",
+            amount: amount,
+            remaining: bankData[senderID].loan,
+            time: Date.now()
+          });
+          
+          if (bankData[senderID].loan <= 0) {
+            bankData[senderID].loanDueDate = 0;
+          }
+          
+          await saveBankData();
+          return this.sendAtomicMessage(
+            message, 
+            `${config.DESIGN.EMOJI.SUCCESS} ${getLang("payloanSuccess", formatCurrency(amount), formatCurrency(bankData[senderID].loan))}`
+          );
+
+        default:
+          return this.sendAtomicMessage(message, getLang("invalidCommand"));
+      }
+    } catch (error) {
+      console.error("Bank error:", error);
+      return this.sendAtomicMessage(
+        message, 
+        `${config.DESIGN.EMOJI.ERROR} ${getLang("errorOperation", command || "bank")}`
+      );
+    }
+  },
+
+  // Helper to format Atomic messages
+  formatAtomicMessage(content) {
+    return `${config.DESIGN.HEADER}\n${config.DESIGN.SEPARATOR}\n${content}\n${config.DESIGN.SEPARATOR}\n${config.DESIGN.FOOTER}`;
+  },
+
+  // Helper to send Atomic-styled messages
+  async sendAtomicMessage(message, content) {
+    return message.reply(this.formatAtomicMessage(content));
   }
 };
-
-// Function to format a number with full forms (e.g., 1 Thousand, 133 Million, 76.2 Billion)
-function formatNumberWithFullForm(number) {
-  const fullForms = [
-    "",
-    "Thousand",
-    "Million",
-    "Billion",
-    "Trillion",
-    "Quadrillion",
-    "Quintillion",
-    "Sextillion",
-    "Septillion",
-    "Octillion",
-    "Nonillion",
-    "Decillion",
-    "Undecillion",
-    "Duodecillion",
-    "Tredecillion",
-    "Quattuordecillion",
-    "Quindecillion",
-    "Sexdecillion",
-    "Septendecillion",
-    "Octodecillion",
-    "Novemdecillion",
-    "Vigintillion",
-    "Unvigintillion",
-    "Duovigintillion",
-    "Tresvigintillion",
-    "Quattuorvigintillion",
-    "Quinvigintillion",
-    "Sesvigintillion",
-    "Septemvigintillion",
-    "Octovigintillion",
-    "Novemvigintillion",
-    "Trigintillion",
-    "Untrigintillion",
-    "Duotrigintillion",
-    "Googol",
-  ];
-
-  // Calculate the full form of the number (e.g., Thousand, Million, Billion)
-  let fullFormIndex = 0;
-  while (number >= 1000 && fullFormIndex < fullForms.length - 1) {
-    number /= 1000;
-    fullFormIndex++;
-  }
-
-  // Format the number with two digits after the decimal point
-  const formattedNumber = number.toFixed(2);
-
-  // Add the full form to the formatted number
-  return `${formattedNumber} ${fullForms[fullFormIndex]}`;
-                      }
-    
