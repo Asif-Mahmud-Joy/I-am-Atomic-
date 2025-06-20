@@ -1,58 +1,146 @@
 const fs = require("fs-extra");
 const axios = require("axios");
+const path = require("path");
+
+// ⚛️ Atomic design configuration
+const ATOMIC_EMOJIS = {
+  processing: "⚛️",
+  success: "✅",
+  error: "❌",
+  art: "🎨",
+  magic: "✨",
+  clock: "⏱️"
+};
 
 module.exports = {
   config: {
     name: "anigen",
-    aliases: ["animegen"],
-    author: "𝐀𝐬𝐢𝐟 𝐌𝐚𝐡𝐦𝐮𝐝",
-    version: "2.0",
-    cooldowns: 5,
+    aliases: ["animegen", "atomic-art"],
+    author: "𝐀𝐬𝐢𝐟 𝐌𝐚𝐡𝐦𝐮𝐝 | Atomic Design",
+    version: "3.0",
+    cooldowns: 7,
     role: 0,
     shortDescription: {
-      en: "Generate anime-style image from prompt"
+      en: "⚛️ Generate atomic anime art"
     },
     longDescription: {
-      en: "Bot will generate a high-quality anime image based on your given prompt."
+      en: "Create high-quality anime images with atomic precision using AI"
     },
-    category: "MEDIA",
+    category: "𝗠𝗘𝗗𝗜𝗔",
     guide: {
       en: "{pn} <your anime prompt>"
     }
   },
 
   onStart: async function ({ api, event, args }) {
-    const path = __dirname + "/cache/anime.png";
-    const tid = event.threadID;
-    const mid = event.messageID;
+    const { threadID, messageID } = event;
+    const cachePath = path.join(__dirname, "cache", "atomic_anigen");
+    
+    // Atomic design helper function
+    const atomicMessage = (content) => {
+      return `╔═══════════════════════╗
+║   ⚛️ 𝗔𝗧𝗢𝗠𝗜𝗖 𝗔𝗥𝗧  ⚛️   ║
+╚═══════════════════════╝
+
+${content}
+❖━━━━━━━━━━━━━━━━━━━━━━━━━━━❖`;
+    };
 
     if (!args[0]) {
-      return api.sendMessage("📌 Prompt lagbe bhai! 😅\nUsage: /anigen <prompt>", tid, mid);
+      return api.sendMessage(
+        atomicMessage("📝 Please provide a prompt for your anime art!\nExample: /anigen magical girl in neon city"),
+        threadID,
+        messageID
+      );
     }
 
-    const userPrompt = args.join(" ");
-    const encodedPrompt = encodeURIComponent(userPrompt);
-
     try {
-      api.sendMessage("🎨 Generating your anime image, ektu wait...", tid, mid);
+      // Set processing reaction
+      api.setMessageReaction(ATOMIC_EMOJIS.processing, messageID, () => {}, true);
+      
+      // Send processing message
+      const processingMsg = await api.sendMessage(
+        atomicMessage(`${ATOMIC_EMOJIS.processing} Crafting your atomic anime art...`),
+        threadID
+      );
 
-      // ✅ Updated API (trusted + working)
-      const apiUrl = `https://nekobot.xyz/api/imagegen?type=aiart&text=${encodedPrompt}`;
-      const response = await axios.get(apiUrl);
+      const userPrompt = args.join(" ");
+      const encodedPrompt = encodeURIComponent(userPrompt);
+      
+      // ✅ Updated API endpoint
+      const apiUrl = `https://api.nekosapi.com/v2/image/random?rating=safe&tags=anime&prompt=${encodedPrompt}`;
+      
+      const response = await axios.get(apiUrl, {
+        headers: {
+          'User-Agent': 'AtomicAnigen/3.0',
+          'Accept': 'application/json'
+        },
+        timeout: 30000
+      });
 
-      if (!response.data || !response.data.message) {
-        return api.sendMessage("❌ Image generate korte parlam na. Try different prompt.", tid, mid);
+      if (!response.data || !response.data.imageUrl) {
+        throw new Error("API response was invalid");
       }
 
-      const imageUrl = response.data.message;
-      const imageStream = (await axios.get(imageUrl, { responseType: 'stream' })).data;
-
-      imageStream.pipe(fs.createWriteStream(path)).on("finish", () => {
-        api.sendMessage({ attachment: fs.createReadStream(path) }, tid, () => fs.unlinkSync(path), mid);
+      const imageUrl = response.data.imageUrl;
+      await fs.ensureDir(cachePath);
+      const imagePath = path.join(cachePath, `atomic_art_${Date.now()}.png`);
+      
+      const imageStream = await axios.get(imageUrl, { 
+        responseType: 'stream',
+        onDownloadProgress: progressEvent => {
+          const percent = Math.floor((progressEvent.loaded * 100) / progressEvent.total);
+          if (percent % 25 === 0) {
+            api.sendMessage(
+              atomicMessage(`${ATOMIC_EMOJIS.art} Rendering art... ${percent}%`),
+              threadID
+            );
+          }
+        }
       });
-    } catch (err) {
-      console.error("Error in anigen:", err);
-      api.sendMessage("😓 Internal error hoye gese. Please try again later.", tid, mid);
+
+      await new Promise((resolve, reject) => {
+        const file = fs.createWriteStream(imagePath);
+        imageStream.data.pipe(file);
+        file.on("finish", resolve);
+        file.on("error", reject);
+      });
+
+      const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      
+      // Success message
+      const successMsg = atomicMessage(
+        `${ATOMIC_EMOJIS.success} Atomic Art Created!\n\n` +
+        `✨ Prompt: ${userPrompt}\n` +
+        `🎨 Style: Anime\n` +
+        `⏱️ Time: ${timestamp}`
+      );
+
+      // Send the final image
+      await api.sendMessage({
+        body: successMsg,
+        attachment: fs.createReadStream(imagePath)
+      }, threadID, () => {
+        fs.unlinkSync(imagePath);
+        api.unsendMessage(processingMsg.messageID);
+      });
+
+      // Update reaction to success
+      api.setMessageReaction(ATOMIC_EMOJIS.success, messageID, () => {}, true);
+
+    } catch (error) {
+      console.error("Atomic Art Error:", error);
+      
+      // Error handling with atomic design
+      api.setMessageReaction(ATOMIC_EMOJIS.error, messageID, () => {}, true);
+      
+      const errorMsg = atomicMessage(
+        `❌ Atomic Art Creation Failed!\n\n` +
+        `⚡ Reason: ${error.message || 'API timeout or invalid response'}\n` +
+        `🔧 Tip: Try a different prompt or try again later`
+      );
+      
+      api.sendMessage(errorMsg, threadID, messageID);
     }
   }
 };
