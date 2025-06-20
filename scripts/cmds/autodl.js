@@ -2,78 +2,129 @@ const axios = require("axios");
 const fs = require("fs-extra");
 const { shortenURL } = global.utils;
 
-const cachePath = __dirname + "/cache";
-const filePath = cachePath + "/autodl_video.mp4";
+// ======================== 🚀 ULTIMATE DOWNLOAD SYSTEM 🚀 ======================== //
+const DESIGN = {
+  FRAME: {
+    TOP: "╔═══════════ ∘◦🚀◦∘ ═══════════╗",
+    BOTTOM: "╚═══════════ ∘◦🚀◦∘ ═══════════╝",
+    DIVIDER: "▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰"
+  },
+  ELEMENTS: {
+    VIDEO: "🎬",
+    DOWNLOAD: "📥",
+    SUCCESS: "✅",
+    ERROR: "❌",
+    LOADING: "⏳",
+    LINK: "🔗",
+    PLATFORM: "🌐",
+    CLOCK: "⏱️"
+  }
+};
+
+const createDesignMessage = (content) => {
+  return `${DESIGN.FRAME.TOP}
+${content}
+${DESIGN.FRAME.DIVIDER}
+${DESIGN.FRAME.BOTTOM}`;
+};
 
 // Ensure cache folder exists
-if (!fs.existsSync(cachePath)) fs.mkdirSync(cachePath);
+const cachePath = __dirname + "/cache/mediadl";
+if (!fs.existsSync(cachePath)) fs.mkdirSync(cachePath, { recursive: true });
+const filePath = `${cachePath}/downloaded_media_${Date.now()}.mp4`;
 
-const baseApiUrl = async () => {
-  const { data } = await axios.get("https://raw.githubusercontent.com/Blankid018/D1PT0/main/baseApiUrl.json");
-  return data.api;
-};
+// Supported platforms
+const SUPPORTED_PLATFORMS = [
+  "tiktok.com", "facebook.com", "instagram.com", 
+  "youtube.com", "youtu.be", "twitter.com", "x.com",
+  "fb.watch", "pinterest.com", "snapchat.com",
+  "dailymotion.com", "vimeo.com", "twitch.tv"
+];
 
 module.exports = {
   config: {
     name: "autodl",
-    version: "2.0.0",
-    author: "🎩 𝐌𝐫.𝐒𝐦𝐨𝐤𝐞𝐲 • 𝐀𝐬𝐢𝐟 𝐌𝐚𝐡𝐦𝐮𝐝 🌠",
+    version: "3.0",
+    author: "Asif Mahmud",
     countDown: 0,
     role: 0,
     description: {
-      en: "Auto download video from TikTok, Facebook, Instagram, YouTube, Twitter, and more",
+      en: "Auto download media from 12+ platforms"
     },
     category: "media",
     guide: {
-      en: "Reply or paste any supported video link",
-    },
+      en: "Simply send a supported media link"
+    }
   },
 
-  onStart: async () => {},
+  onStart: async function () {},
 
   onChat: async function ({ api, event }) {
     const link = event.body?.trim();
     if (!link) return;
 
-    const supportedDomains = [
-      "tiktok.com",
-      "vt.tiktok.com",
-      "vm.tiktok.com",
-      "facebook.com",
-      "fb.watch",
-      "instagram.com",
-      "youtu.be",
-      "youtube.com",
-      "twitter.com",
-      "x.com",
-      "pinterest.com"
-    ];
-
-    const isSupported = supportedDomains.some(domain => link.includes(domain));
+    const isSupported = SUPPORTED_PLATFORMS.some(domain => link.includes(domain));
     if (!isSupported) return;
 
     try {
-      api.setMessageReaction("⏳", event.messageID, () => {}, true);
+      api.setMessageReaction(DESIGN.ELEMENTS.LOADING, event.messageID, () => {}, true);
 
-      const apiUrl = `${await baseApiUrl()}/alldl?url=${encodeURIComponent(link)}`;
-      const { data } = await axios.get(apiUrl);
+      // Get API base URL
+      const baseAPI = "https://api-samir.onrender.com"; // Using a reliable alternative API
+      const apiUrl = `${baseAPI}/alldl?url=${encodeURIComponent(link)}`;
+      
+      const { data } = await axios.get(apiUrl, {
+        timeout: 30000
+      });
 
-      if (!data.result) throw new Error("❌ | Video link invalid or unsupported API response.");
+      if (!data.result) throw new Error("Invalid media link or API response");
 
-      const videoBuffer = (await axios.get(data.result, { responseType: "arraybuffer" })).data;
-      fs.writeFileSync(filePath, videoBuffer);
+      // Download media
+      const videoRes = await axios.get(data.result, {
+        responseType: "arraybuffer",
+        timeout: 60000
+      });
+      fs.writeFileSync(filePath, Buffer.from(videoRes.data));
 
-      const shortUrl = await shortenURL(data.result);
+      // Shorten URL
+      let shortUrl;
+      try {
+        shortUrl = await shortenURL(data.result);
+      } catch {
+        shortUrl = data.result;
+      }
 
-      api.setMessageReaction("✅", event.messageID, () => {}, true);
-      api.sendMessage({
-        body: `${data.cp || "📥 Downloaded Video"}\n🔗 Link: ${shortUrl}`,
-        attachment: fs.createReadStream(filePath),
-      }, event.threadID, () => fs.unlinkSync(filePath), event.messageID);
+      // Get platform name
+      const platform = SUPPORTED_PLATFORMS.find(domain => link.includes(domain));
+      const platformName = platform.split('.')[0].toUpperCase();
+
+      // Send result
+      api.setMessageReaction(DESIGN.ELEMENTS.SUCCESS, event.messageID, () => {}, true);
+      await api.sendMessage({
+        body: createDesignMessage(
+          `${DESIGN.ELEMENTS.SUCCESS} 𝗠𝗘𝗗𝗜𝗔 𝗗𝗢𝗪𝗡𝗟𝗢𝗔𝗗𝗘𝗗 𝗦𝗨𝗖𝗖𝗘𝗦𝗦𝗙𝗨𝗟𝗟𝗬!\n\n` +
+          `${DESIGN.ELEMENTS.PLATFORM} 𝗣𝗹𝗮𝘁𝗳𝗼𝗿𝗺: ${platformName}\n` +
+          `${DESIGN.ELEMENTS.LINK} 𝗦𝗼𝘂𝗿𝗰𝗲: ${shortUrl}\n` +
+          `${DESIGN.ELEMENTS.CLOCK} 𝗧𝗶𝗺𝗲: ${new Date().toLocaleTimeString()}`
+        ),
+        attachment: fs.createReadStream(filePath)
+      }, event.threadID);
+
+      // Cleanup
+      fs.unlinkSync(filePath);
 
     } catch (error) {
-      api.setMessageReaction("❎", event.messageID, () => {}, true);
-      api.sendMessage(`❌ | Download failed:\n${error.message}`, event.threadID, event.messageID);
+      api.setMessageReaction(DESIGN.ELEMENTS.ERROR, event.messageID, () => {}, true);
+      await api.sendMessage(
+        createDesignMessage(
+          `${DESIGN.ELEMENTS.ERROR} 𝗗𝗢𝗪𝗡𝗟𝗢𝗔𝗗 𝗙𝗔𝗜𝗟𝗘𝗗\n\n` +
+          `• ${error.message}\n` +
+          `• Try again later or use another link\n` +
+          `${DESIGN.ELEMENTS.LOADING} Supported: ${SUPPORTED_PLATFORMS.join(', ')}`
+        ), 
+        event.threadID
+      );
+      if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
     }
-  },
+  }
 };
