@@ -1,39 +1,85 @@
+const fs = require('fs');
 const axios = require('axios');
 
 module.exports = {
   config: {
-    name: "td",
-    version: "2.0",
-    author: "🎩 𝐌𝐫.𝐒𝐦𝐨𝐤𝐞𝐲 • 𝐀𝐬𝐢𝐟 𝐌𝐚𝐡𝐦𝐮𝐝 🌠",
-    countDown: 5,
+    name: "truthordare",
+    aliases: ["td", "atomictd"],
+    version: "3.0",
+    author: "Asif Mahmud",
+    countDown: 3,
     role: 0,
-    shortDescription: "Truth or Dare game",
-    longDescription: "Play Truth or Dare game with auto Bangla support.",
-    category: "games",
+    shortDescription: "Atomic Truth or Dare",
+    longDescription: "Play Truth or Dare with quantum-inspired questions and atomic design",
+    category: "⚡ Science Games",
     guide: {
-      en: "{pn} truth | dare"
+      en: "{pn} [truth/dare]"
     }
   },
 
-  onStart: async function ({ api, args, message }) {
-    const [type] = args;
-    if (!type || !['truth', 'dare'].includes(type.toLowerCase())) {
-      return message.reply("📌 Use like: /td truth or /td dare");
+  onStart: async function ({ api, event, args, message }) {
+    // =============================== ⚛️ ATOMIC DESIGN ⚛️ =============================== //
+    const design = {
+      header: type => `⚛️ ${type === 'truth' ? '𝐀𝐓𝐎𝐌𝐈𝐂 𝐓𝐑𝐔𝐓𝐇' : '𝐐𝐔𝐀𝐍𝐓𝐔𝐌 𝐃𝐀𝐑𝐄'} ⚛️`,
+      separator: "•⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅•",
+      footer: "☢️ Powered by Quantum Core | ATOM Edition ☢️",
+      emojis: {
+        truth: ["🟢", "🔍", "🧪", "⚗️", "🔬"],
+        dare: ["🔴", "💥", "⚡", "🌪️", "💣"]
+      }
+    };
+    // ================================================================================== //
+
+    const { threadID, messageID } = event;
+    const [choice] = args;
+
+    if (!choice || !['truth', 'dare'].includes(choice.toLowerCase())) {
+      return message.reply(`⚡ 𝐈𝐍𝐕𝐀𝐋𝐈𝐃 𝐂𝐎𝐌𝐌𝐀𝐍𝐃 ⚡\n» Use "${global.GoatBot.config.prefix}td truth" for atomic truth\n» Use "${global.GoatBot.config.prefix}td dare" for quantum dare`);
     }
 
-    const lang = "bn"; // Bangla
-    const endpoint = `https://api.truthordarebot.xyz/v1/${type.toLowerCase()}?lang=${lang}`;
+    const type = choice.toLowerCase();
+    const typingEmojis = design.emojis[type];
+    let currentEmojiIndex = 0;
+
+    // Show atomic reaction sequence
+    const reactionInterval = setInterval(() => {
+      api.setMessageReaction(typingEmojis[currentEmojiIndex], messageID, () => {});
+      currentEmojiIndex = (currentEmojiIndex + 1) % typingEmojis.length;
+    }, 800);
 
     try {
-      const res = await axios.get(endpoint);
-      const question = res.data.question;
+      let question;
+      
+      // Try API first (with Bangla support)
+      try {
+        const apiUrl = `https://api.truthordarebot.xyz/v1/${type}?lang=bn`;
+        const response = await axios.get(apiUrl, { timeout: 10000 });
+        question = response.data.question;
+      } 
+      // Fallback to local database
+      catch (apiError) {
+        const filePath = `${__dirname}/assist_json/${type === 'truth' ? 'TRUTHQN' : 'DAREQN'}.json`;
+        const questions = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+        question = questions[Math.floor(Math.random() * questions.length)];
+      }
 
-      const prefix = type.toLowerCase() === 'truth' ? '🟢 সত্য প্রশ্ন:' : '🔴 সাহস চ্যালেঞ্জ:';
+      // Build atomic response
+      const formattedResponse = [
+        design.header(type),
+        design.separator,
+        `${type === 'truth' ? '🟢' : '🔴'} ${question}`,
+        design.separator,
+        design.footer
+      ].join("\n");
 
-      return message.reply(`${prefix}\n${question}`);
-    } catch (err) {
-      console.error(err);
-      return message.reply("❌ প্রশ্ন আনতে সমস্যা হয়েছে। একটু পরে চেষ্টা করুন।");
+      // Send response
+      message.reply(formattedResponse);
+    } catch (error) {
+      console.error("Atomic Error:", error);
+      message.reply(`☢️ 𝐐𝐔𝐀𝐍𝐓𝐔𝐌 𝐅𝐀𝐈𝐋𝐔𝐑𝐄 ☢️\nReality collapsed while generating your ${type} question!`);
+    } finally {
+      clearInterval(reactionInterval);
+      api.setMessageReaction("⚛️", messageID, () => {}, true);
     }
   }
 };
