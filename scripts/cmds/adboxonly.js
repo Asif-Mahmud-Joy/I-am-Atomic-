@@ -1,65 +1,105 @@
 module.exports = {
-	config: {
-		name: "onlyadminbox",
-		aliases: ["onlyadbox", "adboxonly", "adminboxonly"],
-		version: "1.3",
-		author: "Asif",
-		countDown: 5,
-		role: 1,
-		description: {
-			vi: "bật/tắt chế độ chỉ quản trị của viên nhóm mới có thể sử dụng bot",
-			en: "turn on/off only admin box can use bot"
-		},
-		category: "box chat",
-		guide: {
-			vi: "   {pn} [on | off]: bật/tắt chế độ chỉ quản trị viên nhóm mới có thể sử dụng bot"
-				+ "\n   {pn} noti [on | off]: bật/tắt thông báo khi người dùng không phải là quản trị viên nhóm sử dụng bot",
-			en: "   {pn} [on | off]: turn on/off the mode only admin of group can use bot"
-				+ "\n   {pn} noti [on | off]: turn on/off the notification when user is not admin of group use bot"
-		}
-	},
+  config: {
+    name: "onlyadminbox",
+    aliases: ["quantumadmin", "atomadmin", "adminlock"],
+    version: "2.0",
+    author: "Asif Mahmud | Atomic Edition",
+    countDown: 3,
+    role: 1,
+    description: {
+      en: "⚛️ Enable/disable quantum admin restrictions"
+    },
+    category: "⚡ Box Management",
+    guide: {
+      en: "   {pn} [on | off]: Toggle quantum admin mode\n"
+        + "   {pn} noti [on | off]: Toggle quantum notification alerts"
+    }
+  },
 
-	langs: {
-		bn: {
-			turnedOn: "✅ এখন শুধু Group Admin bot use korte parbe",
-			turnedOff: "✅ সবার জন্য bot use allow করা হয়েছে",
-			turnedOnNoti: "🔔 Admin na hole warning message দেখাবে",
-			turnedOffNoti: "🔕 Admin না হলেও এখন message আসবে না",
-			syntaxError: "⚠️ ভুল syntax! Use: {pn} on/off বা {pn} noti on/off"
-		},
-		en: {
-			turnedOn: "Turned on the mode only admin of group can use bot",
-			turnedOff: "Turned off the mode only admin of group can use bot",
-			turnedOnNoti: "Turned on the notification when user is not admin of group use bot",
-			turnedOffNoti: "Turned off the notification when user is not admin of group use bot",
-			syntaxError: "Syntax error, only use {pn} on or {pn} off"
-		}
-	},
+  langs: {
+    en: {
+      turnedOn: "⚛️ 𝐐𝐔𝐀𝐍𝐓𝐔𝐌 𝐀𝐃𝐌𝐈𝐍 𝐌𝐎𝐃𝐄 𝐀𝐂𝐓𝐈𝐕𝐀𝐓𝐄𝐃\nOnly quantum admins can access the system",
+      turnedOff: "⚡ 𝐐𝐔𝐀𝐍𝐓𝐔𝐌 𝐌𝐎𝐃𝐄 𝐃𝐄𝐀𝐂𝐓𝐈𝐕𝐀𝐓𝐄𝐃\nUniversal access restored",
+      turnedOnNoti: "🔔 𝐐𝐔𝐀𝐍𝐓𝐔𝐌 𝐀𝐋𝐄𝐑𝐓𝐒 𝐄𝐍𝐀𝐁𝐋𝐄𝐃\nNon-admin alerts activated",
+      turnedOffNoti: "🔕 𝐐𝐔𝐀𝐍𝐓𝐔𝐌 𝐀𝐋𝐄𝐑𝐓𝐒 𝐃𝐈𝐒𝐀𝐁𝐋𝐄𝐃\nNon-admin alerts silenced",
+      syntaxError: "☢️ 𝐐𝐔𝐀𝐍𝐓𝐔𝐌 𝐒𝐘𝐍𝐓𝐀𝐗 𝐄𝐑𝐑𝐎𝐑\nUse: {pn} [on/off] or {pn} noti [on/off]"
+    },
+    bn: {
+      turnedOn: "⚛️ 𝐐𝐔𝐀𝐍𝐓𝐔𝐌 𝐀𝐃𝐌𝐈𝐍 𝐌𝐎𝐃𝐄 𝐀𝐂𝐓𝐈𝐕𝐀𝐓𝐄𝐃\nএখন শুধু গ্রুপ অ্যাডমিন বট ব্যবহার করতে পারবেন",
+      turnedOff: "⚡ 𝐐𝐔𝐀𝐍𝐓𝐔𝐌 𝐌𝐎𝐃𝐄 𝐃𝐄𝐀𝐂𝐓𝐈𝐕𝐀𝐓𝐄𝐃\nসবার জন্য বট ব্যবহারের অনুমতি দেওয়া হলো",
+      turnedOnNoti: "🔔 𝐐𝐔𝐀𝐍𝐓𝐔𝐌 𝐀𝐋𝐄𝐑𝐓𝐒 𝐄𝐍𝐀𝐁𝐋𝐄𝐃\nঅ্যাডমিন না হলে সতর্কবার্তা দেখানো হবে",
+      turnedOffNoti: "🔕 𝐐𝐔𝐀𝐍𝐓𝐔𝐌 𝐀𝐋𝐄𝐑𝐓𝐒 𝐃𝐈𝐒𝐀𝐁𝐋𝐄𝐃\nঅ্যাডমিন না হলেও সতর্কবার্তা আসবে না",
+      syntaxError: "☢️ 𝐐𝐔𝐀𝐍𝐓𝐔𝐌 𝐒𝐘𝐍𝐓𝐀𝐗 𝐄𝐑𝐑𝐎𝐑\nব্যবহার: {pn} [on/off] অথবা {pn} noti [on/off]"
+    }
+  },
 
-	onStart: async function ({ args, message, event, threadsData, getLang }) {
-		let isSetNoti = false;
-		let value;
-		let keySetData = "data.onlyAdminBox";
-		let indexGetVal = 0;
+  onStart: async function ({ args, message, event, threadsData, getLang }) {
+    // =============================== ⚛️ ATOMIC DESIGN ⚛️ =============================== //
+    const design = {
+      header: "⚛️ 𝐐𝐔𝐀𝐍𝐓𝐔𝐌 𝐀𝐃𝐌𝐈𝐍 𝐂𝐎𝐍𝐓𝐑𝐎𝐋 ⚛️",
+      separator: "•⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅•",
+      footer: "☢️ Powered by Quantum Core | ATOM Edition ☢️",
+      emojis: ["⚡", "🔒", "🔓", "🔔", "🔕"]
+    };
+    // ================================================================================== //
 
-		if (args[0] == "noti") {
-			isSetNoti = true;
-			indexGetVal = 1;
-			keySetData = "data.hideNotiMessageOnlyAdminBox";
-		}
+    const formatResponse = (content) => {
+      return [
+        design.header,
+        design.separator,
+        content,
+        design.separator,
+        design.footer
+      ].join("\n");
+    };
 
-		if (args[indexGetVal] == "on")
-			value = true;
-		else if (args[indexGetVal] == "off")
-			value = false;
-		else
-			return message.reply(getLang("syntaxError"));
+    // Show atomic processing animation
+    let loadingIndex = 0;
+    const loadingInterval = setInterval(() => {
+      api.setMessageReaction(design.emojis[loadingIndex], event.messageID, () => {});
+      loadingIndex = (loadingIndex + 1) % design.emojis.length;
+    }, 500);
 
-		await threadsData.set(event.threadID, isSetNoti ? !value : value, keySetData);
+    try {
+      let isSetNoti = false;
+      let value;
+      let keySetData = "data.onlyAdminBox";
+      let indexGetVal = 0;
 
-		if (isSetNoti)
-			return message.reply(value ? getLang("turnedOnNoti") : getLang("turnedOffNoti"));
-		else
-			return message.reply(value ? getLang("turnedOn") : getLang("turnedOff"));
-	}
+      if (args[0] === "noti") {
+        isSetNoti = true;
+        indexGetVal = 1;
+        keySetData = "data.hideNotiMessageOnlyAdminBox";
+      }
+
+      const action = args[indexGetVal]?.toLowerCase();
+      
+      if (action === "on") {
+        value = true;
+      } else if (action === "off") {
+        value = false;
+      } else {
+        return message.reply(formatResponse(getLang("syntaxError")));
+      }
+
+      // Set quantum lock state
+      await threadsData.set(event.threadID, isSetNoti ? !value : value, keySetData);
+
+      let response;
+      if (isSetNoti) {
+        response = value ? getLang("turnedOnNoti") : getLang("turnedOffNoti");
+      } else {
+        response = value ? getLang("turnedOn") : getLang("turnedOff");
+      }
+
+      return message.reply(formatResponse(response));
+
+    } catch (error) {
+      console.error("Quantum Admin Error:", error);
+      return message.reply(formatResponse("☢️ 𝐐𝐔𝐀𝐍𝐓𝐔𝐌 𝐂𝐎𝐑𝐄 𝐌𝐄𝐋𝐓𝐃𝐎𝐖𝐍\nSystem overload detected"));
+    } finally {
+      clearInterval(loadingInterval);
+      api.setMessageReaction("⚛️", event.messageID, () => {}, true);
+    }
+  }
 };
