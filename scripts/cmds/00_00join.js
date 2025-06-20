@@ -15,67 +15,74 @@ async function smoothTyping(api, threadID, duration = 2500, interval = 600) {
 function getPageIndicator(current, total) {
   let str = "";
   for (let i = 1; i <= total; i++) {
-    str += i === current ? "💖[" + i + "]💖 " : "[" + i + "] ";
+    str += i === current ? "☣️" : "⚛️";
   }
-  return str.trim();
+  return str;
 }
 
 module.exports = {
   config: {
     name: "join24",
-    version: "3.3.0",
+    version: "4.0",
     author: "𝐀𝐬𝐢𝐟 𝐌𝐚𝐡𝐦𝐮𝐝",
     countDown: 5,
     role: 2,
-    shortDescription: "Join group via bot",
-    longDescription: "Browse and join groups the bot is in. Romantic UI + pagination + ❤️ vibe!",
+    shortDescription: "Atomic group joining system",
+    longDescription: "Premium group navigation with atomic design and animations",
     category: "user",
     guide: { en: "{p}join24" }
   },
 
   onStart: async function ({ api, event }) {
     try {
-      // পারমিশন চেক (bot group এর admin কিনা)
+      // Atomic UI typing animation
+      await smoothTyping(api, event.threadID, 2000);
+      
       const botID = api.getCurrentUserID ? api.getCurrentUserID() : null;
-      if (!botID) return api.sendMessage("❌ Bot ID পাওয়া যায়নি।", event.threadID);
+      if (!botID) return api.sendMessage("☢️ System Error: Bot ID not detected", event.threadID);
 
       const groups = await api.getThreadList(100, null, ["INBOX"]);
       const groupList = groups.filter(g => g.isGroup && g.threadName && g.threadID !== event.threadID);
 
-      if (groupList.length === 0)
-        return api.sendMessage("😔 Jaan... ekhono kono onno group e jete parbo na. Ami sudhu tomar jonno ekhanei. 💌", event.threadID);
+      if (groupList.length === 0) {
+        return api.sendMessage("☢️ SYSTEM STATUS: No accessible groups detected ⚛️\n☣️ Only available in your current channel", event.threadID);
+      }
 
-      // পারমিশন চেক - bot কি ওই গ্রুপে admin?
+      // Check admin permissions
       const filteredList = [];
       for (const g of groupList) {
         try {
           const info = await api.getThreadInfo(g.threadID);
           if (info.adminIDs && info.adminIDs.some(adm => adm.id === botID)) filteredList.push(g);
         } catch {
-          // ignore error, skip group
+          // skip group
         }
       }
 
-      if (filteredList.length === 0)
-        return api.sendMessage("❌ Sorry jaan, bot kisu group e admin na. Tai join korte parbe na.", event.threadID);
+      if (filteredList.length === 0) {
+        return api.sendMessage("☢️ PERMISSION DENIED:\n⚛️ Bot admin privileges required in target groups", event.threadID);
+      }
 
-      const pageSize = 7;
+      const pageSize = 5;
       const page = 1;
       const totalPages = Math.ceil(filteredList.length / pageSize);
       const pageList = filteredList.slice(0, pageSize);
 
-      await smoothTyping(api, event.threadID, 2500);
+      // Atomic UI design
+      const formattedList = pageList.map((g, i) => 
+        `☣️ ${i + 1}. ${g.threadName}\n⚛️ ID: ${g.threadID}\n☢️ ────────────`
+      ).join("\n\n");
 
-      const formattedList = pageList.map((g, i) =>
-        `💘 Group ${i + 1}: ${g.threadName}\n🔐 ID: ${g.threadID}\n💫 ───────────────────────────`
-      ).join("\n");
-
-      const msg = `╭💞───[ 𝐋𝐎𝐕𝐄 𝐆𝐑𝐎𝐔𝐏 𝐋𝐈𝐒𝐓 ]───💞╮\n` +
-        formattedList + `\n` +
-        `╰💘────────────────────────────╯\n\n` +
-        `🌹 Just reply the number to join.\n` +
-        `➡️ 'next' | ⬅️ 'prev' | 🔍 'search <name>'\n` +
-        `\n💌 Page ${page}/${totalPages} • ${getPageIndicator(page, totalPages)}\n❤️ Bot only for you jaan...`;
+      const msg = `☢️ ════ ATOMIC GROUP NAVIGATOR ════ ☢️\n\n` +
+        `${formattedList}\n\n` +
+        `⚛️ COMMAND OPTIONS:\n` +
+        `☣️ [number] - Join group\n` +
+        `☢️ next - Next page\n` +
+        `⚛️ prev - Previous page\n` +
+        `☣️ search [name] - Find group\n\n` +
+        `☢️ PAGE: ${page}/${totalPages}\n` +
+        `${getPageIndicator(page, totalPages)}\n\n` +
+        `⚛️ SYSTEM: v4.0 | ATOMIC CORE`;
 
       const sentMessage = await api.sendMessage(msg, event.threadID);
       global.GoatBot.onReply.set(sentMessage.messageID, {
@@ -87,14 +94,17 @@ module.exports = {
         page
       });
     } catch (err) {
-      console.error("💔 Error fetching group list:", err);
-      api.sendMessage("❌ Sorry jaan, kichu ekta bhul hoye geche. Pore try koro na please?", event.threadID);
+      console.error("☢️ System Error:", err);
+      api.sendMessage("⚛️ SYSTEM FAILURE: Command execution failed\n☣️ Please retry operation", event.threadID);
     }
   },
 
   onReply: async function ({ api, event, Reply }) {
     if (event.senderID !== Reply.author) return;
 
+    // Show typing animation
+    await smoothTyping(api, event.threadID, 1500);
+    
     let input = event.body.trim().toLowerCase();
     const totalPages = Math.ceil(Reply.groupList.length / Reply.pageSize);
     let page = Reply.page;
@@ -105,31 +115,34 @@ module.exports = {
       page = page <= 1 ? totalPages : page - 1;
     } else if (input.startsWith("search ")) {
       const searchTerm = input.slice(7).trim();
-      if (!searchTerm)
-        return api.sendMessage("🔍 Search korte kichu likho jaan...", event.threadID);
+      if (!searchTerm) {
+        return api.sendMessage("☢️ INPUT ERROR: Specify search parameters", event.threadID);
+      }
 
       const filtered = Reply.groupList.filter(g =>
         g.threadName.toLowerCase().includes(searchTerm)
       );
 
-      if (filtered.length === 0)
-        return api.sendMessage("❌ Kono group name paoa jay na oi naam diye...", event.threadID);
+      if (filtered.length === 0) {
+        return api.sendMessage("⚛️ SEARCH RESULTS: No matching groups found", event.threadID);
+      }
 
-      // Search result pagination reset
       page = 1;
-
       const totalPagesSearch = Math.ceil(filtered.length / Reply.pageSize);
       const pageList = filtered.slice(0, Reply.pageSize);
-      const formattedList = pageList.map((g, i) =>
-        `💘 Group ${i + 1}: ${g.threadName}\n🔐 ID: ${g.threadID}\n💫 ───────────────────────────`
-      ).join("\n");
+      const formattedList = pageList.map((g, i) => 
+        `☣️ ${i + 1}. ${g.threadName}\n⚛️ ID: ${g.threadID}\n☢️ ────────────`
+      ).join("\n\n");
 
-      const msg = `╭💞───[ 𝐒𝐄𝐀𝐑𝐂𝐇 𝐑𝐄𝐒𝐔𝐋𝐓𝐒 ]───💞╮\n` +
-        formattedList + `\n` +
-        `╰💘────────────────────────────╯\n\n` +
-        `🌹 Just reply the number to join.\n` +
-        `➡️ 'next' | ⬅️ 'prev'\n` +
-        `\n💌 Page ${page}/${totalPagesSearch} • ${getPageIndicator(page, totalPagesSearch)}\n❤️ Bot only for you jaan...`;
+      const msg = `☢️ ════ SEARCH RESULTS ════ ☢️\n\n` +
+        `${formattedList}\n\n` +
+        `⚛️ COMMAND OPTIONS:\n` +
+        `☣️ [number] - Join group\n` +
+        `☢️ next - Next page\n` +
+        `⚛️ prev - Previous page\n\n` +
+        `☢️ PAGE: ${page}/${totalPagesSearch}\n` +
+        `${getPageIndicator(page, totalPagesSearch)}\n\n` +
+        `⚛️ SYSTEM: v4.0 | ATOMIC CORE`;
 
       const sentMessage = await api.sendMessage(msg, event.threadID);
       global.GoatBot.onReply.set(sentMessage.messageID, {
@@ -144,33 +157,39 @@ module.exports = {
       const index = (page - 1) * Reply.pageSize + (parseInt(input) - 1);
       const group = Reply.groupList[index];
 
-      if (!group) return api.sendMessage("😥 Bhul number diyacho jaan. Ar ektu mon diye dekho na. 🥺", event.threadID);
+      if (!group) {
+        return api.sendMessage("☢️ INPUT ERROR: Invalid selection index", event.threadID);
+      }
 
       try {
         await api.addUserToGroup(event.senderID, group.threadID);
-        return api.sendMessage(`💞 Tumake group e invite kora holo: ${group.threadName} 🎉`, event.threadID);
+        return api.sendMessage(`⚛️ ACCESS GRANTED:\n☣️ Joined: ${group.threadName}`, event.threadID);
       } catch (err) {
-        return api.sendMessage("😔 Bot e admin permission nai jaan... tai add korte parlam na. 💔", event.threadID);
+        return api.sendMessage("☢️ PERMISSION DENIED:\n⚛️ Bot requires admin privileges", event.threadID);
       }
     } else {
-      return api.sendMessage("❓ Bhul input... sudhu number ba next/prev/search reply koro jaan 😇", event.threadID);
+      return api.sendMessage("☢️ INPUT ERROR: Invalid command syntax", event.threadID);
     }
 
-    // Normal pagination render
+    // Render pagination
     const start = (page - 1) * Reply.pageSize;
     const end = start + Reply.pageSize;
     const pageList = Reply.groupList.slice(start, end);
 
-    const formattedList = pageList.map((g, i) =>
-      `💘 Group ${i + 1}: ${g.threadName}\n🔐 ID: ${g.threadID}\n💫 ───────────────────────────`
-    ).join("\n");
+    const formattedList = pageList.map((g, i) => 
+      `☣️ ${i + 1}. ${g.threadName}\n⚛️ ID: ${g.threadID}\n☢️ ────────────`
+    ).join("\n\n");
 
-    const msg = `╭💞───[ 𝐋𝐎𝐕𝐄 𝐆𝐑𝐎𝐔𝐏 𝐋𝐈𝐒𝐓 ]───💞╮\n` +
-      formattedList + `\n` +
-      `╰💘────────────────────────────╯\n\n` +
-      `🌹 Just reply the number to join.\n` +
-      `➡️ 'next' | ⬅️ 'prev' | 🔍 'search <name>'\n` +
-      `\n💌 Page ${page}/${totalPages} • ${getPageIndicator(page, totalPages)}\n❤️ Bot only for you jaan...`;
+    const msg = `☢️ ════ ATOMIC GROUP NAVIGATOR ════ ☢️\n\n` +
+      `${formattedList}\n\n` +
+      `⚛️ COMMAND OPTIONS:\n` +
+      `☣️ [number] - Join group\n` +
+      `☢️ next - Next page\n` +
+      `⚛️ prev - Previous page\n` +
+      `☣️ search [name] - Find group\n\n` +
+      `☢️ PAGE: ${page}/${totalPages}\n` +
+      `${getPageIndicator(page, totalPages)}\n\n` +
+      `⚛️ SYSTEM: v4.0 | ATOMIC CORE`;
 
     const sentMessage = await api.sendMessage(msg, event.threadID);
     global.GoatBot.onReply.set(sentMessage.messageID, {
