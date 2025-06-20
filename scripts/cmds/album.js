@@ -5,7 +5,7 @@ const path = require("path");
 // ============================== ⚡️ CONFIGURATION ⚡️ ============================== //
 const ADMIN_ID = "61571630409265"; // Replace with your admin ID
 const IMGUR_TOKEN = "Bearer edd3135472e670b475101491d1b0e489d319940f";
-const BANNER_IMAGE = "https://files.catbox.moe/qptlr8.mp4"; // Optional decorative banner
+const BANNER_IMAGE = "https://files.catbox.moe/e7bozl.jpg"; // Optional decorative banner
 // ================================================================================= //
 
 const baseApiUrl = async () => {
