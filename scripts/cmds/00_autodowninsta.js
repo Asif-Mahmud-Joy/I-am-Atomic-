@@ -10,20 +10,20 @@ module.exports = {
 
   config: {
     name: 'autoinsta_v2',
-    version: '2.2',
+    version: '2.3',
     author: '𝐀𝐬𝐢𝐟 𝐌𝐚𝐡𝐦𝐮𝐝',
     countDown: 5,
     role: 0,
-    maxVideoSizeMB: 25, // কনফিগারেবল ভিডিও সাইজ লিমিট (MB)
-    shortDescription: '📥 Auto Instagram ভিডিও ডাউনলোডার',
-    longDescription: 'ইনস্টাগ্রাম ভিডিও লিঙ্ক স্বয়ংক্রিয়ভাবে ডিটেক্ট করে ডাউনলোড ও শেয়ার করে।',
+    maxVideoSizeMB: 25,
+    shortDescription: '📥 Auto Instagram Video Downloader',
+    longDescription: 'Automatically detects and downloads Instagram video links',
     category: 'media',
     guide: {
-      en: "Use: autoinsta on/off দিয়ে চালু/বন্ধ করো। Instagram ভিডিও লিঙ্ক পাঠাও।"
+      en: "Use: autoinsta on/off to enable/disable. Send Instagram video links."
     }
   },
 
-  // পুরানো ক্যাশ ফাইল ডিলিট (১ ঘণ্টার বেশি পুরানো)
+  // Clean old cache files (older than 1 hour)
   async cleanOldCacheFiles() {
     try {
       const files = await fs.readdir(CACHE_DIR);
@@ -31,21 +31,21 @@ module.exports = {
       for (const file of files) {
         const filePath = path.join(CACHE_DIR, file);
         const stats = await fs.stat(filePath);
-        if (now - stats.mtimeMs > 3600000) { // ১ ঘণ্টা
+        if (now - stats.mtimeMs > 3600000) {
           await fs.unlink(filePath);
-          console.log(`🧹 ক্যাশ ফাইল ডিলিট হয়েছে: ${file}`);
+          console.log(`🧹 Deleted cache file: ${file}`);
         }
       }
     } catch (err) {
-      console.error("🛠 ক্যাশ ক্লিনআপ এrror:", err);
+      console.error("🛠 Cache cleanup error:", err);
     }
   },
 
   onLoad: function () {
-    // প্রতি ১ ঘণ্টায় ক্যাশ ক্লিনআপ চালানো হবে
+    // Run cache cleanup every hour
     setInterval(() => {
       this.cleanOldCacheFiles();
-    }, 3600000); // 3600000ms = 1 hour
+    }, 3600000);
   },
 
   onStart: async function ({ api, event }) {
@@ -58,14 +58,51 @@ module.exports = {
     if (msg.includes("autoinsta")) {
       await api.sendMessageTyping(threadID);
 
+      // Add typing delay for better UX
+      await new Promise(resolve => setTimeout(resolve, 1500));
+
       if (msg.includes("on")) {
         this.threadStates[threadID].autoInstaEnabled = true;
-        return api.sendMessage("✅ *AutoInsta* চালু হয়েছে! এখন Instagram ভিডিও লিঙ্ক পাঠাও। 🎉", threadID, event.messageID);
+        return api.sendMessage(`
+☣️⚛️ *𝐀𝐓𝐎𝐌𝐈𝐂 𝐀𝐔𝐓𝐎𝐈𝐍𝐒𝐓𝐀 𝐕𝟐* ⚛️☣️
+━━━━━━━━━━━━━━━━━━
+✅ *System Activated Successfully!*
+📥 Ready to download Instagram videos
+➤ Send any Instagram video link to start
+━━━━━━━━━━━━━━━━━━
+⚡ *Features:*
+• Automatic video detection
+• Fast downloading
+• Cache optimization
+• Size limitation: ${this.config.maxVideoSizeMB}MB
+━━━━━━━━━━━━━━━━━━
+🔧 Use 'autoinsta off' to disable
+        `.trim(), threadID, event.messageID);
       } else if (msg.includes("off")) {
         this.threadStates[threadID].autoInstaEnabled = false;
-        return api.sendMessage("❌ *AutoInsta* বন্ধ করা হয়েছে। প্রয়োজনে আবার চালু করো।", threadID, event.messageID);
+        return api.sendMessage(`
+☣️⚛️ *𝐀𝐓𝐎𝐌𝐈𝐂 𝐀𝐔𝐓𝐎𝐈𝐍𝐒𝐓𝐀 𝐕𝟐* ⚛️☣️
+━━━━━━━━━━━━━━━━━━
+🔴 *System Deactivated*
+🚫 AutoInsta is now disabled
+━━━━━━━━━━━━━━━━━━
+💡 Use 'autoinsta on' to re-enable
+        `.trim(), threadID, event.messageID);
       } else {
-        return api.sendMessage("ℹ️ *ব্যবহার:* 'autoinsta on' অথবা 'autoinsta off' লিখে চালু/বন্ধ করো।", threadID, event.messageID);
+        return api.sendMessage(`
+☣️⚛️ *𝐀𝐓𝐎𝐌𝐈𝐂 𝐀𝐔𝐓𝐎𝐈𝐍𝐒𝐓𝐀 𝐕𝟐* ⚛️☣️
+━━━━━━━━━━━━━━━━━━
+ℹ️ *Command Usage:*
+➤ 'autoinsta on' - Enable the system
+➤ 'autoinsta off' - Disable the system
+━━━━━━━━━━━━━━━━━━
+📥 *How to use:*
+1. Enable the system
+2. Send any Instagram video link
+3. The bot will download and send the video
+━━━━━━━━━━━━━━━━━━
+⚙️ *Current Status:* ${this.threadStates[threadID].autoInstaEnabled ? "🟢 ACTIVE" : "🔴 INACTIVE"}
+        `.trim(), threadID, event.messageID);
       }
     }
   },
@@ -77,11 +114,14 @@ module.exports = {
     if (this.threadStates[threadID]?.autoInstaEnabled && this.checkLink(msg)) {
       await api.sendMessageTyping(threadID);
       api.setMessageReaction("⏬", event.messageID, () => {}, true);
+      
+      // Add typing animation before processing
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
       this.downloadAndSendVideo(msg, api, event);
     }
   },
 
-  // ইনস্টাগ্রামের নতুন ও পুরানো URL ফরম্যাট সাপোর্ট (Regex আপডেট)
   checkLink: function (text) {
     const instaRegex = /(?:https?:\/\/)?(?:www\.)?(instagram\.com|instagr\.am)\/(?:p|tv|reel|stories)\/[^\s]+/i;
     return instaRegex.test(text);
@@ -99,49 +139,104 @@ module.exports = {
       ) {
         return res.data.video;
       } else {
-        throw new Error("❌ API থেকে ভিডিও লিঙ্ক পাওয়া যায়নি।");
+        throw new Error("❌ Couldn't retrieve video link from API");
       }
     } catch (err) {
       console.error("🛠 API Error:", err);
-      throw new Error("❌ ভিডিও লিঙ্ক আনার সময় সমস্যা হয়েছে।");
+      throw new Error("❌ Error retrieving video link");
     }
   },
 
   downloadAndSendVideo: async function (url, api, event) {
     const threadID = event.threadID;
     try {
+      // Send initial processing message
+      await api.sendMessage(`
+☣️⚛️ *𝐀𝐓𝐎𝐌𝐈𝐂 𝐀𝐔𝐓𝐎𝐈𝐍𝐒𝐓𝐀 𝐕𝟐* ⚛️☣️
+━━━━━━━━━━━━━━━━━━
+🔍 *Link Detected:* ${url}
+⏳ Processing your request...
+🔄 Connecting to Instagram servers...
+      `.trim(), threadID);
+      
+      // Add typing animation
       await api.sendMessageTyping(threadID);
-      await api.sendMessage("⏳ ভিডিও ডাউনলোড শুরু হয়েছে, অনুগ্রহ করে অপেক্ষা করুন...", threadID);
+      await new Promise(resolve => setTimeout(resolve, 3000));
 
       const videoUrl = await this.getDownloadLink(url);
       const fileName = `${Date.now()}.mp4`;
       const filePath = path.join(CACHE_DIR, fileName);
 
-      const videoResp = await axios.get(videoUrl, { responseType: "arraybuffer" });
+      // Show downloading status
+      await api.sendMessage(`
+☣️⚛️ *𝐀𝐓𝐎𝐌𝐈𝐂 𝐀𝐔𝐓𝐎𝐈𝐍𝐒𝐓𝐀 𝐕𝟐* ⚛️☣️
+━━━━━━━━━━━━━━━━━━
+📥 *Downloading Video...*
+⏳ Please wait while we fetch your content
+🔄 Status: Downloading video data...
+      `.trim(), threadID);
+      
+      const videoResp = await axios.get(videoUrl, { 
+        responseType: "arraybuffer",
+        onDownloadProgress: progressEvent => {
+          const percent = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+          // Only log progress to console to avoid spamming chat
+          console.log(`Download progress: ${percent}%`);
+        }
+      });
+      
       await fs.outputFile(filePath, videoResp.data);
 
       const stats = await fs.stat(filePath);
       const maxSize = this.config.maxVideoSizeMB * 1024 * 1024;
+      const fileSizeMB = (stats.size / (1024 * 1024)).toFixed(2);
+      
       if (stats.size > maxSize) {
         await fs.unlink(filePath);
-        return api.sendMessage(
-          `⚠️ ভিডিওর সাইজ ${this.config.maxVideoSizeMB}MB এর বেশি হওয়ায় পাঠানো যাচ্ছে না।`,
-          threadID,
-          event.messageID
-        );
+        return api.sendMessage(`
+☣️⚛️ *𝐀𝐓𝐎𝐌𝐈𝐂 𝐀𝐔𝐓𝐎𝐈𝐍𝐒𝐓𝐀 𝐕𝟐* ⚛️☣️
+━━━━━━━━━━━━━━━━━━
+⚠️ *Size Limit Exceeded!*
+📏 Detected Size: ${fileSizeMB}MB
+🧾 Max Allowed: ${this.config.maxVideoSizeMB}MB
+━━━━━━━━━━━━━━━━━━
+💡 Try shorter videos or contact admin
+        `.trim(), threadID, event.messageID);
       }
 
+      // Success message with atomic design
       await api.sendMessage({
-        body: "✅ Instagram থেকে সফলভাবে ভিডিও ডাউনলোড হয়েছে। নিচে দেখাও হলো:",
+        body: `
+☣️⚛️ *𝐀𝐓𝐎𝐌𝐈𝐂 𝐀𝐔𝐓𝐎𝐈𝐍𝐒𝐓𝐀 𝐕𝟐* ⚛️☣️
+━━━━━━━━━━━━━━━━━━
+✅ *Download Successful!*
+🎬 Video ready to play
+📏 Size: ${fileSizeMB}MB
+⏱️ Duration: Processing...
+━━━━━━━━━━━━━━━━━━
+🔧 Cache will auto-clean periodically
+        `.trim(),
         attachment: fs.createReadStream(filePath)
       }, threadID, () => fs.unlink(filePath), event.messageID);
 
-      // ক্যাশ ক্লিনআপ
+      // Cache cleanup
       this.cleanOldCacheFiles();
 
     } catch (err) {
       console.error("🛠 Download/send error:", err);
-      const customMsg = err.message || "❌ ভিডিও ডাউনলোড বা পাঠাতে সমস্যা হয়েছে। দয়া করে পরে আবার চেষ্টা করুন।";
+      
+      const customMsg = `
+☣️⚛️ *𝐀𝐓𝐎𝐌𝐈𝐂 𝐀𝐔𝐓𝐎𝐈𝐍𝐒𝐓𝐀 𝐕𝟐* ⚛️☣️
+━━━━━━━━━━━━━━━━━━
+⚠️ *Download Failed!*
+🔧 Error: ${err.message || "Unknown error"}
+━━━━━━━━━━━━━━━━━━
+💡 Possible solutions:
+• Check the link validity
+• Try again later
+• Contact admin if problem persists
+      `.trim();
+      
       return api.sendMessage(customMsg, threadID, event.messageID);
     }
   }
