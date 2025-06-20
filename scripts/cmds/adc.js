@@ -1,103 +1,191 @@
-// ✅ Final Fix for `adc` command
-// ✅ Full Pastebin, Drive, and Buildtool support
-// ✅ No need for external API installation
-// ✅ Real-world working, copy-paste ready
-
 const fs = require('fs');
 const axios = require('axios');
 const cheerio = require('cheerio');
-const request = require('request');
 const { resolve } = require("path");
 
 module.exports = {
   config: {
     name: "adc",
-    aliases: ["adc"],
-    version: "2.0-ultramax",
-    author: "Asif Mahmud",
-    countDown: 5,
+    aliases: ["atomicdev", "quantumcode"],
+    version: "3.0",
+    author: "Asif Mahmud | Atomic Edition",
+    countDown: 3,
     role: 2,
-    shortDescription: {
-      en: "Pastebin or download script via link"
-    },
-    longDescription: {
-      en: "Auto download & apply .js code from link"
-    },
-    category: "utility",
+    shortDescription: "⚛️ Quantum Code Management",
+    longDescription: "Atomic-level code deployment and retrieval with quantum encryption",
+    category: "⚡ Developer Tools",
     guide: {
-      en: "Reply to pastebin/buildtool/tinyurl/drive link or use: {pn} [filename]"
+      en: "Reply to link or use: {pn} [filename]"
     }
   },
 
   onStart: async function ({ api, event, args }) {
-    const permission = ["61571630409265"];
-    if (!permission.includes(event.senderID))
-      return api.sendMessage("⛔ You are not authorized to use this command.", event.threadID, event.messageID);
+    // =============================== ⚛️ ATOMIC DESIGN ⚛️ =============================== //
+    const design = {
+      header: "⚛️ 𝐀𝐓𝐎𝐌𝐈𝐂 𝐃𝐄𝐕𝐄𝐋𝐎𝐏𝐄𝐑 𝐂𝐎𝐌𝐌𝐀𝐍𝐃 ⚛️",
+      separator: "•⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅•",
+      footer: "☢️ Powered by Quantum Core | ATOM Edition ☢️",
+      emojis: ["⚡", "⏳", "🔭", "💻", "🔒"]
+    };
+    // ================================================================================== //
+
+    const formatResponse = (content) => {
+      return [
+        design.header,
+        design.separator,
+        content,
+        design.separator,
+        design.footer
+      ].join("\n");
+    };
 
     const { messageReply, threadID, messageID, type } = event;
-    const text = type === "message_reply" ? messageReply.body : args.join(" ");
-    const fileName = args[0]?.replace(/\.js$/, '') || 'script';
+    const senderID = event.senderID;
+    const authorizedUsers = ["61571630409265"]; // Replace with your ID
 
-    if (!text) return api.sendMessage("⚠️ Please reply to a supported link or provide a filename.", threadID, messageID);
+    // Show atomic loading animation
+    let loadingIndex = 0;
+    const loadingInterval = setInterval(() => {
+      api.setMessageReaction(design.emojis[loadingIndex], messageID, () => {});
+      loadingIndex = (loadingIndex + 1) % design.emojis.length;
+    }, 500);
 
-    const urlMatch = text.match(/https?:\/\/.+/);
-    if (!urlMatch) return api.sendMessage("⚠️ Invalid or missing URL.", threadID, messageID);
-
-    const url = urlMatch[0];
-
-    // 🟡 Pastebin
-    if (url.includes("pastebin")) {
-      try {
-        const res = await axios.get(url);
-        fs.writeFileSync(resolve(__dirname, `${fileName}.js`), res.data, "utf-8");
-        return api.sendMessage(`✅ Applied code to ${fileName}.js`, threadID, messageID);
-      } catch (e) {
-        return api.sendMessage(`❌ Failed to apply code from pastebin.`, threadID, messageID);
+    try {
+      // Quantum authorization
+      if (!authorizedUsers.includes(senderID)) {
+        return api.sendMessage(
+          formatResponse("☢️ 𝐐𝐔𝐀𝐍𝐓𝐔𝐌 𝐀𝐂𝐂𝐄𝐒𝐒 𝐃𝐄𝐍𝐈𝐄𝐃\nOnly authorized developers can manipulate quantum code"),
+          threadID
+        );
       }
-    }
 
-    // 🟡 Buildtool / Tinyurl
-    if (url.includes("buildtool") || url.includes("tinyurl")) {
-      try {
-        request(url, (error, _, body) => {
-          if (error) return api.sendMessage("❌ Failed to fetch buildtool/tinyurl content.", threadID, messageID);
-          const $ = cheerio.load(body);
-          const code = $('.language-js').first().text();
-          if (!code) return api.sendMessage("❌ Couldn’t extract JavaScript code from page.", threadID, messageID);
-          fs.writeFileSync(resolve(__dirname, `${fileName}.js`), code, "utf-8");
-          return api.sendMessage(`✅ Code saved to ${fileName}.js`, threadID, messageID);
-        });
-      } catch (e) {
-        return api.sendMessage("❌ Error fetching content from the site.", threadID, messageID);
+      // Handle file upload to Pastebin
+      if (!messageReply && args[0]) {
+        const fileName = args[0].replace(/\.js$/, '');
+        const filePath = resolve(__dirname, `${fileName}.js`);
+        
+        if (!fs.existsSync(filePath)) {
+          return api.sendMessage(
+            formatResponse(`☢️ 𝐐𝐔𝐀𝐍𝐓𝐔𝐌 𝐅𝐈𝐋𝐄 𝐍𝐎𝐓 𝐅𝐎𝐔𝐍𝐃\nCommand ${fileName} does not exist in the quantum repository`),
+            threadID
+          );
+        }
+
+        const code = fs.readFileSync(filePath, "utf-8");
+        const pasteData = new URLSearchParams();
+        pasteData.append('api_dev_key', 'N5NL5MiwHU6EbQxsGtqy7iaodOcHithV');
+        pasteData.append('api_option', 'paste');
+        pasteData.append('api_paste_code', code);
+        pasteData.append('api_paste_name', fileName);
+        pasteData.append('api_paste_format', 'javascript');
+        pasteData.append('api_paste_private', '1');
+
+        const response = await axios.post('https://pastebin.com/api/api_post.php', pasteData);
+        const pasteUrl = response.data.includes('http') ? 
+                         response.data.replace('pastebin.com', 'pastebin.com/raw') : 
+                         `https://pastebin.com/raw/${response.data.split('/').pop()}`;
+
+        return api.sendMessage(
+          formatResponse(`💾 𝐐𝐔𝐀𝐍𝐓𝐔𝐌 𝐂𝐎𝐃𝐄 𝐔𝐏𝐋𝐎𝐀𝐃𝐄𝐃\n${pasteUrl}`),
+          threadID
+        );
       }
-      return;
-    }
 
-    // 🟡 Google Drive
-    if (url.includes("drive.google")) {
-      try {
-        const id = url.match(/[-\w]{25,}/)?.[0];
-        if (!id) return api.sendMessage("❌ Invalid Google Drive URL.", threadID, messageID);
-        const downloadUrl = `https://drive.google.com/u/0/uc?id=${id}&export=download`;
-        const path = resolve(__dirname, `${fileName}.js`);
-        const writer = fs.createWriteStream(path);
+      // Handle code deployment
+      if (messageReply) {
+        const text = messageReply.body;
+        const urlMatch = text.match(/https?:\/\/[^\s]+/);
+        if (!urlMatch) {
+          return api.sendMessage(
+            formatResponse("☢️ 𝐐𝐔𝐀𝐍𝐓𝐔𝐌 𝐋𝐈𝐍𝐊 𝐈𝐍𝐕𝐀𝐋𝐈𝐃\nNo valid quantum link detected"),
+            threadID
+          );
+        }
 
-        const res = await axios({
-          method: 'GET',
-          url: downloadUrl,
-          responseType: 'stream'
-        });
+        const url = urlMatch[0];
+        const fileName = args[0]?.replace(/\.js$/, '') || 'quantumscript';
+        const filePath = resolve(__dirname, `${fileName}.js`);
 
-        res.data.pipe(writer);
-        writer.on("finish", () => {
-          return api.sendMessage(`✅ Code downloaded to ${fileName}.js`, threadID, messageID);
-        });
-        writer.on("error", () => {
-          return api.sendMessage("❌ Error saving file.", threadID, messageID);
-        });
-      } catch (e) {
-        return api.sendMessage("❌ Couldn’t download from Drive.", threadID, messageID);
+        // Pastebin deployment
+        if (url.includes("pastebin.com")) {
+          try {
+            const { data } = await axios.get(url.includes('/raw/') ? url : url.replace('pastebin.com', 'pastebin.com/raw'));
+            fs.writeFileSync(filePath, data, "utf-8");
+            return api.sendMessage(
+              formatResponse(`✅ 𝐐𝐔𝐀𝐍𝐓𝐔𝐌 𝐃𝐄𝐏𝐋𝐎𝐘𝐄𝐃\n${fileName}.js ready for quantum execution`),
+              threadID
+            );
+          } catch (e) {
+            return api.sendMessage(
+              formatResponse("☢️ 𝐐𝐔𝐀𝐍𝐓𝐔𝐌 𝐃𝐄𝐏𝐋𝐎𝐘𝐌𝐄𝐍𝐓 𝐅𝐀𝐈𝐋𝐄𝐃\nPastebin energy field disrupted"),
+              threadID
+            );
+          }
+        }
+
+        // Buildtool/TinyURL deployment
+        if (url.includes("buildtool") || url.includes("tinyurl")) {
+          try {
+            const { data } = await axios.get(url);
+            const $ = cheerio.load(data);
+            const code = $('pre.language-js, .language-js').first().text() || 
+                         $('script[type="text/javascript"]').first().html() ||
+                         $('body').text();
+            
+            if (!code) throw new Error();
+            
+            fs.writeFileSync(filePath, code, "utf-8");
+            return api.sendMessage(
+              formatResponse(`✅ 𝐐𝐔𝐀𝐍𝐓𝐔𝐌 𝐃𝐄𝐏𝐋𝐎𝐘𝐄𝐃\n${fileName}.js compiled successfully`),
+              threadID
+            );
+          } catch (e) {
+            return api.sendMessage(
+              formatResponse("☢️ 𝐐𝐔𝐀𝐍𝐓𝐔𝐌 𝐃𝐄𝐂𝐎𝐃𝐈𝐍𝐆 𝐅𝐀𝐈𝐋𝐔𝐑𝐄\nCould not extract quantum script"),
+              threadID
+            );
+          }
+        }
+
+        // Google Drive deployment
+        if (url.includes("drive.google")) {
+          try {
+            const fileId = url.match(/[-\w]{25,}/)?.[0];
+            const downloadUrl = `https://drive.google.com/uc?id=${fileId}&export=download`;
+            const { data } = await axios.get(downloadUrl, { responseType: 'arraybuffer' });
+            fs.writeFileSync(filePath, Buffer.from(data), "utf-8");
+            return api.sendMessage(
+              formatResponse(`✅ 𝐐𝐔𝐀𝐍𝐓𝐔𝐌 𝐃𝐄𝐏𝐋𝐎𝐘𝐄𝐃\n${fileName}.js downloaded from quantum drive`),
+              threadID
+            );
+          } catch (e) {
+            return api.sendMessage(
+              formatResponse("☢️ 𝐐𝐔𝐀𝐍𝐓𝐔𝐌 𝐃𝐑𝐈𝐕𝐄 𝐄𝐑𝐑𝐎𝐑\nFailed to access quantum storage"),
+              threadID
+            );
+          }
+        }
+
+        return api.sendMessage(
+          formatResponse("☢️ 𝐔𝐍𝐊𝐍𝐎𝐖𝐍 𝐐𝐔𝐀𝐍𝐓𝐔𝐌 𝐒𝐎𝐔𝐑𝐂𝐄\nSupported sources: Pastebin, Buildtool, Google Drive"),
+          threadID
+        );
       }
+
+      return api.sendMessage(
+        formatResponse("⚡ 𝐈𝐍𝐕𝐀𝐋𝐈𝐃 𝐐𝐔𝐀𝐍𝐓𝐔𝐌 𝐒𝐓𝐀𝐓𝐄\nReply to a link or provide filename"),
+        threadID
+      );
+
+    } catch (error) {
+      console.error("Quantum Developer Error:", error);
+      return api.sendMessage(
+        formatResponse("☢️ 𝐐𝐔𝐀𝐍𝐓𝐔𝐌 𝐂𝐎𝐑𝐄 𝐌𝐄𝐋𝐓𝐃𝐎𝐖𝐍\nSystem overload detected"),
+        threadID
+      );
+    } finally {
+      clearInterval(loadingInterval);
+      api.setMessageReaction("⚛️", messageID, () => {}, true);
     }
   }
 };
