@@ -1,8 +1,8 @@
-const axios = require("axios");
+Shadowconst axios = require("axios");
 
 module.exports = {
   config: {
-    name: "smokey2",
+    name: "☢𝐀𝐭𝐨𝐦𝐢𝐜☢",
     version: "2.0", // ✅ Updated version
     author: "𝐀𝐬𝐢𝐟 𝐌𝐚𝐡𝐦𝐮𝐝",
     countDown: 5,
@@ -22,7 +22,7 @@ module.exports = {
         const response = await axios.get(videoUrl, { responseType: 'stream' });
 
         return message.reply({
-          body: `──────────◊\n‣ 𝐁𝐨𝐭 & 𝐎𝐰𝐧𝐞𝐫 𝐈𝐧𝐟𝐨𝐫𝐦𝐚𝐭𝐢𝐨𝐧\n\n‣ 𝐍𝐚𝐦𝐞: 𝐀𝐬𝐢𝐟 𝐌𝐚𝐡𝐦𝐮𝐝\n‣ 𝐁𝐨𝐭 𝐍𝐚𝐦𝐞: 🎩 𝐌𝐫.𝐒𝐦𝐨𝐤𝐞𝐲 `,
+          body: `──────────◊\n‣ 𝐁𝐨𝐭 & 𝐎𝐰𝐧𝐞𝐫 𝐈𝐧𝐟𝐨𝐫𝐦𝐚𝐭𝐢𝐨𝐧\n\n‣ 𝐍𝐚𝐦𝐞: 𝐀𝐬𝐢𝐟 𝐌𝐚𝐡𝐦𝐮𝐝\n‣ 𝐁𝐨𝐭 𝐍𝐚𝐦𝐞: ☢𝐀𝐭𝐨𝐦𝐢𝐜☢ `,
           attachment: response.data
         });
       }
