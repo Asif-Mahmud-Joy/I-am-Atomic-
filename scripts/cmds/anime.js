@@ -3,7 +3,7 @@ const axios = require('axios');
 module.exports = {
     config: {
         name: "anime",
-        version: "3.1",
+        version: "3.2",
         author: "𝐀𝐬𝐢𝐟 𝐌𝐚𝐡𝐦𝐮𝐝 & KSHITIZ",
         countDown: 5,
         role: 0,
@@ -24,16 +24,16 @@ module.exports = {
     onStart: async function ({ api, args, message, event }) {
         // ========== ☣️ ATOMIC DESIGN SYSTEM ========== //
         const atomic = {
-            loading: "🔄 𝐆𝐞𝐧𝐞𝐫𝐚𝐭𝐢𝐧𝐠 𝐑𝐞𝐜𝐨𝐦𝐦𝐞𝐧𝐝𝐚𝐭𝐢𝐨𝐧𝐬...",
-            error: "⚠️ 𝐈𝐧𝐯𝐚𝐥𝐢𝐝 𝐆𝐞𝐧𝐫𝐞!",
-            limit: "⚠️ 𝐏𝐥𝐞𝐚𝐬𝐞 𝐜𝐡𝐨𝐨𝐬𝐞 𝟏-𝟓 𝐫𝐞𝐜𝐨𝐦𝐦𝐞𝐧𝐝𝐚𝐭𝐢𝐨𝐧𝐬 𝐨𝐧𝐥𝐲!",
-            header: "✨ 𝗔𝗡𝗜𝗠𝗘 𝗥𝗘𝗖𝗢𝗠𝗠𝗘𝗡𝗗𝗔𝗧𝗜𝗢𝗡 𝗦𝗬𝗦𝗧𝗘𝗠 ✨",
-            footer: "\n⚡ 𝐏𝐨𝐰𝐞𝐫𝐞𝐝 𝐛𝐲 𝐉𝐢𝐤𝐚𝐧 𝐀𝐏𝐈 | ☣️ 𝐀𝐓𝐎𝐌𝐈𝐂 𝐕𝟑.𝟏",
-            apiFail: "🌐 𝐀𝐏𝐈 𝐔𝐧𝐚𝐯𝐚𝐢𝐥𝐚𝐛𝐥𝐞! 𝐔𝐬𝐢𝐧𝐠 𝐅𝐚𝐥𝐥𝐛𝐚𝐜𝐤 𝐃𝐚𝐭𝐚...",
+            loading: "🔄 Generating recommendations...",
+            error: "⚠️ Invalid genre!",
+            limit: "⚠️ Please choose 1-5 recommendations only!",
+            header: "✨ ANIME RECOMMENDATION SYSTEM ✨",
+            footer: "⚡ Powered by Jikan API | ☣️ ATOMIC v3.2",
+            apiFail: "🌐 API unavailable! Using fallback data...",
             divider: "▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬"
         };
 
-        // ========== 🗃️ ATOMIC ANIME DATABASE (WITH DRIVE LINKS) ========== //
+        // ========== 🗃️ ANIME DATABASE WITH DRIVE LINKS ========== //
         const animeDB = {
             shonen: [
                 { animeName: "Naruto", imageUrl: "https://drive.google.com/uc?export=download&id=1OP2zmycLmFihRISVLzFwrw__LRBsF9GN" },
@@ -88,72 +88,71 @@ module.exports = {
                 { animeName: "Beyblade", imageUrl: "https://drive.google.com/uc?export=download&id=14UrkjjLC2595N5yUClXRxsjq3x81unHU" }
             ],
             seinen: [
-                { animeName: "Berserk", imageUrl: "https://example.com/placeholder.jpg" },
-                { animeName: "Cowboy Bebop", imageUrl: "https://example.com/placeholder.jpg" },
-                { animeName: "Hellsing", imageUrl: "https://example.com/placeholder.jpg" },
-                { animeName: "Black Lagoon", imageUrl: "https://example.com/placeholder.jpg" },
-                { animeName: "Ghost in the Shell: Stand Alone Complex", imageUrl: "https://example.com/placeholder.jpg" },
-                { animeName: "Psycho-Pass", imageUrl: "https://example.com/placeholder.jpg" },
-                { animeName: "Monster", imageUrl: "https://example.com/placeholder.jpg" },
-                { animeName: "Death Parade", imageUrl: "https://example.com/placeholder.jpg" },
-                { animeName: "Vinland Saga", imageUrl: "https://example.com/placeholder.jpg" },
-                { animeName: "Paranoia Agent", imageUrl: "https://example.com/placeholder.jpg" }
+                { animeName: "Berserk", imageUrl: "https://drive.google.com/uc?export=download&id=1OP2zmycLmFihRISVLzFwrw__LRBsF9GN" },
+                { animeName: "Cowboy Bebop", imageUrl: "https://drive.google.com/uc?export=download&id=1QaK3EfNmbwAgpJm4czY8n8QRau9MXoaR" },
+                { animeName: "Hellsing", imageUrl: "https://drive.google.com/uc?export=download&id=1q-8lFZD5uPmhRySvT75Bgsr2lp9UQ4Mi" },
+                { animeName: "Black Lagoon", imageUrl: "https://drive.google.com/uc?export=download&id=1bds-i6swtqi2k4YCoglPKTV7kL7f-SF7" },
+                { animeName: "Ghost in the Shell: Stand Alone Complex", imageUrl: "https://drive.google.com/uc?export=download&id=1uOcTZ8r1zDGmqF9Nyg1vupuWHKEg1eVf" },
+                { animeName: "Psycho-Pass", imageUrl: "https://drive.google.com/uc?export=download&id=1DrBwp7irJrW_DVmIXHbNvFjofHCTmZ0a" },
+                { animeName: "Monster", imageUrl: "https://drive.google.com/uc?export=download&id=1W4RHPv1zWtFUGFVUJ0uiCxvP5ovpURHG" },
+                { animeName: "Death Parade", imageUrl: "https://drive.google.com/uc?export=download&id=1C-pRqtjpCFFPSZf8xAsNLgn9VgZBUgu6" },
+                { animeName: "Vinland Saga", imageUrl: "https://drive.google.com/uc?export=download&id=1vU5XMLgKwBPfsiheUF4SK79LfKbzU6NX" },
+                { animeName: "Paranoia Agent", imageUrl: "https://drive.google.com/uc?export=download&id=1tUJEum_tf79gj9420mHx-_q7f0QP27DC" }
             ],
             isekai: [
-                { animeName: "Re:Zero - Starting Life in Another World", imageUrl: "https://example.com/placeholder.jpg" },
-                { animeName: "Sword Art Online", imageUrl: "https://example.com/placeholder.jpg" },
-                { animeName: "No Game No Life", imageUrl: "https://example.com/placeholder.jpg" },
-                { animeName: "Overlord", imageUrl: "https://example.com/placeholder.jpg" },
-                { animeName: "Log Horizon", imageUrl: "https://example.com/placeholder.jpg" },
-                { animeName: "The Rising of the Shield Hero", imageUrl: "https://example.com/placeholder.jpg" },
-                { animeName: "That Time I Got Reincarnated as a Slime", imageUrl: "https://example.com/placeholder.jpg" },
-                { animeName: "KonoSuba: God's Blessing on This Wonderful World!", imageUrl: "https://example.com/placeholder.jpg" },
-                { animeName: "The Devil Is a Part-Timer!", imageUrl: "https://example.com/placeholder.jpg" },
-                { animeName: "Grimgar, Ashes and Illusions", imageUrl: "https://example.com/placeholder.jpg" }
+                { animeName: "Re:Zero - Starting Life in Another World", imageUrl: "https://drive.google.com/uc?export=download&id=1JL07gw2S4f6T_d9ufWDnNkDme3zqOuLU" },
+                { animeName: "Sword Art Online", imageUrl: "https://drive.google.com/uc?export=download&id=13WKaqx8rdmwZE7VDWRK0fFkk8zkA7AOi" },
+                { animeName: "No Game No Life", imageUrl: "https://drive.google.com/uc?export=download&id=10KOnQyrli8HPaeThalyN3KA2yX0T28Uj" },
+                { animeName: "Overlord", imageUrl: "https://drive.google.com/uc?export=download&id=1JxczwxBgreEc4tZdLTdFHh6klsvlCYkM" },
+                { animeName: "Log Horizon", imageUrl: "https://drive.google.com/uc?export=download&id=1aKzkrSAYAPXNIPhazTT6pkQxJpdQOD2p" },
+                { animeName: "The Rising of the Shield Hero", imageUrl: "https://drive.google.com/uc?export=download&id=1oonrlOFBjdYLV2zv9V-oB0AenGH4HNr2" },
+                { animeName: "That Time I Got Reincarnated as a Slime", imageUrl: "https://drive.google.com/uc?export=download&id=1tFHwCTNgoLHi34YL6fdXq2taZINZERHR" },
+                { animeName: "KonoSuba: God's Blessing on This Wonderful World!", imageUrl: "https://drive.google.com/uc?export=download&id=1ecenM1HVzgPtwaN8eISfxwBB-uKqdZoj" },
+                { animeName: "The Devil Is a Part-Timer!", imageUrl: "https://drive.google.com/uc?export=download&id=1FzV9FwXri9xxwAy-xrlA8zA6dyO70tkf" },
+                { animeName: "Grimgar, Ashes and Illusions", imageUrl: "https://drive.google.com/uc?export=download&id=1qBXCvbhENmyC05vLHQLFJR-xlf5HhZzF" }
             ],
             scifi: [
-                { animeName: "Cowboy Bebop", imageUrl: "https://example.com/placeholder.jpg" },
-                { animeName: "Ghost in the Shell: Stand Alone Complex", imageUrl: "https://example.com/placeholder.jpg" },
-                { animeName: "Neon Genesis Evangelion", imageUrl: "https://example.com/placeholder.jpg" },
-                { animeName: "Steins;Gate", imageUrl: "https://example.com/placeholder.jpg" },
-                { animeName: "Psycho-Pass", imageUrl: "https://example.com/placeholder.jpg" },
-                { animeName: "Serial Experiments Lain", imageUrl: "https://example.com/placeholder.jpg" },
-                { animeName: "Ergo Proxy", imageUrl: "https://example.com/placeholder.jpg" },
-                { animeName: "Space Dandy", imageUrl: "https://example.com/placeholder.jpg" },
-                { animeName: "Planetes", imageUrl: "https://example.com/placeholder.jpg" },
-                { animeName: "Aldnoah.Zero", imageUrl: "https://example.com/placeholder.jpg" }
+                { animeName: "Cowboy Bebop", imageUrl: "https://drive.google.com/uc?export=download&id=13IP6cwdimzHv3nUJi-kODbGKIAHpJEAy" },
+                { animeName: "Ghost in the Shell: Stand Alone Complex", imageUrl: "https://drive.google.com/uc?export=download&id=1Gu6us6Ue5530ynkpFu-vsGOCynq_o6EI" },
+                { animeName: "Neon Genesis Evangelion", imageUrl: "https://drive.google.com/uc?export=download&id=1f8CGrENwaHOgy11yeNdPwDI_nzpcESky" },
+                { animeName: "Steins;Gate", imageUrl: "https://drive.google.com/uc?export=download&id=1PxUiu6ZhJT5btIAWNubNPD3cQPNWnvYp" },
+                { animeName: "Psycho-Pass", imageUrl: "https://drive.google.com/uc?export=download&id=1o57c1C7yXr_RDHz0lAH9lWJUgpMzQn1x" },
+                { animeName: "Serial Experiments Lain", imageUrl: "https://drive.google.com/uc?export=download&id=1hQEdeO3F8v1sZQvZ6uh5n_YTwuizYt0v" },
+                { animeName: "Ergo Proxy", imageUrl: "https://drive.google.com/uc?export=download&id=1Lz3PNL1X4ygv1U7xcFgILYODtGiwaGn9" },
+                { animeName: "Space Dandy", imageUrl: "https://drive.google.com/uc?export=download&id=11vryRMTkLuFvhlWjVZkuAaS0QoesIlwo" },
+                { animeName: "Planetes", imageUrl: "https://drive.google.com/uc?export=download&id=1oRD7AAH_VD73o8kUlUaJQC1dFTrV1nDz" },
+                { animeName: "Aldnoah.Zero", imageUrl: "https://drive.google.com/uc?export=download&id=1jpb7fFDZpdHjACghQWUQopI0nzzvzrxY" }
             ]
         };
 
-        // ========== ⚙️ MAIN EXECUTION ========== //
+        // ========== ⚙️ MAIN FUNCTIONALITY ========== //
         try {
-            // Initial loading message with typing indicator simulation
-            const loadingMsg = await message.reply(`✍️ ${atomic.loading}`);
+            const loadingMsg = await message.reply(atomic.loading);
             
-            // Handle empty arguments
+            // No arguments provided
             if (args.length === 0) {
                 await api.unsendMessage(loadingMsg.messageID);
                 return message.reply(
-                    `${atomic.header}\n\n` +
-                    "📝 𝗨𝗦𝗔𝗚𝗘 𝗚𝗨𝗜𝗗𝗘:\n`anime [genre] [1-5]`\n\n" +
-                    "🎭 𝗔𝗩𝗔𝗜𝗟𝗔𝗕𝗟𝗘 𝗚𝗘𝗡𝗥𝗘𝗦:\n" +
+                    `${atomic.header}\n${atomic.divider}\n` +
+                    "📝 **USAGE GUIDE**\n`anime [genre] [1-5]`\n\n" +
+                    "🎭 **AVAILABLE GENRES**\n" +
                     "• Shonen 🔥\n• Seinen 🧠\n• Isekai 🌌\n• Scifi 🤖\n\n" +
                     `${atomic.divider}\n` +
-                    `𝗘𝘅𝗮𝗺𝗽𝗹𝗲: 𝖺𝗇𝗂𝗆𝖾 𝗌𝖼𝗂𝖿𝗂 𝟥\n${atomic.footer}`
+                    `**Example:** anime scifi 3\n${atomic.footer}`
                 );
             }
 
             const genre = args[0].toLowerCase();
             let recCount = 1;
 
-            // Validate genre input
+            // Validate genre
             if (!animeDB[genre]) {
                 await api.unsendMessage(loadingMsg.messageID);
                 return message.reply(
-                    `❌ ${atomic.error}\n` +
-                    `📌 𝗩𝗮𝗹𝗶𝗱 𝗴𝗲𝗻𝗿𝗲𝘀: ${Object.keys(animeDB).join(", ")}\n` +
+                    `${atomic.error}\n` +
+                    `📌 Valid genres: ${Object.keys(animeDB).join(", ")}\n` +
                     `${atomic.divider}\n` +
-                    `𝗧𝗶𝗽: 𝖳𝗒𝗉𝖾 "𝖺𝗇𝗂𝗆𝖾" 𝖺𝗅𝗈𝗇𝖾 𝖿𝗈𝗋 𝗎𝗌𝖺𝗀𝖾 𝗀𝗎𝗂𝖽𝖾`
+                    `Tip: Type "anime" alone for usage guide`
                 );
             }
 
@@ -162,7 +161,7 @@ module.exports = {
                 recCount = parseInt(args[1]);
                 if (recCount < 1 || recCount > 5) {
                     await api.unsendMessage(loadingMsg.messageID);
-                    return message.reply(`⛔ ${atomic.limit}`);
+                    return message.reply(atomic.limit);
                 }
             }
 
@@ -190,10 +189,9 @@ module.exports = {
                     score: anime.score,
                     episodes: anime.episodes,
                     year: anime.year,
-                    synopsis: anime.synopsis?.substring(0, 150) + '...' || "No description available"
-                })).filter(item => item.image !== "");
+                    synopsis: anime.synopsis?.substring(0, 100) + '...' || "No description available"
+                })).filter(item => item.image);
                 
-                // Add fallback if API returns empty
                 if (recommendations.length === 0) throw new Error("Empty API response");
             } catch (apiError) {
                 apiFailed = true;
@@ -231,59 +229,42 @@ module.exports = {
             await api.unsendMessage(loadingMsg.messageID);
             
             if (selected.length === 0) {
-                return message.reply(
-                    `⚠️ 𝗡𝗼 𝗻𝗲𝘄 𝗿𝗲𝗰𝗼𝗺𝗺𝗲𝗻𝗱𝗮𝘁𝗶𝗼𝗻𝘀 𝗳𝗼𝘂𝗻𝗱!\n` +
-                    `𝗧𝗿𝘆 𝗮 𝗱𝗶𝗳𝗳𝗲𝗿𝗲𝗻𝘁 𝗴𝗲𝗻𝗿𝗲 𝗼𝗿 𝗰𝗵𝗲𝗰𝗸 𝗯𝗮𝗰𝗸 𝗹𝗮𝘁𝗲𝗿.`
-                );
+                return message.reply("⚠️ No new recommendations found! Try a different genre.");
             }
 
             for (const anime of selected) {
                 try {
-                    let stream = null;
-                    
-                    // Only try to get stream if image URL is valid
-                    if (anime.image && !anime.image.includes("example.com")) {
-                        stream = await global.utils.getStreamFromURL(anime.image);
-                    }
-                    
+                    const stream = await global.utils.getStreamFromURL(anime.image);
                     const rating = anime.score ? `⭐ ${anime.score}/10 | ` : "";
                     const yearInfo = anime.year ? `🗓️ ${anime.year} | ` : "";
                     const episodeInfo = anime.episodes ? `📀 ${anime.episodes} eps` : "";
                     
-                    const messageBody = `${atomic.header}\n` +
-                              `${atomic.divider}\n` +
-                              `🎌 𝗚𝗲𝗻𝗿𝗲: #${genre.toUpperCase()}\n` +
-                              `🎬 𝗧𝗶𝘁𝗹𝗲: 《${anime.title}》\n` +
+                    await message.reply({
+                        body: `${atomic.header}\n${atomic.divider}\n` +
+                              `🎌 **Genre:** #${genre.toUpperCase()}\n` +
+                              `🎬 **Title:** 《${anime.title}》\n` +
                               `${atomic.divider}\n` +
                               `${rating}${yearInfo}${episodeInfo}\n` +
-                              `📝 𝗦𝘆𝗻𝗼𝗽𝘀𝗶𝘀: ${anime.synopsis || "Not available"}\n` +
+                              `📝 **Synopsis:** ${anime.synopsis || "Not available"}\n` +
                               `${atomic.divider}\n` +
-                              `${apiFailed ? atomic.apiFail + '\n' : ''}${atomic.footer}`;
-                    
-                    if (stream) {
-                        await message.reply({
-                            body: messageBody,
-                            attachment: stream
-                        });
-                    } else {
-                        await message.reply(messageBody);
-                    }
-                } catch (attachmentError) {
+                              `${apiFailed ? atomic.apiFail + '\n' : ''}${atomic.footer}`,
+                        attachment: stream
+                    });
+                } catch (error) {
                     await message.reply(
-                        `🎌 𝗚𝗲𝗻𝗿𝗲: #${genre.toUpperCase()}\n` +
-                        `🎬 𝗧𝗶𝘁𝗹𝗲: 《${anime.title}》\n` +
+                        `🎌 **Genre:** #${genre.toUpperCase()}\n` +
+                        `🎬 **Title:** 《${anime.title}》\n` +
                         `${atomic.divider}\n` +
-                        `⚠️ 𝗜𝗺𝗮𝗴𝗲 𝗹𝗼𝗮𝗱 𝗳𝗮𝗶𝗹𝗲𝗱 | ${atomic.footer}`
+                        `⚠️ Image load failed | ${atomic.footer}`
                     );
                 }
             }
 
         } catch (finalError) {
-            console.error("☢️ System Failure:", finalError);
+            console.error("System Error:", finalError);
             await message.reply(
-                "❌ 𝗖𝗿𝗶𝘁𝗶𝗰𝗮𝗹 𝗦𝘆𝘀𝘁𝗲𝗺 𝗘𝗿𝗿𝗼𝗿\n" +
-                "𝗧𝗵𝗲 𝗿𝗲𝗰𝗼𝗺𝗺𝗲𝗻𝗱𝗮𝘁𝗶𝗼𝗻 𝗲𝗻𝗴𝗶𝗻𝗲 𝗳𝗮𝗶𝗹𝗲𝗱 𝘁𝗼 𝗿𝗲𝘀𝗽𝗼𝗻𝗱.\n" +
-                "𝗣𝗹𝗲𝗮𝘀𝗲 𝘁𝗿𝘆 𝗮𝗴𝗮𝗶𝗻 𝗹𝗮𝘁𝗲𝗿."
+                "❌ Critical system error\n" +
+                "Please try again later or contact developer"
             );
         }
     }
