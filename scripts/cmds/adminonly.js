@@ -5,64 +5,100 @@ const { client } = global;
 module.exports = {
   config: {
     name: "adminonly",
-    aliases: ["adonly", "onlyad", "onlyadmin"],
-    version: "2.0", // ✅ Updated
-    author: "𝐀𝐬𝐢𝐟 𝐌𝐚𝐡𝐦𝐮𝐝",
+    aliases: ["quantumlock", "atomiclock", "admincore"],
+    version: "3.0",
+    author: "Asif Mahmud | Atomic Edition",
     countDown: 3,
     role: 2,
     shortDescription: {
-      vi: "bật/tắt chỉ admin sử dụng bot",
-      en: "turn on/off only admin can use bot"
+      en: "⚛️ Quantum Admin Lock"
     },
     longDescription: {
-      vi: "bật/tắt chế độ chỉ admin mới có thể sử dụng bot",
-      en: "turn on/off only admin can use bot"
+      en: "Control quantum access protocols for admin-only commands"
     },
-    category: "owner",
+    category: "⚡ System Control",
     guide: {
-      en: "{pn} [on | off] → enable/disable admin-only mode\n{pn} noti [on | off] → show/hide warning to non-admin users"
+      en: "{pn} [on|off] → Toggle quantum admin lock\n"
+        + "{pn} noti [on|off] → Configure quantum alert system"
     }
   },
 
   langs: {
     en: {
-      turnedOn: "✅ Only admin can use the bot now!",
-      turnedOff: "✅ Anyone can use the bot now!",
-      turnedOnNoti: "🔔 Warning message will be shown to non-admins.",
-      turnedOffNoti: "🔕 Warning message will be hidden for non-admins.",
-      syntaxError: "❌ Invalid command format. Use: on/off or noti on/off."
+      turnedOn: "✅ 𝐐𝐔𝐀𝐍𝐓𝐔𝐌 𝐋𝐎𝐂𝐊 𝐀𝐂𝐓𝐈𝐕𝐀𝐓𝐄𝐃\nOnly quantum admins can access the system",
+      turnedOff: "⚡ 𝐐𝐔𝐀𝐍𝐓𝐔𝐌 𝐋𝐎𝐂𝐊 𝐃𝐄𝐀𝐂𝐓𝐈𝐕𝐀𝐓𝐄𝐃\nUniversal access restored",
+      turnedOnNoti: "🔔 𝐐𝐔𝐀𝐍𝐓𝐔𝐌 𝐀𝐋𝐄𝐑𝐓𝐒 𝐄𝐍𝐀𝐁𝐋𝐄𝐃\nNon-admin intrusions will trigger quantum alerts",
+      turnedOffNoti: "🔕 𝐐𝐔𝐀𝐍𝐓𝐔𝐌 𝐀𝐋𝐄𝐑𝐓𝐒 𝐃𝐈𝐒𝐀𝐁𝐋𝐄𝐃\nStealth mode activated",
+      syntaxError: "☢️ 𝐐𝐔𝐀𝐍𝐓𝐔𝐌 𝐒𝐘𝐍𝐓𝐀𝐗 𝐄𝐑𝐑𝐎𝐑\nUse: on/off or noti on/off"
     }
   },
 
-  onStart: function ({ args, message, getLang }) {
-    let isSetNoti = false;
-    let value;
-    let index = 0;
+  onStart: async function ({ message, event, args, getLang }) {
+    // =============================== ⚛️ ATOMIC DESIGN ⚛️ =============================== //
+    const design = {
+      header: "⚛️ 𝐐𝐔𝐀𝐍𝐓𝐔𝐌 𝐀𝐃𝐌𝐈𝐍 𝐋𝐎𝐂𝐊 ⚛️",
+      separator: "•⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅•",
+      footer: "☢️ Powered by Quantum Core | ATOM Edition ☢️",
+      emojis: ["⚡", "🔒", "🔓", "🔔", "🔕"]
+    };
+    // ================================================================================== //
 
-    // 🔄 Check if setting notification toggle
-    if (args[0] === "noti") {
-      isSetNoti = true;
-      index = 1;
-    }
+    const formatResponse = (content) => {
+      return [
+        design.header,
+        design.separator,
+        content,
+        design.separator,
+        design.footer
+      ].join("\n");
+    };
 
-    const val = args[index]?.toLowerCase();
-    if (val === "on") value = true;
-    else if (val === "off") value = false;
-    else return message.reply(getLang("syntaxError"));
+    // Show atomic processing animation
+    let loadingIndex = 0;
+    const loadingInterval = setInterval(() => {
+      api.setMessageReaction(design.emojis[loadingIndex], event.messageID, () => {});
+      loadingIndex = (loadingIndex + 1) % design.emojis.length;
+    }, 500);
 
-    // ✅ Update config values
     try {
-      if (isSetNoti) {
-        config.hideNotiMessage.adminOnly = !value;
-        message.reply(getLang(value ? "turnedOnNoti" : "turnedOffNoti"));
-      } else {
-        config.adminOnly.enable = value;
-        message.reply(getLang(value ? "turnedOn" : "turnedOff"));
+      let isSetNoti = false;
+      let value;
+      let index = 0;
+
+      // Quantum command parsing
+      if (args[0] === "noti") {
+        isSetNoti = true;
+        index = 1;
       }
 
+      const action = args[index]?.toLowerCase();
+      
+      if (action === "on") {
+        value = true;
+      } else if (action === "off") {
+        value = false;
+      } else {
+        return message.reply(formatResponse(getLang("syntaxError")));
+      }
+
+      // Update quantum security protocols
+      if (isSetNoti) {
+        config.hideNotiMessage.adminOnly = !value;
+        message.reply(formatResponse(value ? getLang("turnedOnNoti") : getLang("turnedOffNoti")));
+      } else {
+        config.adminOnly.enable = value;
+        message.reply(formatResponse(value ? getLang("turnedOn") : getLang("turnedOff")));
+      }
+
+      // Save quantum configuration
       fs.writeFileSync(client.dirConfig, JSON.stringify(config, null, 2));
-    } catch (err) {
-      message.reply("❌ Config update e problem hoise:\n" + err.message);
+
+    } catch (error) {
+      console.error("Quantum Lock Error:", error);
+      message.reply(formatResponse("☢️ 𝐐𝐔𝐀𝐍𝐓𝐔𝐌 𝐂𝐎𝐑𝐄 𝐌𝐄𝐋𝐓𝐃𝐎𝐖𝐍\nSystem overload detected"));
+    } finally {
+      clearInterval(loadingInterval);
+      api.setMessageReaction("⚛️", event.messageID, () => {}, true);
     }
   }
 };
