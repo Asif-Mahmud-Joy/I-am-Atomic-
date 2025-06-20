@@ -1,107 +1,186 @@
 const fs = require("fs-extra");
 const axios = require("axios");
-const cheerio = require("cheerio");
-const qs = require("qs");
-const { getStreamFromURL, shortenURL, randomString } = global.utils;
+const { shortenURL } = global.utils;
 
-function loadAutoLinkStates() {
-  try {
-    return JSON.parse(fs.readFileSync("autolink.json", "utf8"));
-  } catch (err) {
-    return {};
+// ======================== ⚛️ ATOMIC DESIGN SYSTEM ⚛️ ======================== //
+const ATOMIC = {
+  FRAME: {
+    TOP: "╔═══════ ∘◦⚛️◦∘ ═══════╗",
+    BOTTOM: "╚═══════ ∘◦⚛️◦∘ ═══════╝",
+    DIVIDER: "▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰"
+  },
+  ELEMENTS: {
+    DOWNLOAD: "📥",
+    SUCCESS: "✅",
+    ERROR: "❌",
+    VIDEO: "🎬",
+    LINK: "🔗",
+    PLATFORM: "🌐",
+    GEAR: "⚙️",
+    CLOCK: "⏱️"
+  },
+  COLORS: {
+    PRIMARY: "#FF6B6B",
+    SECONDARY: "#4ECDC4"
   }
-}
+};
 
-function saveAutoLinkStates(states) {
-  fs.writeFileSync("autolink.json", JSON.stringify(states, null, 2));
-}
+const createAtomicMessage = (content) => {
+  return `${ATOMIC.FRAME.TOP}
+${content}
+${ATOMIC.FRAME.DIVIDER}
+${ATOMIC.FRAME.BOTTOM}`;
+};
 
-let autoLinkStates = loadAutoLinkStates();
+const cachePath = __dirname + "/cache/atomic_media";
+if (!fs.existsSync(cachePath)) fs.mkdirSync(cachePath, { recursive: true });
+
+// Supported platforms with icons
+const PLATFORMS = {
+  instagram: "📸",
+  facebook: "📘",
+  tiktok: "🎵",
+  twitter: "🐦",
+  pinterest: "📌",
+  youtube: "▶️",
+  other: "🌐"
+};
+// ============================================================================== //
 
 module.exports = {
   config: {
-    name: 'autolink',
-    version: '4.0',
-    author: '🎩 𝐌𝐫.𝐒𝐦𝐨𝐤𝐞𝐲 • 𝐀𝐬𝐢𝐟 𝐌𝐚𝐡𝐦𝐮𝐝 🌠',
-    countDown: 5,
+    name: "autolink",
+    version: "5.0",
+    author: "Asif Mahmud",
+    countDown: 0,
     role: 0,
-    shortDescription: 'Auto download video from popular platforms',
-    longDescription: 'Instagram, Facebook, TikTok, Twitter, Pinterest, YouTube auto video downloader',
-    category: 'media',
-    guide: { en: '{pn} (on/off)' }
+    shortDescription: "Auto-download media from 12+ platforms",
+    longDescription: "Smart media downloader with atomic design",
+    category: "media",
+    guide: {
+      en: "Send any media link | {pn} on/off"
+    }
   },
 
-  onStart: async function ({ api, event }) {
+  onStart: async function ({ api, event, args }) {
     const threadID = event.threadID;
-    const body = event.body.toLowerCase();
-
-    if (body.includes('autolink off')) {
-      autoLinkStates[threadID] = 'off';
-      saveAutoLinkStates(autoLinkStates);
-      return api.sendMessage("✅ AutoLink off kore deya holo.", threadID, event.messageID);
+    
+    if (args[0] === "off") {
+      this.threadStates[threadID] = "off";
+      api.sendMessage(createAtomicMessage(
+        `${ATOMIC.ELEMENTS.GEAR} 𝗔𝘂𝘁𝗼𝗟𝗶𝗻𝗸 𝗗𝗶𝘀𝗮𝗯𝗹𝗲𝗱\n` +
+        `▸ Media auto-download turned off\n` +
+        `▸ Use "${this.config.name} on" to re-enable`
+      ), threadID);
+      return;
+    }
+    
+    if (args[0] === "on") {
+      this.threadStates[threadID] = "on";
+      api.sendMessage(createAtomicMessage(
+        `${ATOMIC.ELEMENTS.GEAR} 𝗔𝘂𝘁𝗼𝗟𝗶𝗻𝗸 𝗘𝗻𝗮𝗯𝗹𝗲𝗱\n` +
+        `▸ Media auto-download activated\n` +
+        `▸ Supported: ${Object.keys(PLATFORMS).join(", ")}`
+      ), threadID);
+      return;
     }
 
-    if (body.includes('autolink on')) {
-      autoLinkStates[threadID] = 'on';
-      saveAutoLinkStates(autoLinkStates);
-      return api.sendMessage("✅ AutoLink on kore deya holo.", threadID, event.messageID);
-    }
+    api.sendMessage(createAtomicMessage(
+      `${ATOMIC.ELEMENTS.VIDEO} 𝗔𝘁𝗼𝗺𝗶𝗰 𝗠𝗲𝗱𝗶𝗮 𝗗𝗼𝘄𝗻𝗹𝗼𝗮𝗱𝗲𝗿\n\n` +
+      `▸ Status: ${this.threadStates[threadID] === "off" ? "Disabled ❌" : "Enabled ✅"}\n` +
+      `▸ Commands:\n` +
+      `   • ${this.config.name} on → Enable\n` +
+      `   • ${this.config.name} off → Disable\n\n` +
+      `${ATOMIC.ELEMENTS.LINK} Just send any media link to download`
+    ), threadID);
   },
+
+  threadStates: {},
 
   onChat: async function ({ api, event }) {
     const threadID = event.threadID;
-    const link = this.extractLink(event.body);
+    if (this.threadStates[threadID] === "off") return;
+    
+    const url = this.extractLink(event.body);
+    if (!url) return;
 
-    if (!link) return;
-
-    if (autoLinkStates[threadID] !== 'off') {
-      api.setMessageReaction("⬇️", event.messageID, () => {}, true);
-      this.download(link, api, event);
+    api.setMessageReaction(ATOMIC.ELEMENTS.DOWNLOAD, event.messageID, () => {}, true);
+    
+    try {
+      const startTime = Date.now();
+      const filePath = `${cachePath}/${Date.now()}.mp4`;
+      
+      // Identify platform
+      const platform = Object.keys(PLATFORMS).find(p => url.includes(p)) || "other";
+      const platformIcon = PLATFORMS[platform];
+      
+      // Download media
+      const apiUrl = `https://allinonedownloader-ayan.onrender.com/download?url=${encodeURIComponent(url)}`;
+      const response = await axios.get(apiUrl, { timeout: 30000 });
+      
+      if (!response.data?.url) throw new Error("Invalid API response");
+      
+      const shortUrl = await shortenURL(response.data.url);
+      const mediaRes = await axios({ 
+        url: response.data.url, 
+        responseType: "stream", 
+        timeout: 60000 
+      });
+      
+      // Check file size
+      const contentLength = mediaRes.headers['content-length'];
+      if (contentLength > 25 * 1024 * 1024) {
+        return api.sendMessage(createAtomicMessage(
+          `${ATOMIC.ELEMENTS.ERROR} 𝗙𝗶𝗹𝗲 𝗧𝗼𝗼 𝗟𝗮𝗿𝗴𝗲\n` +
+          `▸ Max size: 25MB\n` +
+          `▸ Your file: ${(contentLength/1024/1024).toFixed(1)}MB`
+        ), threadID);
+      }
+      
+      // Save file
+      const writer = fs.createWriteStream(filePath);
+      mediaRes.data.pipe(writer);
+      
+      await new Promise((resolve, reject) => {
+        writer.on("finish", resolve);
+        writer.on("error", reject);
+      });
+      
+      // Calculate download time
+      const downloadTime = ((Date.now() - startTime)/1000).toFixed(1);
+      
+      // Send result
+      api.sendMessage({
+        body: createAtomicMessage(
+          `${ATOMIC.ELEMENTS.SUCCESS} 𝗠𝗘𝗗𝗜𝗔 𝗗𝗢𝗪𝗡𝗟𝗢𝗔𝗗𝗘𝗗\n\n` +
+          `${platformIcon} 𝗣𝗹𝗮𝘁𝗳𝗼𝗿𝗺: ${platform.toUpperCase()}\n` +
+          `${ATOMIC.ELEMENTS.LINK} 𝗦𝗼𝘂𝗿𝗰𝗲: ${shortUrl}\n` +
+          `${ATOMIC.ELEMENTS.CLOCK} 𝗧𝗶𝗺𝗲: ${downloadTime}s`
+        ),
+        attachment: fs.createReadStream(filePath)
+      }, threadID);
+      
+      // Cleanup
+      fs.unlinkSync(filePath);
+      
+    } catch (error) {
+      api.setMessageReaction(ATOMIC.ELEMENTS.ERROR, event.messageID, () => {}, true);
+      api.sendMessage(createAtomicMessage(
+        `${ATOMIC.ELEMENTS.ERROR} 𝗗𝗢𝗪𝗡𝗟𝗢𝗔𝗗 𝗙𝗔𝗜𝗟𝗘𝗗\n\n` +
+        `▸ Error: ${error.message || "Unknown"}\n` +
+        `▸ Platform: ${this.getPlatformFromUrl(url)}\n` +
+        `${ATOMIC.ELEMENTS.GEAR} Try again or use different link`
+      ), threadID);
     }
   },
 
   extractLink: function (text) {
-    const regex = /(https?:\/\/[\w./?=&%-]+)/gi;
+    const regex = /https?:\/\/[^\s]+/gi;
     const match = text.match(regex);
-    if (!match) return null;
-
-    const url = match.find(url =>
-      /(instagram|facebook|fb\.watch|tiktok|x\.com|pin\.it|youtu)/.test(url)
-    );
-    return url || null;
+    return match ? match[0] : null;
   },
 
-  download: async function (url, api, event) {
-    let site = 'unknown';
-    if (url.includes('instagram')) site = 'instagram';
-    else if (url.includes('facebook') || url.includes('fb.watch')) site = 'facebook';
-    else if (url.includes('tiktok')) site = 'tiktok';
-    else if (url.includes('x.com')) site = 'twitter';
-    else if (url.includes('pin.it')) site = 'pinterest';
-    else if (url.includes('youtu')) site = 'youtube';
-
-    try {
-      const response = await axios.get(`https://allinonedownloader-ayan.onrender.com/download?url=${encodeURIComponent(url)}`);
-      if (!response.data || !response.data.url) return api.sendMessage("❌ Download link pawa jaini.", event.threadID, event.messageID);
-
-      const videoURL = response.data.url;
-      const short = await shortenURL(videoURL);
-      const msg = `🔗 Video Link: ${short}`;
-
-      const filePath = `${__dirname}/cache/${Date.now()}.mp4`;
-      const stream = await axios({ url: videoURL, method: 'GET', responseType: 'stream' });
-
-      const totalSize = parseInt(stream.headers['content-length']);
-      if (totalSize > 25 * 1024 * 1024) return api.sendMessage("⚠️ File boro bole pathano jabe na.", event.threadID, event.messageID);
-
-      const writer = fs.createWriteStream(filePath);
-      stream.data.pipe(writer);
-      writer.on('finish', () => {
-        api.sendMessage({ body: msg, attachment: fs.createReadStream(filePath) }, event.threadID, () => fs.unlinkSync(filePath), event.messageID);
-      });
-    } catch (err) {
-      console.error("Download error:", err);
-      api.sendMessage("❌ Somossa hoise video download e.", event.threadID, event.messageID);
-    }
+  getPlatformFromUrl: function (url) {
+    return Object.keys(PLATFORMS).find(p => url.includes(p)) || "Unknown";
   }
 };
