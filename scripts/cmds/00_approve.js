@@ -1,28 +1,36 @@
 const fs = require("fs-extra");
 const path = require("path");
 
-// Simple file lock to avoid race conditions
-class FileLock {
+// 🔒 Enhanced File Lock with atomic operations
+class AtomicLock {
   constructor() {
     this.locked = false;
     this.queue = [];
+    this.operationId = 0;
   }
+  
   async acquire() {
+    const opId = ++this.operationId;
     if (this.locked) {
-      await new Promise(resolve => this.queue.push(resolve));
+      await new Promise(resolve => {
+        this.queue.push({resolve, opId});
+      });
     }
-    this.locked = true;
+    this.locked = opId;
   }
+  
   release() {
     this.locked = false;
     if (this.queue.length > 0) {
-      const resolve = this.queue.shift();
+      const {resolve} = this.queue.shift();
       resolve();
     }
   }
 }
-const fileLock = new FileLock();
 
+const atomicLock = new AtomicLock();
+
+// ✨ Enhanced logging with atomic design
 function getLogFilePath() {
   const logDir = path.join(__dirname, "logs");
   fs.ensureDirSync(logDir);
@@ -30,205 +38,269 @@ function getLogFilePath() {
   return path.join(logDir, `approval-${today}.log`);
 }
 
-async function logAction(text) {
+async function logAtomicAction(action, id, user) {
   const logFile = getLogFilePath();
-  const time = new Date().toISOString();
-  await fs.appendFile(logFile, `[${time}] ${text}\n`);
+  const timestamp = new Date().toISOString();
+  const entry = `[${timestamp}] ⚡ ${action} by 👤 ${user} → ID: ${id}\n`;
+  await fs.appendFile(logFile, entry);
 }
 
 module.exports = {
   config: {
     name: "approveThreads",
     author: "𝐀𝐬𝐢𝐟 𝐌𝐚𝐡𝐦𝐮𝐝",
-    countDown: 5,
+    countDown: 3,
     role: 0,
     category: "owner",
     shortDescription: {
-      en: "Manage approved & pending thread IDs with search, pagination & locking"
+      en: "⚙️ Thread management system with atomic operations"
     },
   },
 
-  onLoad: async function () {
+  onLoad: async function() {
     try {
       const dirPath = path.join(__dirname, "cache");
-      const approvedPath = path.join(dirPath, "approvedThreads.json");
-      const pendingPath = path.join(dirPath, "pendingThreads.json");
+      const paths = [
+        path.join(dirPath, "approvedThreads.json"),
+        path.join(dirPath, "pendingThreads.json")
+      ];
 
-      await fs.ensureDir(dirPath);
-      await fs.ensureFile(approvedPath);
-      await fs.ensureFile(pendingPath);
-
-      if ((await fs.readFile(approvedPath, "utf8")).trim() === "")
-        await fs.writeFile(approvedPath, JSON.stringify([]));
-      if ((await fs.readFile(pendingPath, "utf8")).trim() === "")
-        await fs.writeFile(pendingPath, JSON.stringify([]));
+      await Promise.all(paths.map(async p => {
+        await fs.ensureFile(p);
+        const content = await fs.readFile(p, "utf8");
+        if (!content.trim()) await fs.writeFile(p, "[]");
+      }));
     } catch (e) {
-      console.error("❌ onLoad Error:", e);
+      console.error("🔴 Initialization Error:", e);
     }
   },
 
-  onStart: async function ({ event, api, args, senderID }) {
+  onStart: async function({ event, api, args, senderID }) {
     const { threadID, messageID } = event;
-    const approvedPath = path.join(__dirname, "cache", "approvedThreads.json");
-    const pendingPath = path.join(__dirname, "cache", "pendingThreads.json");
+    const [approvedPath, pendingPath] = [
+      path.join(__dirname, "cache", "approvedThreads.json"),
+      path.join(__dirname, "cache", "pendingThreads.json")
+    ];
 
     try {
-      // Permission check
+      // 🔐 Permission verification
       if (this.config.role === 0 && senderID !== api.getCurrentUserID()) {
-        return api.sendMessage("❌ দুঃখিত, আপনার অনুমতি নেই এই কমান্ড চালানোর জন্য।", threadID, messageID);
+        return api.sendMessage(
+          "⛔ অ্যাকসেস ডিনাইড! আপনার এই কমান্ড এক্সিকিউট করার অনুমতি নেই।",
+          threadID,
+          messageID
+        );
       }
 
       await api.sendTyping(threadID);
+      await atomicLock.acquire();
 
-      await fileLock.acquire();
+      // 📂 Atomic data loading
+      const [approved, pending] = await Promise.all([
+        fs.readJson(approvedPath),
+        fs.readJson(pendingPath)
+      ]);
 
-      let approved = await fs.readJson(approvedPath);
-      let pending = await fs.readJson(pendingPath);
+      // 🧩 Command parsing
+      const command = args[0]?.toLowerCase() || "";
+      const page = parseInt(args.find(arg => !isNaN(arg))) || 1;
+      const targetID = args.find(arg => /^\d+$/.test(arg)) || threadID;
 
-      const command = args[0] ? args[0].toLowerCase() : "";
-      const pageArg = args.find(arg => !isNaN(parseInt(arg)));
-      const page = pageArg ? parseInt(pageArg) : 1;
-      const idBox = args.find(arg => /^\d+$/.test(arg)) || threadID;
+      // 🔄 Utility functions
+      const paginate = (arr, size, pg) => 
+        arr.slice((pg - 1) * size, pg * size);
+      
+      const searchFilter = (arr, term) => 
+        term ? arr.filter(id => id.includes(term)) : arr;
 
-      function paginate(array, size, pageNum) {
-        return array.slice((pageNum - 1) * size, pageNum * size);
-      }
+      // ✨ ATOMIC DESIGN: Enhanced help system
+      const atomicHelp = () => {
+        const border = "═".repeat(28);
+        return [
+          `╔${border}╗`,
+          "║ 🌟 অ্যাপ্রুভ থ্রেড কমান্ড সিস্টেম ║",
+          `╚${border}╝`,
+          "",
+          "📜 list [সার্চ] [পেজ] - অনুমোদিত লিস্ট (পেজ ১০ আইটেম)",
+          "⏳ pending [সার্চ] [পেজ] - পেন্ডিং রিকুয়েস্ট",
+          "🗑️ del <আইডি> - অনুমোদন প্রত্যাহার",
+          "✅ <আইডি> - নতুন থ্রেড অনুমোদন",
+          "",
+          `📌 উদাহরণ: ${this.config.name} pending গ্রুপ 2`,
+          `💡 টিপ: আইডি অবশ্যই সংখ্যায় হতে হবে`
+        ].join("\n");
+      };
 
-      const helpMsg = `📜 *ApproveThreads কমান্ড ব্যবহার:*\n
-- {pn} list [search] [page]: অনুমোদিত তালিকা দেখাও (প্রতি পেজ ১০)\n
-- {pn} pending [search] [page]: পেন্ডিং তালিকা দেখাও (প্রতি পেজ ১০)\n
-- {pn} del <ID>: অনুমোদিত তালিকা থেকে আইডি মুছে দাও\n
-- {pn} <ID>: নির্দিষ্ট থ্রেড অনুমোদন করো\n\n
-🌟 উদাহরণ: {pn} list group 2 (group নাম বা আইডি অনুসারে সার্চ + ২য় পেজ)\n
-🌟 মনে রাখবে: ID অবশ্যই সংখ্যার মতো হতে হবে।`;
-
+      // Handle list command
       if (command === "list") {
-        let searchTerm = args[1] && isNaN(parseInt(args[1])) ? args[1].toLowerCase() : "";
-        let filtered = approved;
-
-        if (searchTerm) {
-          filtered = approved.filter(id => id.toLowerCase().includes(searchTerm));
-          if (filtered.length === 0) {
-            fileLock.release();
-            return api.sendMessage(`❌ "${searchTerm}" নাম বা আইডি দিয়ে কিছু পাওয়া যায়নি।`, threadID, messageID);
-          }
+        const searchTerm = args[1] && isNaN(args[1]) ? args[1] : "";
+        const filtered = searchFilter(approved, searchTerm);
+        
+        if (!filtered.length) {
+          atomicLock.release();
+          return api.sendMessage(
+            searchTerm ? 
+            `🔍 "${searchTerm}" এর জন্য কোনো ফলাফল নেই!` : 
+            "📭 অনুমোদিত থ্রেডের তালিকা খালি",
+            threadID,
+            messageID
+          );
         }
 
-        if (filtered.length === 0) {
-          fileLock.release();
-          return api.sendMessage("❌ এখনো কোনো অনুমোদিত থ্রেড নেই।", threadID, messageID);
+        const paged = paginate(filtered, 10, page);
+        if (!paged.length) {
+          atomicLock.release();
+          return api.sendMessage(
+            `📭 পেজ ${page} এ কোনো ডাটা নেই!`,
+            threadID,
+            messageID
+          );
         }
 
-        let paged = paginate(filtered, 10, page);
-        if (paged.length === 0) {
-          fileLock.release();
-          return api.sendMessage(`❌ পেজ ${page} খালি!`, threadID, messageID);
-        }
-
-        let msg = `✅ অনুমোদিত থ্রেডসমূহ (পৃষ্ঠা ${page}):\n`;
-        paged.forEach((id, i) => {
-          msg += `\n📌 ${(page - 1) * 10 + i + 1}. থ্রেড আইডি: ${id}`;
-        });
-        fileLock.release();
-        return api.sendMessage(msg, threadID, messageID);
+        const list = paged.map((id, i) => 
+          `▸ ${(page-1)*10 + i+1}. ${id}`).join("\n");
+        
+        atomicLock.release();
+        return api.sendMessage(
+          `📜 অনুমোদিত থ্রেড (পেজ ${page}):\n${list}\n\n🔢 মোট: ${filtered.length} আইটেম`,
+          threadID,
+          messageID
+        );
       }
 
+      // Handle pending command
       if (command === "pending") {
-        let searchTerm = args[1] && isNaN(parseInt(args[1])) ? args[1].toLowerCase() : "";
-        let filtered = pending;
-
-        if (searchTerm) {
-          filtered = pending.filter(id => id.toLowerCase().includes(searchTerm));
-          if (filtered.length === 0) {
-            fileLock.release();
-            return api.sendMessage(`❌ "${searchTerm}" নাম বা আইডি দিয়ে কিছু পাওয়া যায়নি।`, threadID, messageID);
-          }
+        const searchTerm = args[1] && isNaN(args[1]) ? args[1] : "";
+        const filtered = searchFilter(pending, searchTerm);
+        
+        if (!filtered.length) {
+          atomicLock.release();
+          return api.sendMessage(
+            "✅ সকল পেন্ডিং রিকুয়েস্ট ক্লিয়ার!",
+            threadID,
+            messageID
+          );
         }
 
-        if (filtered.length === 0) {
-          fileLock.release();
-          return api.sendMessage("⏳ অনুমোদনের জন্য অপেক্ষমান থ্রেড নেই।", threadID, messageID);
+        const paged = paginate(filtered, 5, page);
+        if (!paged.length) {
+          atomicLock.release();
+          return api.sendMessage(
+            `📭 পেজ ${page} এ কোনো পেন্ডিং রিকুয়েস্ট নেই!`,
+            threadID,
+            messageID
+          );
         }
 
-        let paged = paginate(filtered, 10, page);
-        if (paged.length === 0) {
-          fileLock.release();
-          return api.sendMessage(`❌ পেজ ${page} খালি!`, threadID, messageID);
-        }
-
-        let msg = `⏳ অনুমোদনের অপেক্ষমান থ্রেডসমূহ (পৃষ্ঠা ${page}):\n`;
-        let count = (page - 1) * 10 + 1;
-
+        let output = `⏳ পেন্ডিং রিকুয়েস্ট (পেজ ${page}):\n\n`;
         for (const id of paged) {
           try {
-            const info = await api.getThreadInfo(id);
-            msg += `\n📍 ${count++}. ${info.name || "Unnamed Group"}\n    আইডি: ${id}`;
+            const { name } = await api.getThreadInfo(id);
+            output += `🔹 ${name || 'নামবিহীন গ্রুপ'}\n   🔢 আইডি: ${id}\n\n`;
           } catch {
-            msg += `\n📍 ${count++}. Unknown Group\n    আইডি: ${id}`;
+            output += `🔹 অজানা গ্রুপ\n   🔢 আইডি: ${id}\n\n`;
           }
         }
-        fileLock.release();
-        return api.sendMessage(msg, threadID, messageID);
+        
+        atomicLock.release();
+        return api.sendMessage(
+          `${output}📊 মোট পেন্ডিং: ${filtered.length} আইটেম`,
+          threadID,
+          messageID
+        );
       }
 
+      // Handle delete command
       if (command === "del") {
-        if (!approved.includes(idBox)) {
-          fileLock.release();
-          return api.sendMessage("❌ এই আইডি অনুমোদিত তালিকায় নেই।", threadID, messageID);
+        if (!approved.includes(targetID)) {
+          atomicLock.release();
+          return api.sendMessage(
+            `❌ ${targetID} আইডিটি অনুমোদিত তালিকায় নেই!`,
+            threadID,
+            messageID
+          );
         }
-        approved = approved.filter(id => id !== idBox);
-        if (!pending.includes(idBox)) pending.push(idBox);
 
-        await fs.writeJson(approvedPath, approved, { spaces: 2 });
-        await fs.writeJson(pendingPath, pending, { spaces: 2 });
-        await logAction(`Deleted approved thread ID: ${idBox} by user ${senderID}`);
-
-        fileLock.release();
-        return api.sendMessage(`✅ সফলভাবে অনুমোদিত তালিকা থেকে মুছে দেওয়া হলো: ${idBox}`, threadID, messageID);
+        const newApproved = approved.filter(id => id !== targetID);
+        const newPending = [...pending, targetID];
+        
+        await Promise.all([
+          fs.writeJson(approvedPath, newApproved, { spaces: 2 }),
+          fs.writeJson(pendingPath, newPending, { spaces: 2 })
+        ]);
+        
+        await logAtomicAction("REMOVED_APPROVAL", targetID, senderID);
+        atomicLock.release();
+        
+        return api.sendMessage(
+          `🗑️ সফলভাবে অপসারণ করা হয়েছে!\n🔢 আইডি: ${targetID}`,
+          threadID,
+          messageID
+        );
       }
 
-      if (/^\d+$/.test(command) || command === "approve") {
-        if (approved.includes(idBox)) {
-          fileLock.release();
-          return api.sendMessage(`✅ আইডি ${idBox} ইতিমধ্যে অনুমোদিত আছে।`, threadID, messageID);
+      // Handle approval
+      if (/^(approve|\d+)$/.test(command)) {
+        if (approved.includes(targetID)) {
+          atomicLock.release();
+          return api.sendMessage(
+            `✅ ${targetID} ইতিমধ্যেই অনুমোদিত!`,
+            threadID,
+            messageID
+          );
         }
 
-        await api.sendTyping(idBox);
+        await api.sendTyping(targetID);
         api.sendMessage(
-          "✅ আপনার থ্রেড অনুমোদিত হয়েছে! এখন থেকে বটের সব কমান্ড ব্যবহার করতে পারবেন।",
-          idBox,
-          async (error) => {
-            if (error) {
-              fileLock.release();
+          "🎉 আপনার গ্রুপ অনুমোদিত হয়েছে!\n\nএখন থেকে আপনি বটের সকল ফিচার ব্যবহার করতে পারবেন।",
+          targetID,
+          async (err) => {
+            if (err) {
+              atomicLock.release();
               return api.sendMessage(
-                "❌ অনুমোদনের মেসেজ পাঠানো যায়নি। বট কি ঐ গ্রুপে আছে তো?",
+                `❌ ${targetID} তে মেসেজ পাঠানো যায়নি!\n\nকারণ: ${err.errorDescription}`,
                 threadID,
                 messageID
               );
             }
 
-            approved.push(idBox);
-            pending = pending.filter(id => id !== idBox);
-
-            await fs.writeJson(approvedPath, approved, { spaces: 2 });
-            await fs.writeJson(pendingPath, pending, { spaces: 2 });
-            await logAction(`Approved thread ID: ${idBox} by user ${senderID}`);
-
-            fileLock.release();
-            api.sendMessage(`✅ সফলভাবে অনুমোদন হয়েছে: ${idBox}`, threadID, messageID);
+            const newApproved = [...approved, targetID];
+            const newPending = pending.filter(id => id !== targetID);
+            
+            await Promise.all([
+              fs.writeJson(approvedPath, newApproved, { spaces: 2 }),
+              fs.writeJson(pendingPath, newPending, { spaces: 2 })
+            ]);
+            
+            await logAtomicAction("THREAD_APPROVED", targetID, senderID);
+            atomicLock.release();
+            
+            api.sendMessage(
+              `✨ সফলভাবে অনুমোদন দেওয়া হলো!\n\n🔢 আইডি: ${targetID}`,
+              threadID,
+              messageID
+            );
           }
         );
         return;
       }
 
-      fileLock.release();
-      return api.sendMessage(helpMsg.replace(/{pn}/g, this.config.name), threadID, messageID);
-    } catch (err) {
-      if (fileLock.locked) fileLock.release();
-      console.error("❌ Error in approveThreads command:", err);
-      const logFile = getLogFilePath();
-      await fs.appendFile(logFile, `[${new Date().toISOString()}] ERROR: ${err.stack || err}\n`);
-      await api.sendMessage("❌ কোনো সমস্যা হয়েছে, আবার চেষ্টা করুন।", threadID, messageID);
+      // Default help response
+      atomicLock.release();
+      return api.sendMessage(atomicHelp(), threadID, messageID);
+      
+    } catch (error) {
+      if (atomicLock.locked) atomicLock.release();
+      console.error("🔴 Command Error:", error);
+      
+      const errorMsg = [
+        "⚠️ সিস্টেমে সমস্যা!",
+        "",
+        `🔧 বিস্তারিত: ${error.message}`,
+        "🔄 অনুগ্রহ করে আবার চেষ্টা করুন"
+      ].join("\n");
+      
+      api.sendMessage(errorMsg, threadID, messageID);
     }
-  },
+  }
 };
