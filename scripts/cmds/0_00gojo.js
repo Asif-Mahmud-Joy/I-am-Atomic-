@@ -1,4 +1,4 @@
-const fetch = require("node-fetch"); // Node 18+ এর জন্য optional, না থাকলে npm install node-fetch
+const fetch = require("node-fetch");
 
 const OPENROUTER_API_KEY = "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";
 
@@ -7,19 +7,33 @@ async function gojoAIReply({ api, event, args }) {
 
   if (!prompt) {
     return api.sendMessage(
-      "❌ কিছু লিখতে হবে, ভাই! যেমন: `gojo তুমি কে?`",
+      `☣️⚛️ *𝐀𝐓𝐎𝐌𝐈𝐂 𝐆𝐎𝐉𝐎 𝐀𝐈* ⚛️☣️
+━━━━━━━━━━━━━━━━━━
+❌ *ইনপুট রিকুয়েস্ট*
+📝 কিছু লিখতে হবে, ভাই!
+💡 যেমন: gojo_v3 কে তুমি সবচেয়ে ভালো বন্ধু হিসেবে মনে করো?
+━━━━━━━━━━━━━━━━━━`,
       event.threadID,
       event.messageID
     );
   }
 
-  // টাইপিং শুরু (যদি api তে ফাংশন থাকে)
+  // Show typing animation
   if (typeof api.sendMessageTyping === "function") {
     api.sendMessageTyping(event.threadID, true);
   }
 
-  // ইউজারকে তথ্য দিচ্ছি
-  await api.sendMessage("⏳ Gojo AI ভাবছে... একটু অপেক্ষা করো!", event.threadID, event.messageID);
+  // Send initial processing message
+  const processingMsg = await api.sendMessage(
+    `☣️⚛️ *𝐀𝐓𝐎𝐌𝐈𝐂 𝐆𝐎𝐉𝐎 𝐀𝐈* ⚛️☣️
+━━━━━━━━━━━━━━━━━━
+🧠 *প্রসেসিং রিকুয়েস্ট...*
+🔍 কোয়েরি: ${prompt.length > 50 ? prompt.substring(0, 47) + '...' : prompt}
+🔄 ডিপসিক মডেল লোড হচ্ছে...
+⏳ একটু অপেক্ষা করো ভাই...
+━━━━━━━━━━━━━━━━━━`,
+    event.threadID
+  );
 
   try {
     const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
@@ -31,6 +45,10 @@ async function gojoAIReply({ api, event, args }) {
       body: JSON.stringify({
         model: "deepseek/deepseek-r1-0528:free",
         messages: [
+          {
+            role: "system",
+            content: "You are Gojo AI, an advanced AI assistant with a mature tone. Respond in Bengali unless asked otherwise. Be helpful, witty, and slightly sarcastic."
+          },
           {
             role: "user",
             content: prompt
@@ -49,27 +67,51 @@ async function gojoAIReply({ api, event, args }) {
       throw new Error("Gojo কিছু বুঝতে পারেনি।");
     }
 
-    // টাইপিং বন্ধ
+    // Stop typing animation
     if (typeof api.sendMessageTyping === "function") {
       api.sendMessageTyping(event.threadID, false);
     }
 
-    // সুন্দরভাবে রেসপন্স পাঠাচ্ছি
-    const reply = `👁️‍🗨️ Gojo বলছে:\n\n✨ ${data.choices[0].message.content.trim()}`;
+    // Format the AI response
+    const aiResponse = data.choices[0].message.content.trim();
+    const reply = `☣️⚛️ *𝐀𝐓𝐎𝐌𝐈𝐂 𝐆𝐎𝐉𝐎 𝐀𝐈* ⚛️☣️
+━━━━━━━━━━━━━━━━━━
+💬 *ইউজার কোয়েরি:*
+${prompt}
 
-    api.sendMessage(reply, event.threadID, event.messageID);
+✨ *গোজো'র উত্তর:*
+${aiResponse}
+
+🔧 *সিস্টেম স্ট্যাটাস:*
+🔄 মডেল: DeepSeek-R1-0528
+⏱️ লেটেন্সি: ${data.usage?.total_tokens ? data.usage.total_tokens + ' টোকেন' : 'N/A'}
+━━━━━━━━━━━━━━━━━━
+⚡ *ভার্সন ৩.০ | 𝐀𝐓𝐎𝐌𝐈𝐂 𝐃𝐄𝐒𝐈𝐆𝐍* ⚛️`,
+      event.threadID,
+      processingMsg.messageID
+    );
   } catch (error) {
-    // টাইপিং বন্ধ
+    // Stop typing animation
     if (typeof api.sendMessageTyping === "function") {
       api.sendMessageTyping(event.threadID, false);
     }
 
-    console.error("Gojo API Error:", error.message || error);
+    console.error("Gojo API Error:", error);
 
     api.sendMessage(
-      "⚠️ দুঃখিত ভাই, Gojo একটু ব্রেক নিচ্ছে। পরে আবার চেষ্টা করো।",
+      `☣️⚛️ *𝐀𝐓𝐎𝐌𝐈𝐂 𝐆𝐎𝐉𝐎 𝐀𝐈* ⚛️☣️
+━━━━━━━━━━━━━━━━━━
+⚠️ *সিস্টেম এরর!*
+🔧 টেকনিক্যাল ডিটেইল: ${error.message || 'অজানা সমস্যা'}
+
+💡 *সমাধানের উপায়:*
+• ইন্টারনেট কানেকশন চেক করুন
+• কিছুক্ষণ পর আবার চেষ্টা করুন
+• অ্যাডমিনকে জানান
+━━━━━━━━━━━━━━━━━━
+⚙️ API Status: ${error.message.includes('API Error') ? 'অফলাইন' : 'অস্থিতিশীল'}`,
       event.threadID,
-      event.messageID
+      processingMsg.messageID
     );
   }
 }
@@ -77,12 +119,16 @@ async function gojoAIReply({ api, event, args }) {
 module.exports = {
   config: {
     name: "gojo_v3",
-    version: "3.0",
+    version: "3.1",
     author: "𝐀𝐬𝐢𝐟 𝐌𝐚𝐡𝐦𝐮𝐝 🌠",
     role: 0,
-    shortDescription: "Gojo AI এর সাথে কথা বলো, mature tone + typing animation সহ",
+    shortDescription: "Gojo AI - পরিপক্ক টোনে কথোপকথন",
+    longDescription: "গোজো AI এর সাথে কথোপকথন করুন, পরিপক্ক টোন এবং টাইপিং অ্যানিমেশন সহ",
     category: "AI",
-    guide: "{pn} তোমার মেসেজ"
+    guide: {
+      en: "{pn} [আপনার বার্তা]",
+      bn: "{pn} [আপনার বার্তা]"
+    }
   },
 
   onStart: gojoAIReply
