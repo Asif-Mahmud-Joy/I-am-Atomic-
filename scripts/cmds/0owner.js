@@ -7,14 +7,19 @@ module.exports = {
     name: "ownerinfo",
     author: "𝐀𝐬𝐢𝐟 𝐌𝐚𝐡𝐦𝐮𝐝 🌠",
     role: 0,
-    shortDescription: "Owner and bot info with video",
-    longDescription: "Real-time styled owner & bot info with animated flair",
+    shortDescription: "☣𝐀𝐓𝐎𝐌𝐈𝐂⚛ Owner Information",
+    longDescription: "Exclusive owner details with premium animation",
     category: "admin",
     guide: "{pn}"
   },
 
   onStart: async function ({ api, event }) {
     try {
+      // Typing animation simulation
+      await api.sendMessageTyping(event.threadID);
+      await new Promise(resolve => setTimeout(resolve, 2500));
+      
+      // Owner information
       const owner = {
         name: '𝐀𝐬𝐢𝐟 𝐌𝐚𝐡𝐦𝐮𝐝',
         gender: 'Male ♂️',
@@ -23,18 +28,31 @@ module.exports = {
         choice: 'Islam ☪️',
         nick: '𝐉𝐚𝐦𝐚𝐢',
         fb: 'https://www.facebook.com/share/1HPjorq8ce/',
-        bot: '🌫 𝐌𝐫.𝐒𝐦𝐨𝐤𝐞𝐲 🎩',
-        uid: '61571630409265'
+        bot: '☣𝐀𝐓𝐎𝐌𝐈𝐂⚛',
+        uid: '61571630409265',
+        skills: 'JavaScript, AI Development, System Architecture',
+        status: 'Premium Developer ⚡'
       };
 
-      const videoUrl = 'https://files.catbox.moe/qptlr8.mp4';
+      // Download video
+      const videoUrl = 'https://files.catbox.moe/pm6rfq.mp4';
       const tmpFolder = path.join(__dirname, 'tmp');
       if (!fs.existsSync(tmpFolder)) fs.mkdirSync(tmpFolder);
-
-      const videoBuffer = await axios.get(videoUrl, { responseType: 'arraybuffer' });
+      
+      await api.sendMessage("☣️⚛️ Downloading premium content...", event.threadID);
+      
+      const videoBuffer = await axios.get(videoUrl, { 
+        responseType: 'arraybuffer',
+        onDownloadProgress: progressEvent => {
+          const percent = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+          console.log(`Download progress: ${percent}%`);
+        }
+      });
+      
       const videoPath = path.join(tmpFolder, 'owner_video.mp4');
       fs.writeFileSync(videoPath, Buffer.from(videoBuffer.data, 'binary'));
 
+      // Current time
       const now = new Date();
       const options = {
         timeZone: 'Asia/Dhaka',
@@ -44,30 +62,38 @@ module.exports = {
         month: 'short',
         day: '2-digit',
         hour: '2-digit',
-        minute: '2-digit'
+        minute: '2-digit',
+        second: '2-digit'
       };
       const timestamp = now.toLocaleString('en-BD', options);
 
-      // Typing feel
-      await new Promise(res => setTimeout(res, 600));
-
+      // Atomic-styled message
       const message = `
-╭━━━━━━━⌈ ⚡ 𝗢𝗪𝗡𝗘𝗥 𝗗𝗘𝗧𝗔𝗜𝗟𝗦 ⚡ ⌋━━━━━━━╮
-┃
-┃ ❖ 📛 𝗡𝗮𝗺𝗲: ${owner.name}
-┃ ❖ 🚹 𝗚𝗲𝗻𝗱𝗲𝗿: ${owner.gender}
-┃ ❖ 🎂 𝗔𝗴𝗲: ${owner.age}
-┃ ❖ 🐾 𝗡𝗶𝗰𝗸: ${owner.nick}
-┃ ❖ 💫 𝗖𝗵𝗼𝗶𝗰𝗲: ${owner.choice}
-┃ ❖ 📏 𝗛𝗲𝗶𝗴𝗵𝘁: ${owner.height}
-┃ ❖ 🤖 𝗕𝗼𝘁: ${owner.bot}
-┃ ❖ 🔗 𝗙𝗕: ${owner.fb}
-┃ ❖ 🆔 𝗨𝗜𝗗: ${owner.uid}
-┃
-╰━━━━━━━⌈ 🕓 ${timestamp} ⌋━━━━━━━╯
+☣️⚛️ *𝐀𝐓𝐎𝐌𝐈𝐂 𝐎𝐖𝐍𝐄𝐑 𝐈𝐍𝐅𝐎* ⚛️☣️
+━━━━━━━━━━━━━━━━━━━━━━━━━
 
-✨ Stay Smoke-tastic! Bot powered by your jamai 😎
-`;
+⚡ *𝐏𝐄𝐑𝐒𝐎𝐍𝐀𝐋 𝐃𝐄𝐓𝐀𝐈𝐋𝐒*
+▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰
+📛 𝗡𝗮𝗺𝗲 » ${owner.name}
+🚹 𝗚𝗲𝗻𝗱𝗲𝗿 » ${owner.gender}
+🎂 𝗔𝗴𝗲 » ${owner.age}
+📏 𝗛𝗲𝗶𝗴𝗵𝘁 » ${owner.height}
+🐾 𝗡𝗶𝗰𝗸 » ${owner.nick}
+💫 𝗖𝗵𝗼𝗶𝗰𝗲 » ${owner.choice}
+💻 𝗦𝗸𝗶𝗹𝗹𝘀 » ${owner.skills}
+🏆 𝗦𝘁𝗮𝘁𝘂𝘀 » ${owner.status}
+
+⚡ *𝐒𝐎𝐂𝐈𝐀𝐋 & 𝐒𝐘𝐒𝐓𝐄𝐌*
+▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰
+🤖 𝗕𝗼𝘁 » ${owner.bot}
+🔗 𝗙𝗮𝗰𝗲𝗯𝗼𝗼𝗸 » ${owner.fb}
+🆔 𝗨𝗜𝗗 » ${owner.uid}
+🕓 𝗧𝗶𝗺𝗲𝘀𝘁𝗮𝗺𝗽 » ${timestamp}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━
+✨ "Stay Smoke-tastic! Bot powered by your jamai 😎"
+☣️⚛️ *𝐀𝐓𝐎𝐌𝐈𝐂 𝐒𝐘𝐒𝐓𝐄𝐌𝐒* ⚛️☣️
+      `;
 
       await api.sendMessage({
         body: message,
@@ -75,8 +101,23 @@ module.exports = {
       }, event.threadID, event.messageID);
 
     } catch (e) {
-      console.log('❌ Owner info error:', e.message);
-      return api.sendMessage('❌ Somossa hoise. Try again later.', event.threadID);
+      console.log('☣️⚛️ Owner info error:', e.message);
+      
+      const errorMessage = `
+☣️⚛️ *𝐀𝐓𝐎𝐌𝐈𝐂 𝐄𝐑𝐑𝐎𝐑* ⚛️☣️
+━━━━━━━━━━━━━━━━━━━━━━━━━
+⚠️ System encountered an issue!
+🔧 Error: ${e.message || 'Unknown error'}
+
+💡 Solutions:
+• Check your internet connection
+• Try again later
+• Contact system administrator
+━━━━━━━━━━━━━━━━━━━━━━━━━
+⚙️ Status: Service disruption
+      `.trim();
+      
+      return api.sendMessage(errorMessage, event.threadID);
     }
   }
 };
