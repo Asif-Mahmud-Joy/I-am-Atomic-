@@ -5,8 +5,8 @@ const { shortenURL } = global.utils;
 // ======================== ⚛️ ATOMIC DESIGN SYSTEM ⚛️ ======================== //
 const ATOMIC = {
   FRAME: {
-    TOP: "╔═══════ ∘◦⚛️◦∘ ═══════╗",
-    BOTTOM: "╚═══════ ∘◦⚛️◦∘ ═══════╝",
+    TOP: "╔═════ ∘◦⚛️◦∘ ═════╗",
+    BOTTOM: "╚═════ ∘◦⚛️◦∘ ═════╝",
     DIVIDER: "▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰"
   },
   ELEMENTS: {
@@ -17,11 +17,9 @@ const ATOMIC = {
     LINK: "🔗",
     PLATFORM: "🌐",
     GEAR: "⚙️",
-    CLOCK: "⏱️"
-  },
-  COLORS: {
-    PRIMARY: "#FF6B6B",
-    SECONDARY: "#4ECDC4"
+    CLOCK: "⏱️",
+    ATOM: "⚛️",
+    BLAST: "💥"
   }
 };
 
@@ -35,8 +33,8 @@ ${ATOMIC.FRAME.BOTTOM}`;
 const cachePath = __dirname + "/cache/atomic_media";
 if (!fs.existsSync(cachePath)) fs.mkdirSync(cachePath, { recursive: true });
 
-// Supported platforms with icons
-const PLATFORMS = {
+// Platform emoji mapping
+const PLATFORM_EMOJIS = {
   instagram: "📸",
   facebook: "📘",
   tiktok: "🎵",
@@ -54,11 +52,11 @@ module.exports = {
     author: "Asif Mahmud",
     countDown: 0,
     role: 0,
-    shortDescription: "Auto-download media from 12+ platforms",
-    longDescription: "Smart media downloader with atomic design",
+    shortDescription: "⚛️ Atomic media downloader",
+    longDescription: "Auto-download media with atomic precision",
     category: "media",
     guide: {
-      en: "Send any media link | {pn} on/off"
+      en: "{pn} on/off - Toggle auto-download"
     }
   },
 
@@ -67,27 +65,25 @@ module.exports = {
     
     if (args[0] === "off") {
       this.threadStates[threadID] = "off";
-      api.sendMessage(createAtomicMessage(
-        `${ATOMIC.ELEMENTS.GEAR} 𝗔𝘂𝘁𝗼𝗟𝗶𝗻𝗸 𝗗𝗶𝘀𝗮𝗯𝗹𝗲𝗱\n` +
-        `▸ Media auto-download turned off\n` +
-        `▸ Use "${this.config.name} on" to re-enable`
+      return api.sendMessage(createAtomicMessage(
+        `${ATOMIC.ELEMENTS.GEAR} 𝗔𝗧𝗢𝗠𝗜𝗖 𝗗𝗜𝗦𝗔𝗕𝗟𝗘𝗗\n` +
+        `▸ Media download deactivated\n` +
+        `${ATOMIC.ELEMENTS.ATOM} Use "${this.config.name} on" to reactivate`
       ), threadID);
-      return;
     }
     
     if (args[0] === "on") {
       this.threadStates[threadID] = "on";
-      api.sendMessage(createAtomicMessage(
-        `${ATOMIC.ELEMENTS.GEAR} 𝗔𝘂𝘁𝗼𝗟𝗶𝗻𝗸 𝗘𝗻𝗮𝗯𝗹𝗲𝗱\n` +
-        `▸ Media auto-download activated\n` +
-        `▸ Supported: ${Object.keys(PLATFORMS).join(", ")}`
+      return api.sendMessage(createAtomicMessage(
+        `${ATOMIC.ELEMENTS.GEAR} 𝗔𝗧𝗢𝗠𝗜𝗖 𝗔𝗖𝗧𝗜𝗩𝗔𝗧𝗘𝗗\n` +
+        `▸ Media download enabled\n` +
+        `${ATOMIC.ELEMENTS.VIDEO} Ready for atomic blasts!`
       ), threadID);
-      return;
     }
 
-    api.sendMessage(createAtomicMessage(
-      `${ATOMIC.ELEMENTS.VIDEO} 𝗔𝘁𝗼𝗺𝗶𝗰 𝗠𝗲𝗱𝗶𝗮 𝗗𝗼𝘄𝗻𝗹𝗼𝗮𝗱𝗲𝗿\n\n` +
-      `▸ Status: ${this.threadStates[threadID] === "off" ? "Disabled ❌" : "Enabled ✅"}\n` +
+    return api.sendMessage(createAtomicMessage(
+      `${ATOMIC.ELEMENTS.ATOM} 𝗔𝗧𝗢𝗠𝗜𝗖 𝗠𝗘𝗗𝗜𝗔 𝗗𝗢𝗪𝗡𝗟𝗢𝗔𝗗𝗘𝗥\n\n` +
+      `▸ Status: ${this.threadStates[threadID] === "off" ? "❌ Disabled" : "✅ Enabled"}\n` +
       `▸ Commands:\n` +
       `   • ${this.config.name} on → Enable\n` +
       `   • ${this.config.name} off → Disable\n\n` +
@@ -104,15 +100,21 @@ module.exports = {
     const url = this.extractLink(event.body);
     if (!url) return;
 
-    api.setMessageReaction(ATOMIC.ELEMENTS.DOWNLOAD, event.messageID, () => {}, true);
-    
+    // Set reaction and send processing message
+    api.setMessageReaction(ATOMIC.ELEMENTS.ATOM, event.messageID, () => {}, true);
+    const processingMsg = await api.sendMessage(createAtomicMessage(
+      `${ATOMIC.ELEMENTS.ATOM} 𝗔𝗧𝗢𝗠𝗜𝗖 𝗣𝗥𝗢𝗖𝗘𝗦𝗦𝗜𝗡𝗚\n` +
+      `▸ Detecting media source...\n` +
+      `${ATOMIC.ELEMENTS.CLOCK} Initializing download sequence`
+    ), threadID);
+
     try {
       const startTime = Date.now();
       const filePath = `${cachePath}/${Date.now()}.mp4`;
       
       // Identify platform
-      const platform = Object.keys(PLATFORMS).find(p => url.includes(p)) || "other";
-      const platformIcon = PLATFORMS[platform];
+      const platform = Object.keys(PLATFORM_EMOJIS).find(p => url.includes(p)) || "other";
+      const platformEmoji = PLATFORM_EMOJIS[platform];
       
       // Download media
       const apiUrl = `https://allinonedownloader-ayan.onrender.com/download?url=${encodeURIComponent(url)}`;
@@ -130,10 +132,11 @@ module.exports = {
       // Check file size
       const contentLength = mediaRes.headers['content-length'];
       if (contentLength > 25 * 1024 * 1024) {
+        await api.unsendMessage(processingMsg.messageID);
         return api.sendMessage(createAtomicMessage(
-          `${ATOMIC.ELEMENTS.ERROR} 𝗙𝗶𝗹𝗲 𝗧𝗼𝗼 𝗟𝗮𝗿𝗴𝗲\n` +
-          `▸ Max size: 25MB\n` +
-          `▸ Your file: ${(contentLength/1024/1024).toFixed(1)}MB`
+          `${ATOMIC.ELEMENTS.ERROR} 𝗔𝗧𝗢𝗠𝗜𝗖 𝗔𝗟𝗘𝗥𝗧\n` +
+          `▸ File exceeds 25MB limit\n` +
+          `▸ Detected size: ${(contentLength/1024/1024).toFixed(1)}MB`
         ), threadID);
       }
       
@@ -149,13 +152,17 @@ module.exports = {
       // Calculate download time
       const downloadTime = ((Date.now() - startTime)/1000).toFixed(1);
       
+      // Update processing message
+      await api.unsendMessage(processingMsg.messageID);
+      
       // Send result
       api.sendMessage({
         body: createAtomicMessage(
-          `${ATOMIC.ELEMENTS.SUCCESS} 𝗠𝗘𝗗𝗜𝗔 𝗗𝗢𝗪𝗡𝗟𝗢𝗔𝗗𝗘𝗗\n\n` +
-          `${platformIcon} 𝗣𝗹𝗮𝘁𝗳𝗼𝗿𝗺: ${platform.toUpperCase()}\n` +
+          `${ATOMIC.ELEMENTS.BLAST} 𝗔𝗧𝗢𝗠𝗜𝗖 𝗕𝗟𝗔𝗦𝗧 𝗖𝗢𝗠𝗣𝗟𝗘𝗧𝗘!\n\n` +
+          `${platformEmoji} 𝗣𝗹𝗮𝘁𝗳𝗼𝗿𝗺: ${platform.toUpperCase()}\n` +
           `${ATOMIC.ELEMENTS.LINK} 𝗦𝗼𝘂𝗿𝗰𝗲: ${shortUrl}\n` +
-          `${ATOMIC.ELEMENTS.CLOCK} 𝗧𝗶𝗺𝗲: ${downloadTime}s`
+          `${ATOMIC.ELEMENTS.CLOCK} 𝗧𝗶𝗺𝗲: ${downloadTime}s\n` +
+          `${ATOMIC.ELEMENTS.ATOM} 𝗖𝗿𝗲𝗮𝘁𝗲𝗱 𝗯𝘆 𝗔𝘀𝗶𝗳 𝗠𝗮𝗵𝗺𝘂𝗱`
         ),
         attachment: fs.createReadStream(filePath)
       }, threadID);
@@ -164,9 +171,9 @@ module.exports = {
       fs.unlinkSync(filePath);
       
     } catch (error) {
-      api.setMessageReaction(ATOMIC.ELEMENTS.ERROR, event.messageID, () => {}, true);
+      await api.unsendMessage(processingMsg.messageID);
       api.sendMessage(createAtomicMessage(
-        `${ATOMIC.ELEMENTS.ERROR} 𝗗𝗢𝗪𝗡𝗟𝗢𝗔𝗗 𝗙𝗔𝗜𝗟𝗘𝗗\n\n` +
+        `${ATOMIC.ELEMENTS.ERROR} 𝗔𝗧𝗢𝗠𝗜𝗖 𝗙𝗔𝗜𝗟𝗨𝗥𝗘\n\n` +
         `▸ Error: ${error.message || "Unknown"}\n` +
         `▸ Platform: ${this.getPlatformFromUrl(url)}\n` +
         `${ATOMIC.ELEMENTS.GEAR} Try again or use different link`
@@ -181,6 +188,6 @@ module.exports = {
   },
 
   getPlatformFromUrl: function (url) {
-    return Object.keys(PLATFORMS).find(p => url.includes(p)) || "Unknown";
+    return Object.keys(PLATFORM_EMOJIS).find(p => url.includes(p)) || "Unknown";
   }
 };
