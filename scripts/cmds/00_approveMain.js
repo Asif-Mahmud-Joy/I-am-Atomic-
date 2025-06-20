@@ -2,182 +2,233 @@ const fs = require('fs-extra');
 const path = require('path');
 const lockfile = require('proper-lockfile');
 
+// 🔐 Atomic Constants
 const LOG_PATH = path.join(__dirname, 'logs');
-const LOG_FILE = path.join(LOG_PATH, 'nsfw.log');
+const LOG_FILE = path.join(LOG_PATH, 'nsfw_atomic.log');
 const MAX_LOG_SIZE = 5 * 1024 * 1024; // 5MB
+const DATA_DIR = path.join(__dirname, 'assist_json');
+const APPROVED_PATH = path.join(DATA_DIR, 'approved_ids.json');
+const PENDING_PATH = path.join(DATA_DIR, 'pending_ids.json');
 
-async function rotateLogIfNeeded() {
-  try {
-    await fs.ensureDir(LOG_PATH);
-    const stats = await fs.stat(LOG_FILE).catch(() => null);
-    if (stats && stats.size >= MAX_LOG_SIZE) {
-      const oldLog = path.join(LOG_PATH, `nsfw_${Date.now()}.log`);
-      await fs.rename(LOG_FILE, oldLog);
+// ⚛️ Atomic Logger
+class AtomicLogger {
+  static async rotate() {
+    try {
+      await fs.ensureDir(LOG_PATH);
+      if (await fs.pathExists(LOG_FILE)) {
+        const { size } = await fs.stat(LOG_FILE);
+        if (size >= MAX_LOG_SIZE) {
+          const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+          await fs.rename(LOG_FILE, path.join(LOG_PATH, `nsfw-${timestamp}.log`));
+        }
+      }
+    } catch (err) {
+      console.error('🛑 [ATOMIC LOG ROTATION FAILURE]', err);
     }
-  } catch (err) {
-    console.error('🛑 লগ রোটেশন এরর:', err);
+  }
+
+  static async log(action, id, user, text = '') {
+    try {
+      await this.rotate();
+      const entry = `[${new Date().toISOString()}] ⚛️ ${action} » 👤 ${user} » 💬 ${text} » 🆔 ${id}\n`;
+      await fs.appendFile(LOG_FILE, entry);
+    } catch (err) {
+      console.error('🛑 [ATOMIC LOGGER FAILURE]', err);
+    }
   }
 }
 
-async function logMessage(text) {
-  try {
-    await rotateLogIfNeeded();
-    await fs.appendFile(LOG_FILE, `[${new Date().toISOString()}] ${text}\n`);
-  } catch (err) {
-    console.error('🛑 লগিং এরর:', err);
+// 🔒 Atomic Operations
+class NSFWManager {
+  static isValidID(id) {
+    return /^\d{5,15}$/.test(id);
+  }
+
+  static async atomicOperation(filePath, operation) {
+    try {
+      const release = await lockfile.lock(filePath, { retries: 3 });
+      const data = await fs.readJson(filePath).catch(() => []);
+      const result = await operation(data);
+      await fs.writeJson(filePath, result, { spaces: 2 });
+      await release();
+      return result;
+    } catch (err) {
+      console.error('🔒 [ATOMIC OPERATION FAILURE]', err);
+      throw new Error('Database operation failed');
+    }
   }
 }
 
-function isValidID(id) {
-  return typeof id === 'string' && /^\d{5,15}$/.test(id);
-}
-
-async function safeWriteJSON(filePath, data) {
-  try {
-    const release = await lockfile.lock(filePath);
-    await fs.writeJson(filePath, data, { spaces: 2 });
-    await release();
-  } catch (err) {
-    console.error('🛑 ফাইল লকিং এরর:', err);
+// ✨ UI Components
+const AtomicUI = {
+  header: "╔════════════════════════╗\n║   🔞 NSFW ATOMIC SYSTEM   ║\n╚════════════════════════╝",
+  divider: "▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬",
+  
+  commandList: [
+    "⚙️  Command Syntax:",
+    `${" ".repeat(4)}🔹 nsfw approved <ID> [মেসেজ]`,
+    `${" ".repeat(4)}🔹 nsfw remove <ID> [কারণ]`,
+    `${" ".repeat(4)}🔹 nsfw disapproved <ID> [কারণ]`,
+    `${" ".repeat(4)}🔹 nsfw check`,
+    `${" ".repeat(4)}🔹 nsfw list-approved`,
+    `${" ".repeat(4)}🔹 nsfw list-pending`
+  ].join("\n"),
+  
+  formatList(items, title, emoji) {
+    let output = `${title}\n${this.divider}\n`;
+    items.forEach((id, i) => {
+      output += `\n${emoji} ${i + 1}. 🆔 ${id}`;
+    });
+    return `${output}\n\n🔢 মোট: ${items.length} আইটেম`;
   }
-}
+};
 
 module.exports = {
   config: {
     name: "nsfwmanage",
-    version: "2.2",
+    version: "3.0",
     author: "𝐀𝐬𝐢𝐟 𝐌𝐚𝐡𝐦𝐮𝐝",
-    countDown: 5,
+    countDown: 3,
     category: "🔞 NSFW",
     role: 2,
     shortDescription: {
-      en: "🔐 Secure NSFW Access Management"
+      en: "☢️ Atomic NSFW Access Control"
     }
   },
 
   onStart: async function ({ api, args, message, event }) {
-    const threadID = event.threadID;
-    const senderID = event.senderID;
-    const assistPath = path.join(__dirname, 'assist_json');
-    const approvedIDsPath = path.join(assistPath, 'approved_ids.json');
-    const pendingIDsPath = path.join(assistPath, 'pending_ids.json');
-
-    // ✅ রোল চেক: শুধুমাত্র role 2+ ইউজাররা ব্যবহার করতে পারবে
-    if (event.author && event.author.role < 2 && senderID !== threadID) {
-      return message.reply("⚠️ আপনার পর্যাপ্ত অনুমতি নেই এই কমান্ড ব্যবহার করার জন্য।");
+    const { threadID, senderID } = event;
+    
+    // 🔐 Authorization Check
+    if (event.author?.role < 2) {
+      return message.reply("⛔ অ্যাক্সেস ডিনাইড! আপনার পর্যাপ্ত অনুমতি নেই।");
     }
 
-    await fs.ensureDir(assistPath);
-    if (!await fs.pathExists(approvedIDsPath)) await fs.writeJson(approvedIDsPath, []);
-    if (!await fs.pathExists(pendingIDsPath)) await fs.writeJson(pendingIDsPath, []);
-
-    let approvedIDs = [], pendingIDs = [];
-    try {
-      approvedIDs = await fs.readJson(approvedIDsPath);
-      pendingIDs = await fs.readJson(pendingIDsPath);
-    } catch {
-      return message.reply("❌ ডেটা ফাইল লোড করতে সমস্যা হয়েছে, পরে আবার চেষ্টা করুন।");
-    }
-
-    const subCommand = args[0];
-    const idArg = args[1];
-    const textArg = args.slice(2).join(" ") || "কোনো বার্তা নেই।";
-
-    // 🛑 ইনপুট ভ্যালিডেশন: ID ফরম্যাট চেক
-    if (idArg && !isValidID(idArg)) {
-      return message.reply("⚠️ ❗ অনুগ্রহ করে সঠিক ফরম্যাটে ID দিন (৫-১৫ সংখ্যার মধ্যে)।");
-    }
-
-    // ⏳ টাইপিং অ্যানিমেশন চালু
+    // ⏳ Typing Indicator
     api.sendTyping(threadID);
 
     try {
+      // 🗂️ Initialize Data Directories
+      await fs.ensureDir(DATA_DIR);
+      if (!await fs.pathExists(APPROVED_PATH)) await fs.writeJson(APPROVED_PATH, []);
+      if (!await fs.pathExists(PENDING_PATH)) await fs.writeJson(PENDING_PATH, []);
+
+      // 📦 Load Atomic Data
+      const [approvedIDs, pendingIDs] = await Promise.all([
+        fs.readJson(APPROVED_PATH).catch(() => []),
+        fs.readJson(PENDING_PATH).catch(() => [])
+      ]);
+
+      const [subCommand, idArg] = args;
+      const textArg = args.slice(2).join(" ") || "কোনো বার্তা নেই।";
+
+      // 🛡️ Input Validation
+      if (idArg && !NSFWManager.isValidID(idArg)) {
+        return message.reply("⚠️ অবৈধ আইডি ফরম্যাট! ৫-১৫ সংখ্যার মধ্যে দিন।");
+      }
+
+      // ⚛️ Command Processing
       switch (subCommand) {
         case "approved": {
-          if (!idArg) return message.reply("❗ অনুমোদনের জন্য ID দিন:\n\nUsage: nsfw approved <ID> [মেসেজ]");
-          if (approvedIDs.includes(idArg)) return message.reply("⛔ এই থ্রেডটি আগেই অনুমোদিত।");
-
-          approvedIDs.push(idArg);
-          await safeWriteJSON(approvedIDsPath, approvedIDs);
-
-          // পেন্ডিং থেকে ID মুছে ফেলুন
-          const idx = pendingIDs.indexOf(idArg);
-          if (idx !== -1) {
-            pendingIDs.splice(idx, 1);
-            await safeWriteJSON(pendingIDsPath, pendingIDs);
+          if (!idArg) return message.reply("❗ আইডি প্রয়োজন:\n\nUsage: nsfw approved <ID> [মেসেজ]");
+          if (approvedIDs.includes(idArg)) {
+            return message.reply("ℹ️ এই আইডি ইতিমধ্যেই অনুমোদিত!");
           }
 
-          await api.sendMessage(`✅ আপনার অনুরোধ অনুমোদিত হয়েছে!\n\n🔞 NSFW কমান্ডগুলি এখন থেকে ব্যবহার করতে পারবেন।\n\n📩 মেসেজ: ${textArg}`, idArg);
-          await logMessage(`✅ Approved ID: ${idArg} by ${senderID} | Message: ${textArg}`);
-          return message.reply(`✅ সফলভাবে ${idArg} অনুমোদিত হয়েছে।`);
+          await NSFWManager.atomicOperation(APPROVED_PATH, data => [...data, idArg]);
+          await NSFWManager.atomicOperation(PENDING_PATH, data => data.filter(id => id !== idArg));
+
+          await api.sendMessage(
+            `🎉 আপনার NSFW অনুরোধ অনুমোদিত হয়েছে!\n\n` +
+            `🔞 এখন থেকে সমস্ত NSFW কমান্ড ব্যবহার করতে পারবেন।\n\n` +
+            `📩 মেসেজ: ${textArg}`,
+            idArg
+          );
+          
+          await AtomicLogger.log("APPROVED", idArg, senderID, textArg);
+          return message.reply(`✅ ${idArg} সফলভাবে অনুমোদিত হয়েছে!`);
         }
 
         case "remove": {
-          if (!idArg) return message.reply("❗ অপসারণের জন্য ID দিন:\n\nUsage: nsfw remove <ID> [কারণ]");
-          if (!approvedIDs.includes(idArg)) return message.reply("❌ এই থ্রেডটি অনুমোদিত নয়।");
+          if (!idArg) return message.reply("❗ আইডি প্রয়োজন:\n\nUsage: nsfw remove <ID> [কারণ]");
+          if (!approvedIDs.includes(idArg)) {
+            return message.reply("❌ এই আইডি অনুমোদিত নয়!");
+          }
 
-          approvedIDs = approvedIDs.filter(id => id !== idArg);
-          await safeWriteJSON(approvedIDsPath, approvedIDs);
+          await NSFWManager.atomicOperation(APPROVED_PATH, data => data.filter(id => id !== idArg));
 
-          await api.sendMessage(`⚠️ আপনার NSFW অ্যাক্সেস বাতিল করা হয়েছে।\n\nকারণ: ${textArg}`, idArg);
-          await logMessage(`❌ Removed NSFW Access from ID: ${idArg} by ${senderID} | Reason: ${textArg}`);
-          return message.reply(`❌ সফলভাবে ${idArg} থেকে NSFW অ্যাক্সেস অপসারণ করা হয়েছে।`);
+          await api.sendMessage(
+            `⚠️ আপনার NSFW অ্যাক্সেস বাতিল করা হয়েছে!\n\n` +
+            `🔒 কারণ: ${textArg}\n\n` +
+            `আপনার আবার অনুমোদন প্রয়োজন হলে নতুন করে আবেদন করুন।`,
+            idArg
+          );
+          
+          await AtomicLogger.log("REMOVED", idArg, senderID, textArg);
+          return message.reply(`🗑️ ${idArg} থেকে অ্যাক্সেস সফলভাবে অপসারণ করা হয়েছে!`);
         }
 
         case "disapproved": {
-          if (!idArg) return message.reply("❗ প্রত্যাখ্যানের জন্য ID দিন:\n\nUsage: nsfw disapproved <ID> [কারণ]");
-          if (!pendingIDs.includes(idArg)) return message.reply("⚠️ এই ID পেন্ডিং তালিকায় নেই।");
+          if (!idArg) return message.reply("❗ আইডি প্রয়োজন:\n\nUsage: nsfw disapproved <ID> [কারণ]");
+          if (!pendingIDs.includes(idArg)) {
+            return message.reply("ℹ️ এই আইডি পেন্ডিং তালিকায় নেই!");
+          }
 
-          pendingIDs = pendingIDs.filter(id => id !== idArg);
-          await safeWriteJSON(pendingIDsPath, pendingIDs);
+          await NSFWManager.atomicOperation(PENDING_PATH, data => data.filter(id => id !== idArg));
 
-          await api.sendMessage(`❌ আপনার NSFW অনুরোধ প্রত্যাখ্যাত হয়েছে।\n\nকারণ: ${textArg}`, idArg);
-          await logMessage(`❌ Disapproved NSFW request from ID: ${idArg} by ${senderID} | Reason: ${textArg}`);
-          return message.reply("✅ NSFW অনুরোধ সফলভাবে প্রত্যাখ্যাত হয়েছে।");
+          await api.sendMessage(
+            `❌ আপনার NSFW অনুরোধ প্রত্যাখ্যান করা হয়েছে!\n\n` +
+            `📝 কারণ: ${textArg}\n\n` +
+            `আপনি চাইলে সংশোধন করে পুনরায় আবেদন করতে পারেন।`,
+            idArg
+          );
+          
+          await AtomicLogger.log("DISAPPROVED", idArg, senderID, textArg);
+          return message.reply("⛔ অনুরোধ সফলভাবে প্রত্যাখ্যান করা হয়েছে!");
         }
 
         case "check": {
-          return message.reply(
-            approvedIDs.includes(threadID)
-              ? "✅ এই থ্রেডে NSFW চালু আছে। 🔞"
-              : "❌ এই থ্রেডে NSFW চালু নেই। 🚫"
-          );
+          const status = approvedIDs.includes(threadID) ? 
+            "✅ এই থ্রেডে NSFW চালু আছে! 🔞" : 
+            "❌ এই থ্রেডে NSFW চালু নেই! 🔒";
+          return message.reply(status);
         }
 
         case "list-approved": {
-          if (approvedIDs.length === 0) return message.reply("❌ কোন অনুমোদিত থ্রেড নেই।");
-
-          let replyMsg = "✅ অনুমোদিত থ্রেডসমূহ:\n\n";
-          approvedIDs.forEach((id, i) => {
-            replyMsg += `🔹 ${i + 1}. ID: ${id}\n`;
-          });
-          return message.reply(replyMsg);
+          if (approvedIDs.length === 0) {
+            return message.reply("📭 কোন অনুমোদিত আইডি নেই!");
+          }
+          return message.reply(
+            AtomicUI.formatList(approvedIDs, "📜 অনুমোদিত আইডি তালিকা:", "🟢")
+          );
         }
 
         case "list-pending": {
-          if (pendingIDs.length === 0) return message.reply("❌ কোন পেন্ডিং থ্রেড নেই।");
-
-          let replyMsg = "⏳ পেন্ডিং থ্রেডসমূহ:\n\n";
-          pendingIDs.forEach((id, i) => {
-            replyMsg += `🔸 ${i + 1}. ID: ${id}\n`;
-          });
-          return message.reply(replyMsg);
+          if (pendingIDs.length === 0) {
+            return message.reply("📭 কোন পেন্ডিং আইডি নেই!");
+          }
+          return message.reply(
+            AtomicUI.formatList(pendingIDs, "⏳ পেন্ডিং অনুরোধ তালিকা:", "🟡")
+          );
         }
 
-        default:
+        default: {
           return message.reply(
-            `⚠️ অবৈধ কমান্ড! সঠিক কমান্ডগুলো:\n\n` +
-            `🔹 nsfw approved <ID> [মেসেজ]\n` +
-            `🔹 nsfw remove <ID> [কারণ]\n` +
-            `🔹 nsfw disapproved <ID> [কারণ]\n` +
-            `🔹 nsfw check\n` +
-            `🔹 nsfw list-approved\n` +
-            `🔹 nsfw list-pending`
+            `${AtomicUI.header}\n\n` +
+            `${AtomicUI.commandList}\n\n` +
+            `${AtomicUI.divider}\n` +
+            `⚡ Version: ${this.config.version} | ⏱️ Countdown: ${this.config.countDown}s`
           );
+        }
       }
     } catch (error) {
-      console.error("🛑 অনাকাঙ্ক্ষিত ত্রুটি:", error);
-      return message.reply("❌ অপ্রত্যাশিত ত্রুটি ঘটেছে, দয়া করে পরে আবার চেষ্টা করুন।");
+      console.error("☢️ [ATOMIC SYSTEM FAILURE]", error);
+      await AtomicLogger.log("ERROR", threadID, senderID, error.message);
+      return message.reply(
+        "⚠️ সিস্টেমে অপ্রত্যাশিত ত্রুটি!\n" +
+        "🔧 বিস্তারিত লগে রেকর্ড করা হয়েছে।\n" +
+        "দয়া করে কিছুক্ষণ পর আবার চেষ্টা করুন।"
+      );
     }
   }
 };
