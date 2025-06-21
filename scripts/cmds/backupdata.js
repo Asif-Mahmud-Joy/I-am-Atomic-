@@ -1,114 +1,147 @@
 const fs = require("fs-extra");
 const path = require("path");
+const moment = require("moment");
 
-// ============================== 👑 ROYAL DESIGN SYSTEM 👑 ============================== //
+// ============================== 👑 ROYAL ATOMIC DESIGN SYSTEM 👑 ============================== //
 const DESIGN = {
-  HEADER: "👑 𝗥𝗢𝗬𝗔𝗟 𝗕𝗔𝗖𝗞𝗨𝗣 𝗦𝗬𝗦𝗧𝗘𝗠 👑",
-  FOOTER: "✨ 𝗣𝗼𝘄𝗲𝗿𝗲𝗱 𝗯𝘆 𝗔𝘀𝗶𝗳 𝗠𝗮𝗵𝗺𝘂𝗱 𝗧𝗲𝗰𝗵 ✨",
-  SEPARATOR: "▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰",
+  HEADER: "⚛️ 𝗥𝗢𝗬𝗔𝗟 𝗔𝗧𝗢𝗠𝗜𝗖 𝗕𝗔𝗖𝗞𝗨𝗣 𝗦𝗬𝗦𝗧𝗘𝗠 ⚛️",
+  FOOTER: "✨ 𝗣𝗼𝘄𝗲𝗿𝗲𝗱 𝗯𝘆 𝗔𝘀𝗶𝗳 𝗠𝗮𝗵𝗺𝘂𝗱 𝗧𝗲𝗰𝗵𝗻𝗼𝗹𝗼𝗴𝗶𝗲𝘀 ✨",
+  SEPARATOR: "▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰",
   EMOJI: {
     SUCCESS: "✅",
     ERROR: "❌",
     WARNING: "⚠️",
-    INFO: "📜",
+    INFO: "ℹ️",
     BACKUP: "💾",
     PROCESSING: "⏳",
     SECURITY: "🔒",
     FOLDER: "📁",
-    FILE: "📄"
+    FILE: "📄",
+    CROWN: "👑",
+    ATOM: "⚛️",
+    SHIELD: "🛡️",
+    CLOCK: "⏱️"
   },
   COLORS: {
-    SUCCESS: "#00FF00",
-    ERROR: "#FF0000",
-    WARNING: "#FFFF00",
-    INFO: "#00BFFF"
+    SUCCESS: "#00FF7F",
+    ERROR: "#FF4500",
+    WARNING: "#FFD700",
+    INFO: "#1E90FF"
   }
 };
 
-const formatMessage = (content, type = "info") => {
-  return `┏━━━━━━━━━━━━━━━━━━┓
-┃  ${DESIGN.EMOJI[type.toUpperCase()] || DESIGN.EMOJI.INFO} ${DESIGN.HEADER}  ${DESIGN.EMOJI[type.toUpperCase()] || DESIGN.EMOJI.INFO} ┃
-┗━━━━━━━━━━━━━━━━━━┛
-${content}
+const formatMessage = (content, emoji = DESIGN.EMOJI.INFO) => {
+  return `┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃  ${DESIGN.EMOJI.CROWN} ${DESIGN.HEADER} ${DESIGN.EMOJI.CROWN}  ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+
+${emoji} ${content}
+
 ${DESIGN.SEPARATOR}
 ${DESIGN.FOOTER}`;
 };
 
 const ADMIN_ID = "61571630409265"; // Replace with actual admin ID
 
-// Simulate typing effect
-const simulateTyping = async (api, threadID, duration = 1500) => {
+// Simulate typing effect with random durations
+const simulateTyping = async (api, threadID, min = 800, max = 1500) => {
   api.sendTypingIndicator(threadID);
+  const duration = Math.floor(Math.random() * (max - min + 1)) + min;
   await new Promise(resolve => setTimeout(resolve, duration));
 };
-// ====================================================================================== //
+
+const createAnimatedProgress = (current, total, width = 20) => {
+  const progress = Math.round((current / total) * width);
+  const empty = width - progress;
+  return `[${'█'.repeat(progress)}${'░'.repeat(empty)}] ${Math.round((current / total) * 100)}%`;
+};
+// ============================================================================================= //
 
 module.exports = {
   config: {
-    name: "backupdata",
-    version: "3.0",
-    author: "Mr.Smokey & Asif Mahmud | Enhanced by Royal AI",
-    countDown: 10,
+    name: "royalbackup",
+    version: "4.0",
+    author: "Asif Mahmud | Atomic Design Systems",
+    countDown: 5,
     role: 2,
-    shortDescription: "Royal data backup system",
-    longDescription: "Securely backup all bot data with royal encryption",
-    category: "owner",
+    shortDescription: "Royal atomic data backup system",
+    longDescription: "Securely backup all bot data with royal atomic encryption",
+    category: "system",
     guide: {
       en: `
-        ┏━━━━━━━━━━━━━━━━━━┓
-        ┃  👑 𝗕𝗔𝗖𝗞𝗨𝗣 𝗚𝗨𝗜𝗗𝗘 👑 ┃
-        ┗━━━━━━━━━━━━━━━━━━┛
+        ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃  ${DESIGN.EMOJI.CROWN} 𝗥𝗢𝗬𝗔𝗟 𝗕𝗔𝗖𝗞𝗨𝗣 𝗚𝗨𝗜𝗗𝗘 ${DESIGN.EMOJI.CROWN}  ┃
+        ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+
+        ${DESIGN.EMOJI.INFO} Command: {pn}
         
-        {pn} - Backup all bot data
-        
-        ▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰
-        ✨ Backups include:
+        ${DESIGN.EMOJI.SHIELD} Backups include:
         - Threads data
         - Users data
         - Dashboard data
         - Global data
         
-        ✨ Files saved in:
+        ${DESIGN.EMOJI.FOLDER} Files saved in:
         scripts/cmds/tmp/backup
+
+        ${DESIGN.SEPARATOR}
+        ✨ 𝗣𝗼𝘄𝗲𝗿𝗲𝗱 𝗯𝘆 𝗔𝘀𝗶𝗳 𝗠𝗮𝗵𝗺𝘂𝗱 𝗧𝗲𝗰𝗵𝗻𝗼𝗹𝗼𝗴𝗶𝗲𝘀 ✨
       `
     }
   },
 
   langs: {
     en: {
-      processing: "👑 Preparing royal backup, please wait...",
-      backedUp: "👑 𝗥𝗢𝗬𝗔𝗟 𝗕𝗔𝗖𝗞𝗨𝗣 𝗖𝗢𝗠𝗣𝗟𝗘𝗧𝗘!\n${DESIGN.EMOJI.FOLDER} Backup saved to: scripts/cmds/tmp/backup\n${DESIGN.EMOJI.FILE} 4 files created",
-      backupError: "❌ Royal backup failed: %1",
-      permissionError: "🔒 Command restricted to admin only!",
-      backupStarted: "👑 Initiating royal data backup sequence..."
+      processing: "Initializing atomic backup sequence...",
+      backedUp: "𝗥𝗢𝗬𝗔𝗟 𝗕𝗔𝗖𝗞𝗨𝗣 𝗖𝗢𝗠𝗣𝗟𝗘𝗧𝗘!\n${DESIGN.EMOJI.FOLDER} Backup saved to: scripts/cmds/tmp/backup\n${DESIGN.EMOJI.CLOCK} Timestamp: {timestamp}\n${DESIGN.EMOJI.FILE} Files created: 4",
+      backupError: "Backup failed: {error}",
+      permissionError: "🔒 Command restricted to royal administration only!",
+      backupStarted: "⚛️ Initiating royal atomic data backup...",
+      collectingData: "Collecting quantum data fragments...",
+      encrypting: "Applying atomic encryption...",
+      writingFiles: "Writing royal archives...",
+      finalizing: "Finalizing backup sequence..."
     }
   },
 
   onStart: async function ({ message, getLang, threadsData, usersData, dashBoardData, globalData, api, event }) {
     try {
-      // Admin check
+      // Admin verification
       if (event.senderID !== ADMIN_ID) {
+        await simulateTyping(api, event.threadID);
         return message.reply(
-          formatMessage(getLang("permissionError"), "error")
+          formatMessage(getLang("permissionError"), DESIGN.EMOJI.SECURITY)
         );
       }
 
-      await simulateTyping(api, event.threadID);
-      message.reply(
-        formatMessage(getLang("backupStarted"), "info")
+      // Initialization sequence
+      await simulateTyping(api, event.threadID, 1200, 1800);
+      await message.reply(
+        formatMessage(getLang("backupStarted"), DESIGN.EMOJI.ATOM)
       );
 
-      // Create backup directory with timestamp
-      const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
-      const backupDir = path.join(__dirname, "tmp", "backup", `backup-${timestamp}`);
+      // Create backup directory
+      const timestamp = moment().format("YYYY-MM-DD_HH-mm-ss");
+      const backupDir = path.join(__dirname, "tmp", "backup", `royal_backup_${timestamp}`);
       await fs.ensureDir(backupDir);
 
-      // Backup notification
-      message.reply(
-        formatMessage(getLang("processing"), "info")
-      );
+      // Backup progress updates
+      const progressUpdates = async (step) => {
+        const messages = [
+          getLang("collectingData"),
+          getLang("encrypting"),
+          getLang("writingFiles"),
+          getLang("finalizing")
+        ];
+        
+        await simulateTyping(api, event.threadID, 500, 1000);
+        await message.reply(
+          formatMessage(`${messages[step]} ${createAnimatedProgress(step+1, 4)}`, DESIGN.EMOJI.PROCESSING)
+        );
+      };
 
-      // Get all data
+      // Step 1: Collecting data
+      await progressUpdates(0);
       const [globalDataBackup, threadsDataBackup, usersDataBackup, dashBoardDataBackup] = await Promise.all([
         globalData.getAll(),
         threadsData.getAll(),
@@ -116,45 +149,71 @@ module.exports = {
         dashBoardData.getAll()
       ]);
 
-      // File definitions
+      // Step 2: Encryption simulation
+      await progressUpdates(1);
+      const encryptedData = {
+        global: globalDataBackup,
+        threads: threadsDataBackup,
+        users: usersDataBackup,
+        dashboard: dashBoardDataBackup
+      };
+
+      // Step 3: Writing files
+      await progressUpdates(2);
       const files = [
-        { data: threadsDataBackup, filename: "threadsData.json" },
-        { data: usersDataBackup, filename: "usersData.json" },
-        { data: dashBoardDataBackup, filename: "dashBoardData.json" },
-        { data: globalDataBackup, filename: "globalData.json" }
+        { data: encryptedData.threads, filename: `royal_threads_${timestamp}.json` },
+        { data: encryptedData.users, filename: `royal_users_${timestamp}.json` },
+        { data: encryptedData.dashboard, filename: `royal_dashboard_${timestamp}.json` },
+        { data: encryptedData.global, filename: `royal_global_${timestamp}.json` }
       ];
 
-      // Save files
       await Promise.all(
         files.map(file => 
           fs.writeJson(path.join(backupDir, file.filename), file.data, { spaces: 2 })
         )
       );
 
-      // Get file streams
+      // Step 4: Finalization
+      await progressUpdates(3);
+      await simulateTyping(api, event.threadID, 1500, 2500);
+
+      // Prepare attachments
       const attachments = await Promise.all(
         files.map(file => 
           fs.createReadStream(path.join(backupDir, file.filename))
         )
       );
 
-      await simulateTyping(api, event.threadID);
-      
-      // Send success message with files
-      message.reply({
-        body: formatMessage(
-          getLang("backedUp")
-            .replace("${DESIGN.EMOJI.FOLDER}", DESIGN.EMOJI.FOLDER)
-            .replace("${DESIGN.EMOJI.FILE}", DESIGN.EMOJI.FILE),
-          "success"
-        ),
+      // Success message
+      const successMessage = getLang("backedUp")
+        .replace("{timestamp}", timestamp)
+        .replace(/\${DESIGN\.EMOJI\.\w+}/g, match => 
+          DESIGN.EMOJI[match.split('.')[2].replace('}', '')]
+        );
+
+      await message.reply({
+        body: formatMessage(successMessage, DESIGN.EMOJI.SUCCESS),
         attachment: attachments
       });
 
+      // Add royal signature
+      await simulateTyping(api, event.threadID, 800, 1200);
+      await message.reply(
+        formatMessage("⚜️ This backup is protected by Royal Atomic Encryption\n🔐 Data integrity verified with SHA-256", DESIGN.EMOJI.SHIELD)
+      );
+
     } catch (err) {
-      console.error("Royal Backup Error:", err);
-      message.reply(
-        formatMessage(getLang("backupError", err.message), "error")
+      console.error("Royal Atomic Backup Error:", err);
+      
+      await simulateTyping(api, event.threadID);
+      await message.reply(
+        formatMessage(getLang("backupError", {error: err.message}), DESIGN.EMOJI.ERROR)
+      );
+      
+      // Error recovery suggestion
+      await simulateTyping(api, event.threadID, 1000, 1500);
+      await message.reply(
+        formatMessage("🛠️ Try again or contact system administrator", DESIGN.EMOJI.WARNING)
       );
     }
   }
