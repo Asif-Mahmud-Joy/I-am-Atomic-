@@ -1,120 +1,90 @@
 const axios = require('axios');
 const { getStreamFromURL } = global.utils;
 
-// ============================== 👑 ROYAL DESIGN SYSTEM 👑 ============================== //
-const DESIGN = {
-  HEADER: "👑 𝗥𝗢𝗬𝗔𝗟 𝗔𝗡𝗜𝗠𝗘 𝗔𝗩𝗔𝗧𝗔𝗥 𝗚𝗘𝗡𝗘𝗥𝗔𝗧𝗢𝗥 👑",
-  FOOTER: "✨ 𝗣𝗼𝘄𝗲𝗿𝗲𝗱 𝗯𝘆 𝗔𝘀𝗶𝗳 𝗠𝗮𝗵𝗺𝘂𝗱 𝗧𝗲𝗰𝗵 ✨",
-  SEPARATOR: "▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰",
-  EMOJI: {
+// ======================== ⚛️ ATOMIC DESIGN SYSTEM ⚛️ ======================== //
+const ATOMIC = {
+  HEADER: "⚛️ 𝗔𝗧𝗢𝗠𝗜𝗖 𝗔𝗩𝗔𝗧𝗔𝗥 𝗚𝗘𝗡𝗘𝗥𝗔𝗧𝗢𝗥 ⚛️",
+  FOOTER: "🎨 𝗣𝗼𝘄𝗲𝗿𝗲𝗱 𝗯𝘆 𝗢𝗽𝗲𝗻𝗥𝗼𝘂𝘁𝗲𝗿 𝗔𝗜 🎨",
+  SEPARATOR: "▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬",
+  ELEMENTS: {
     SUCCESS: "✅",
     ERROR: "❌",
-    WARNING: "⚠️",
-    INFO: "📜",
+    PROCESSING: "⏳",
     AVATAR: "🖼️",
     LIST: "📋",
-    COLOR: "🎨",
-    PROCESSING: "⏳",
     CHARACTER: "👤",
     TEXT: "✏️",
-    SIGNATURE: "✍️"
-  },
-  COLORS: {
-    SUCCESS: "#00FF00",
-    ERROR: "#FF0000",
-    WARNING: "#FFFF00",
-    INFO: "#00BFFF"
+    SIGNATURE: "🖋️",
+    ATOM: "⚛️"
   }
 };
 
-const formatMessage = (content, type = "info") => {
-  return `┏━━━━━━━━━━━━━━━━━━┓
-┃  ${DESIGN.EMOJI[type.toUpperCase()] || DESIGN.EMOJI.INFO} ${DESIGN.HEADER}  ${DESIGN.EMOJI[type.toUpperCase()] || DESIGN.EMOJI.INFO} ┃
-┗━━━━━━━━━━━━━━━━━━┛
+const formatAtomicMessage = (content) => {
+  return `┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃  ${ATOMIC.ELEMENTS.ATOM} ${ATOMIC.HEADER} ${ATOMIC.ELEMENTS.ATOM} ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+
 ${content}
-${DESIGN.SEPARATOR}
-${DESIGN.FOOTER}`;
+
+${ATOMIC.SEPARATOR}
+${ATOMIC.FOOTER}`;
 };
 
-const ADMIN_ID = "61571630409265"; // Replace with actual admin ID
-const PRIMARY_API = "https://goatbotserver.onrender.com/taoanhdep";
-const FALLBACK_API = "https://imagegen-api.onrender.com/avatar-anime";
-const API_KEY = "ntkhangGoatBot";
-
-// Simulate typing effect
-const simulateTyping = async (api, threadID, duration = 1500) => {
+const simulateTyping = async (api, threadID, duration = 1000) => {
   api.sendTypingIndicator(threadID);
   await new Promise(resolve => setTimeout(resolve, duration));
 };
-// ====================================================================================== //
 
-// Fallback character list
-const fallbackCharacters = [
-  { stt: 0, name: "Nezuko Kamado" },
-  { stt: 1, name: "Tanjiro Kamado" },
-  { stt: 2, name: "Sasuke Uchiha" },
-  { stt: 3, name: "Naruto Uzumaki" },
-  { stt: 4, name: "Gojo Satoru" },
-  { stt: 5, name: "Luffy" },
-  { stt: 6, name: "Levi Ackerman" },
-  { stt: 7, name: "Itachi Uchiha" },
-  { stt: 8, name: "Zero Two" },
-  { stt: 9, name: "Mikasa Ackerman" }
+const CHARACTERS = [
+  { id: 0, name: "Nezuko Kamado" },
+  { id: 1, name: "Tanjiro Kamado" },
+  { id: 2, name: "Sasuke Uchiha" },
+  { id: 3, name: "Naruto Uzumaki" },
+  { id: 4, name: "Gojo Satoru" },
+  { id: 5, name: "Luffy" },
+  { id: 6, name: "Levi Ackerman" },
+  { id: 7, name: "Itachi Uchiha" },
+  { id: 8, name: "Zero Two" },
+  { id: 9, name: "Mikasa Ackerman" }
 ];
+// ============================================================================ //
 
 module.exports = {
   config: {
     name: "avatar",
-    version: "3.0",
-    author: "NTKhang & Asif Mahmud | Enhanced by Royal AI",
+    aliases: ["atomicav"],
+    version: "7.0",
+    author: "Asif Mahmud",
     cooldowns: 5,
     role: 0,
-    shortDescription: "Generate royal anime avatars",
-    longDescription: "Create premium anime-style avatars with character selection and custom text",
+    shortDescription: "Create AI-powered avatars",
+    longDescription: "Generate avatars using AI with atomic design elements",
     category: "image",
     guide: {
       en: `
-        ┏━━━━━━━━━━━━━━━━━━┓
-        ┃  👑 𝗔𝗩𝗔𝗧𝗔𝗥 𝗚𝗨𝗜𝗗𝗘 👑 ┃
-        ┗━━━━━━━━━━━━━━━━━━┛
+        ⚛️ 𝗔𝗧𝗢𝗠𝗜𝗖 𝗔𝗩𝗔𝗧𝗔𝗥 𝗚𝗨𝗜𝗗𝗘:
+        {pn} <ID/Name> | <Text> | <Signature>
         
-        {pn} <ID or Name> | <Text> | <Signature> | [Color]
+        🔹 𝗘𝘅𝗮𝗺𝗽𝗹𝗲𝘀:
+        {pn} Nezuko | Atomic User | Asif
+        {pn} 5 | Premium Member | Signature
         
-        ▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰
-        ✨ 𝗘𝘅𝗮𝗺𝗽𝗹𝗲𝘀:
-        !avatar Nezuko | Team Royal | Asif | #FF0000
-        !avatar 5 | Premium User | Signature | blue
-        
-        {pn} list - Show character list
-      `,
-      bn: `
-        ┏━━━━━━━━━━━━━━━━━━┓
-        ┃  👑 𝗔𝗩𝗔𝗧𝗔𝗥 𝗚𝗨𝗜𝗗𝗘 👑 ┃
-        ┗━━━━━━━━━━━━━━━━━━┛
-        
-        {pn} <আইডি বা নাম> | <টেক্সট> | <স্বাক্ষর> | [রঙ]
-        
-        ▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰
-        ✨ 𝗘𝘅𝗮𝗺𝗽𝗹𝗲𝘀:
-        !avatar Nezuko | Team Royal | Asif | #FF0000
-        !avatar 5 | Premium User | Signature | blue
-        
-        {pn} list - ক্যারেক্টার তালিকা দেখান
+        {pn} list - Show character catalog
       `
     }
   },
 
   langs: {
     en: {
-      initImage: "👑 Crafting your royal avatar, please wait...",
-      invalidCharacter: "⚠️ Only %1 characters available! Use ID less than this",
-      notFoundCharacter: "❌ Character '%1' not found in royal collection",
-      success: "👑 𝗥𝗢𝗬𝗔𝗟 𝗔𝗩𝗔𝗧𝗔𝗥 𝗥𝗘𝗔𝗗𝗬!\n${DESIGN.EMOJI.CHARACTER} Character: %1\n📌 ID: %2\n${DESIGN.EMOJI.TEXT} Text: %3\n${DESIGN.EMOJI.SIGNATURE} Signature: %4\n${DESIGN.EMOJI.COLOR} Color: %5",
-      defaultColor: "Royal Default",
-      error: "❌ Royal error: %1",
-      characterList: "👑 𝗥𝗢𝗬𝗔𝗟 𝗖𝗛𝗔𝗥𝗔𝗖𝗧𝗘𝗥 𝗟𝗜𝗦𝗧:\n%1",
-      missingInput: "⚠️ Please provide: <ID/Name> | <Text> | <Signature> | [Color]",
-      processing: "⏳ Processing your royal avatar..."
+      processing: "⏳ Generating your atomic avatar with AI...",
+      invalidChar: "❌ Only %1 characters available! Use ID < %1",
+      charNotFound: "❌ Character '%1' not found in atomic database",
+      success: "✅ 𝗔𝗧𝗢𝗠𝗜𝗖 𝗔𝗩𝗔𝗧𝗔𝗥 𝗚𝗘𝗡𝗘𝗥𝗔𝗧𝗘𝗗!\n\n${ATOMIC.ELEMENTS.CHARACTER} 𝗖𝗵𝗮𝗿𝗮𝗰𝘁𝗲𝗿: %1\n⚛️ 𝗜𝗗: %2\n${ATOMIC.ELEMENTS.TEXT} 𝗧𝗲𝘅𝘁: %3\n${ATOMIC.ELEMENTS.SIGNATURE} 𝗦𝗶𝗴𝗻𝗮𝘁𝘂𝗿𝗲: %4",
+      error: "❌ Avatar generation failed: %1",
+      charList: "⚛️ 𝗔𝗧𝗢𝗠𝗜𝗖 𝗖𝗛𝗔𝗥𝗔𝗖𝗧𝗘𝗥 𝗖𝗔𝗧𝗔𝗟𝗢𝗚:\n%1",
+      missingInput: "⚠️ Required: <ID/Name> | <Text> | <Signature>",
+      generatingPrompt: "🧠 Creating atomic avatar description...",
+      creatingImage: "🎨 Generating avatar visualization..."
     }
   },
 
@@ -122,108 +92,125 @@ module.exports = {
     await simulateTyping(api, event.threadID);
     
     if (args[0]?.toLowerCase() === "list") {
-      try {
-        const { data } = await axios.get(`${PRIMARY_API}/listavataranime?apikey=${API_KEY}`);
-        const characters = data.data || fallbackCharacters;
-        const charList = characters.map(c => `👑 ${c.stt}. ${c.name}`).join("\n");
-        return message.reply(
-          formatMessage(getLang("characterList", charList), "info")
-        );
-      } catch {
-        const charList = fallbackCharacters.map(c => `👑 ${c.stt}. ${c.name}`).join("\n");
-        return message.reply(
-          formatMessage(getLang("characterList", charList), "info")
-        );
-      }
+      const list = CHARACTERS.map(c => `⚛️ ${c.id}. ${c.name}`).join("\n");
+      return message.reply(
+        formatAtomicMessage(getLang("charList", list))
+      );
     }
 
     const input = args.join(" ").split("|").map(i => i.trim());
-    const [charInput, bgText, signText, colorBg] = input;
+    const [charInput, bgText, signText] = input;
 
     if (!charInput || !bgText || !signText) {
       return message.reply(
-        formatMessage(getLang("missingInput"), "error")
+        formatAtomicMessage(getLang("missingInput"))
       );
     }
 
     message.reply(
-      formatMessage(getLang("processing"), "info")
+      formatAtomicMessage(getLang("processing"))
     );
 
-    let charID = null;
-    let charName = null;
-    let characters = fallbackCharacters;
-
-    // Fetch character list
-    try {
-      const { data } = await axios.get(`${PRIMARY_API}/listavataranime?apikey=${API_KEY}`);
-      characters = data.data || fallbackCharacters;
-    } catch {
-      characters = fallbackCharacters;
-    }
+    let charID, charName;
 
     // Find character
     if (!isNaN(charInput)) {
       charID = parseInt(charInput);
-      if (charID >= characters.length) {
+      if (charID >= CHARACTERS.length) {
         return message.reply(
-          formatMessage(getLang("invalidCharacter", characters.length), "error")
+          formatAtomicMessage(getLang("invalidChar", CHARACTERS.length))
         );
       }
-      charName = characters[charID].name;
+      charName = CHARACTERS[charID].name;
     } else {
-      const foundChar = characters.find(c => 
+      const foundChar = CHARACTERS.find(c => 
         c.name.toLowerCase().includes(charInput.toLowerCase())
       );
       if (!foundChar) {
         return message.reply(
-          formatMessage(getLang("notFoundCharacter", charInput), "error")
+          formatAtomicMessage(getLang("charNotFound", charInput))
         );
       }
-      charID = foundChar.stt;
+      charID = foundChar.id;
       charName = foundChar.name;
     }
 
-    // Generate avatar
-    const params = {
-      id: charID,
-      chu_Nen: bgText,
-      chu_Ky: signText,
-      apikey: API_KEY
-    };
-    if (colorBg) params.colorBg = colorBg;
-
     try {
-      const imgStream = await getStreamFromURL(`${PRIMARY_API}/avataranime`, "avatar.png", { params });
+      // Step 1: Generate AI prompt description
+      message.reply(
+        formatAtomicMessage(getLang("generatingPrompt"))
+      );
+      
+      const OPENROUTER_API_KEY = "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";
+      const promptResponse = await axios.post(
+        "https://openrouter.ai/api/v1/chat/completions",
+        {
+          model: "meta-llama/llama-3.3-8b-instruct:free",
+          messages: [
+            {
+              role: "system",
+              content: "You are an expert anime artist specializing in atomic design avatars."
+            },
+            {
+              role: "user",
+              content: `Create a detailed image prompt for an avatar with:
+              - Character: ${charName}
+              - Main Text: ${bgText}
+              - Signature: ${signText}
+              - Style: Atomic design (geometric shapes, vibrant colors, minimalist)
+              - Format: Only return the image description text, nothing else`
+            }
+          ]
+        },
+        {
+          headers: {
+            "Authorization": `Bearer ${OPENROUTER_API_KEY}`,
+            "Content-Type": "application/json"
+          }
+        }
+      );
+
+      const aiPrompt = promptResponse.data.choices[0].message.content;
+      
+      // Step 2: Generate avatar image
+      message.reply(
+        formatAtomicMessage(getLang("creatingImage"))
+      );
+      
+      const imageResponse = await axios.post(
+        "https://api.vyro.ai/v1/imagine/api/generate",
+        {
+          prompt: aiPrompt,
+          style: "anime",
+          ratio: "1:1",
+          priority: "HIGH"
+        },
+        {
+          headers: {
+            "Authorization": "Bearer vk-9YHrLd9u7Rw4i2XGc6TjKZg",
+            "Content-Type": "application/json"
+          },
+          responseType: "json"
+        }
+      );
+
+      const imageUrl = imageResponse.data.image.url;
+      const imgStream = await getStreamFromURL(imageUrl, "avatar.jpg");
       
       await simulateTyping(api, event.threadID);
       
       message.reply({
-        body: formatMessage(
-          getLang("success", charName, charID, bgText, signText, colorBg || getLang("defaultColor")), 
-          "success"
+        body: formatAtomicMessage(
+          getLang("success", charName, charID, bgText, signText)
         ),
         attachment: imgStream
       });
-    } catch (primaryError) {
-      try {
-        // Try fallback API
-        const imgStream = await getStreamFromURL(FALLBACK_API, "avatar.png", { params });
-        
-        await simulateTyping(api, event.threadID);
-        
-        message.reply({
-          body: formatMessage(
-            getLang("success", charName, charID, bgText, signText, colorBg || getLang("defaultColor")), 
-            "success"
-          ),
-          attachment: imgStream
-        });
-      } catch (fallbackError) {
-        message.reply(
-          formatMessage(getLang("error", "Failed to generate royal avatar"), "error")
-        );
-      }
+      
+    } catch (err) {
+      console.error("Avatar Generation Error:", err.response?.data || err.message);
+      message.reply(
+        formatAtomicMessage(getLang("error", err.message))
+      );
     }
   }
 };
