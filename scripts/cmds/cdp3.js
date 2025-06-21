@@ -5,55 +5,100 @@ const path = require("path");
 module.exports = {
   config: {
     name: "cdp3",
-    aliases: [],
-    version: "2.0",
-    author: "🎩 𝐌𝐫.𝐒𝐦𝐨𝐤𝐞𝐲 • 𝐀𝐬𝐢𝐟 𝐌𝐚𝐡𝐦𝐮𝐝 🌠",
+    aliases: ["atomiccouple"],
+    version: "3.0",
+    author: "Asif Mahmud | ☣️ ATOMIC",
     countDown: 5,
     role: 0,
     shortDescription: {
-      en: "get random couple dp"
+      en: "☢️ Generate Quantum Love Pair"
     },
     longDescription: {
-      en: "Generates and sends a random male and female couple DP"
+      en: "⚛️ Create premium couple display pictures with atomic bonding effects"
     },
-    category: "love",
+    category: "💎 Premium Love",
     guide: {
       en: "{pn}"
     }
   },
 
   onStart: async function ({ api, event }) {
-    const tempPath1 = path.join(__dirname, "tmp", `male_${Date.now()}.png`);
-    const tempPath2 = path.join(__dirname, "tmp", `female_${Date.now()}.png`);
+    const tempDir = path.join(__dirname, "tmp");
+    await fs.ensureDir(tempDir);
 
     try {
+      // Send processing message with typing animation
+      const processingMsg = await api.sendMessage({
+        body: "☣️ QUANTUM LOVE SYSTEM\n━━━━━━━━━━━━━━\n⚙️ | Initializing particle entanglement\n▰▱▱▱▱▱▱▱ 20%"
+      }, event.threadID);
+
+      // Update progress
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      await api.sendMessage({
+        body: "☣️ QUANTUM LOVE SYSTEM\n━━━━━━━━━━━━━━\n⚡ | Colliding love particles\n▰▰▰▱▱▱▱▱ 45%",
+        messageID: processingMsg.messageID
+      }, event.threadID);
+
+      // Fetch couple images
       const { data } = await axios.get("https://api.akyuu.xyz/api/coupledpp?apikey=akuu", {
         timeout: 10000
       });
+      
+      if (!data?.male || !data?.female) {
+        return api.sendMessage({
+          body: "☣️ QUANTUM LOVE SYSTEM\n━━━━━━━━━━━━━━\n❌ | Particle entanglement failed\n🔸 | Try again later"
+        }, event.threadID, processingMsg.messageID);
+      }
 
-      const maleImg = await axios.get(data.male, { responseType: "arraybuffer" });
-      await fs.outputFile(tempPath1, maleImg.data);
-
-      const femaleImg = await axios.get(data.female, { responseType: "arraybuffer" });
-      await fs.outputFile(tempPath2, femaleImg.data);
-
+      // Update progress
+      await new Promise(resolve => setTimeout(resolve, 1500));
       await api.sendMessage({
-        body: "💑 Here is your random couple DP!",
+        body: "☣️ QUANTUM LOVE SYSTEM\n━━━━━━━━━━━━━━\n🌀 | Stabilizing atomic bonds\n▰▰▰▰▰▱▱▱ 75%",
+        messageID: processingMsg.messageID
+      }, event.threadID);
+
+      // Download images
+      const [maleImg, femaleImg] = await Promise.all([
+        axios.get(data.male, { responseType: "arraybuffer" }),
+        axios.get(data.female, { responseType: "arraybuffer" })
+      ]);
+
+      const malePath = path.join(tempDir, `male_${Date.now()}.png`);
+      const femalePath = path.join(tempDir, `female_${Date.now()}.png`);
+
+      fs.writeFileSync(malePath, Buffer.from(maleImg.data));
+      fs.writeFileSync(femalePath, Buffer.from(femaleImg.data));
+
+      // Update progress
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      await api.sendMessage({
+        body: "☣️ QUANTUM LOVE SYSTEM\n━━━━━━━━━━━━━━\n✅ | Atomic bond formation complete\n▰▰▰▰▰▰▰▰ 100%",
+        messageID: processingMsg.messageID
+      }, event.threadID);
+
+      // Prepare final message
+      const msg = `☣️ QUANTUM LOVE SYSTEM\n━━━━━━━━━━━━━━\n💞 | Perfect Atomic Match Found!\n✨ | Enjoy your quantum couple display pictures`;
+
+      // Send final result
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      return api.sendMessage({
+        body: msg,
         attachment: [
-          fs.createReadStream(tempPath1),
-          fs.createReadStream(tempPath2)
+          fs.createReadStream(malePath),
+          fs.createReadStream(femalePath)
         ]
-      }, event.threadID, event.messageID);
+      }, event.threadID, () => {
+        // Cleanup
+        fs.unlinkSync(malePath);
+        fs.unlinkSync(femalePath);
+        api.unsend(processingMsg.messageID);
+      });
 
-      // Cleanup
-      setTimeout(() => {
-        fs.remove(tempPath1);
-        fs.remove(tempPath2);
-      }, 30 * 1000);
-
-    } catch (error) {
-      console.error("[CDP3 ERROR]", error.message || error);
-      return api.sendMessage("❌ Sorry, couldn’t fetch couple DP right now. Try again later.", event.threadID);
+    } catch (err) {
+      console.error("☢️ QUANTUM LOVE ERROR:", err);
+      return api.sendMessage({
+        body: "☣️ QUANTUM LOVE SYSTEM\n━━━━━━━━━━━━━━\n❌ | Particle collision failed\n🔸 | " + (err.message || "Try again later")
+      }, event.threadID);
     }
   }
 };
