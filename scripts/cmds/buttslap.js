@@ -2,99 +2,102 @@ const axios = require("axios");
 const fs = require("fs-extra");
 const path = require("path");
 
-// ============================== ☣️ ATOMIC DESIGN SYSTEM ☣️ ============================== //
-const design = {
-  header: "⚡ 𝗔𝗧𝗢𝗠𝗜𝗖 𝗦𝗟𝗔𝗣 ⚡",
-  footer: "✨ 𝗣𝗼𝘄𝗲𝗿𝗲𝗱 𝗯𝘆 𝗔𝘀𝗶𝗳 𝗠𝗮𝗵𝗺𝘂𝗱 𝗔𝗧𝗢𝗠𝗜𝗖 𝗧𝗲𝗰𝗵 ✨",
-  separator: "▰▱▰▱▰▱▰▱▰▱▰▱▰▱▰▱▰▱▰▱▰▱▰▱▰",
-  emoji: {
-    slap: "👋",
-    error: "⚠️",
-    processing: "⚛️",
-    success: "✅",
-    user1: "👤",
-    user2: "👥",
-    atomic: "☢️"
-  }
-};
-
-const formatMessage = (content) => {
-  return `${design.header}\n${design.separator}\n${content}\n${design.separator}\n${design.footer}`;
-};
-// ======================================================================================== //
-
 module.exports = {
   config: {
     name: "buttslap",
-    aliases: ["atomicslap", "slap"],
-    version: "3.0",
-    author: "☣𝐀𝐓𝐎𝐌𝐈𝐂⚛ 𝐀𝐬𝐢𝐟 𝐌𝐚𝐡𝐦𝐮𝐝",
+    version: "3.2",
+    author: "Asif Mahmud | ☣️ ATOMIC",
     countDown: 5,
     role: 0,
-    shortDescription: "⚡ Deliver atomic-powered slaps",
-    longDescription: "⚡ Generate high-energy slap memes with atomic precision",
-    category: "entertainment",
+    shortDescription: "🔥 Premium Slap Experience",
+    longDescription: "✨ Generate high-quality slap memes with atomic-level precision",
+    category: "💎 Premium",
     guide: {
-      en: "{pn} @mention"
+      en: "{pn} @mention [custom message]"
     }
   },
 
   langs: {
     en: {
-      noTag: `${design.emoji.error} 𝗔𝗧𝗢𝗠𝗜𝗖 𝗧𝗔𝗥𝗚𝗘𝗧 𝗥𝗘𝗤𝗨𝗜𝗥𝗘𝗗\n\n▸ Please tag someone to unleash atomic slap`,
-      processing: `${design.emoji.processing} 𝗔𝗧𝗢𝗠𝗜𝗖 𝗦𝗟𝗔𝗣 𝗚𝗘𝗡𝗘𝗥𝗔𝗧𝗜𝗢𝗡\n\n▸ Charging energy particles...`,
-      failed: `${design.emoji.error} 𝗔𝗧𝗢𝗠𝗜𝗖 𝗙𝗔𝗜𝗟𝗨𝗥𝗘\n\n▸ Slap generation failed. Try again later.`
+      noTag: "🌀| ATOMIC COMMAND SYSTEM\n━━━━━━━━━━━━━━\n⚠️ | Target acquisition failed\n🔹 | Please tag recipient",
+      processing: "🌀| ATOMIC COMMAND SYSTEM\n━━━━━━━━━━━━━━\n⚙️ | Initializing particle collision\n▰▰▰▱▱▱▱▱ 45%",
+      success: "🌀| ATOMIC COMMAND SYSTEM\n━━━━━━━━━━━━━━\n✅ | Slap delivered at quantum level\n💥 | Target successfully impacted",
+      failed: "🌀| ATOMIC COMMAND SYSTEM\n━━━━━━━━━━━━━━\n❌ | Quantum fluctuation detected\n🔸 | Matter recombination failed"
     }
   },
 
-  onStart: async function ({ event, message, usersData, api, getLang }) {
+  onStart: async function ({ event, message, usersData, args, getLang }) {
     try {
-      const uid1 = event.senderID;
-      const uid2 = Object.keys(event.mentions)[0];
+      const { senderID, mentions } = event;
+      const targetID = Object.keys(mentions)[0];
       
-      // Validate target
-      if (!uid2) return message.reply(getLang("noTag"));
+      if (!targetID) {
+        return message.reply(getLang("noTag"));
+      }
+
+      // Send processing message with animated typing
+      const procMsg = await message.reply(getLang("processing"));
       
-      // Show processing animation
-      api.setMessageReaction(design.emoji.processing, event.messageID, () => {}, true);
-      const processingMsg = await message.reply(getLang("processing"));
-      
-      // Get avatars
-      const [avatarURL1, avatarURL2] = await Promise.all([
-        usersData.getAvatarUrl(uid1),
-        usersData.getAvatarUrl(uid2)
+      // Update progress indicator
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      await message.reply({
+        body: "🌀| ATOMIC COMMAND SYSTEM\n━━━━━━━━━━━━━━\n⚙️ | Calibrating trajectory\n▰▰▰▰▰▰▱▱ 75%",
+        messageID: procMsg.messageID
+      });
+
+      // Get avatars with enhanced error handling
+      const [slapperAvatar, victimAvatar] = await Promise.all([
+        usersData.getAvatarUrl(senderID).catch(() => null),
+        usersData.getAvatarUrl(targetID).catch(() => null)
       ]);
-      
-      // Generate atomic slap
-      const apiUrl = `https://api.memegen.link/v1/buttslap?avatar1=${encodeURIComponent(avatarURL1)}&avatar2=${encodeURIComponent(avatarURL2)}`;
-      const imgResponse = await axios.get(apiUrl, { responseType: "arraybuffer" });
-      
-      // Save image
-      const tmpPath = path.join(__dirname, "cache", `atomic_slap_${Date.now()}.png`);
-      await fs.outputFile(tmpPath, imgResponse.data);
-      
-      // Get user names
-      const userInfo = await Promise.all([
-        usersData.getName(uid1),
-        usersData.getName(uid2)
-      ]);
-      
-      // Prepare success message
-      const successContent = `${design.emoji.slap} 𝗔𝗧𝗢𝗠𝗜𝗖 𝗦𝗟𝗔𝗣 𝗗𝗘𝗟𝗜𝗩𝗘𝗥𝗘𝗗!\n\n${design.emoji.user1} ${userInfo[0]}\n${design.emoji.atomic} → ${design.emoji.user2} ${userInfo[1]}`;
-      
-      // Send result
-      await api.unsendMessage(processingMsg.messageID);
-      api.setMessageReaction(design.emoji.success, event.messageID, () => {}, true);
-      
-      message.reply({
-        body: formatMessage(successContent),
-        attachment: fs.createReadStream(tmpPath)
-      }, () => fs.unlink(tmpPath));
-      
-    } catch (err) {
-      console.error("[Atomic Slap Error]", err);
-      api.setMessageReaction(design.emoji.error, event.messageID, () => {}, true);
-      message.reply(getLang("failed"));
+
+      if (!slapperAvatar || !victimAvatar) {
+        throw new Error("Avatar retrieval failed");
+      }
+
+      // Generate premium quality image
+      const imgURL = `https://api.atomicgame.dev/v1/slap?from=${encodeURIComponent(slapperAvatar)}&to=${encodeURIComponent(victimAvatar)}&effect=quantum`;
+      const { data } = await axios.get(imgURL, {
+        responseType: "arraybuffer",
+        headers: {
+          "Authorization": `Bearer ${process.env.ATOMIC_API_KEY}`,
+          "Content-Type": "image/png"
+        },
+        timeout: 15000
+      });
+
+      // Save with premium filename
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+      const imagePath = path.join(__dirname, "tmp", `slap_${timestamp}_${senderID}_${targetID}.png`);
+      await fs.outputFile(imagePath, Buffer.from(data));
+
+      // Prepare custom text
+      const customText = args
+        .filter(arg => !arg.startsWith('@') && !arg.includes(targetID))
+        .join(' ')
+        .trim() || "💫 Atomic impact achieved | 0.0001s reaction time";
+
+      // Final delivery with premium design
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      await message.reply({
+        body: `🌀| ATOMIC COMMAND SYSTEM\n━━━━━━━━━━━━━━\n${getLang("success")}\n\n💬 | "${customText}"\n\n🔹 Slapper: @${senderID}\n🔸 Target: @${targetID}\n━━━━━━━━━━━━━━\n💎 Premium Atomic Experience`,
+        attachment: fs.createReadStream(imagePath),
+        mentions: [
+          { id: senderID, tag: usersData.getName(senderID) },
+          { id: targetID, tag: mentions[targetID] }
+        ]
+      });
+
+      // Cleanup
+      fs.unlink(imagePath);
+      message.unsend(procMsg.messageID);
+
+    } catch (error) {
+      console.error("🔴 ATOMIC ERROR:", error);
+      await message.reply({
+        body: `${getLang("failed")}\n💻 | ${error.message || "Unknown quantum error"}`,
+        mentions: []
+      });
     }
   }
 };
