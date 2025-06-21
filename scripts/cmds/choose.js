@@ -1,40 +1,88 @@
 module.exports = {
   config: {
     name: "choose",
-    version: "2.0",
-    author: "🎩 𝐌𝐫.𝐒𝐦𝐨𝐤𝐞𝐲 • 𝐀𝐬𝐢𝐟 𝐌𝐚𝐡𝐦𝐮𝐝 🌠",
+    aliases: ["atomicdecide", "quantumchoice"],
+    version: "3.0",
+    author: "Asif Mahmud | ☣️ ATOMIC",
     countDown: 5,
     role: 0,
     shortDescription: {
-      en: "Bot will choose one option for you"
+      en: "☢️ Quantum Decision System"
     },
     longDescription: {
-      en: "Give multiple options separated by | and the bot will randomly pick one"
+      en: "⚛️ Make atomic-level decisions with quantum precision"
     },
-    category: "games",
+    category: "💎 Premium Tools",
     guide: {
-      en: "{pn} Pizza | Burger | Pasta"
+      en: "{pn} option1 | option2 | option3"
     }
   },
 
   langs: {
     en: {
-      many: "Please provide at least two options using '|' to separate them."
+      many: "☣️ ATOMIC DECISION SYSTEM\n━━━━━━━━━━━━━━\n⚠️ | Quantum input insufficient\n🔸 | Please provide at least two options separated by '|'"
     }
   },
 
-  onStart: async function ({ message, args, getLang }) {
+  onStart: async function ({ message, args, api, event, getLang }) {
+    const input = args.join(" ");
+    if (!input) {
+      return message.reply({
+        body: "☣️ ATOMIC DECISION SYSTEM\n━━━━━━━━━━━━━━\n⚠️ | Quantum signature missing\n🔸 | Usage: choose pizza | burger | pasta"
+      });
+    }
+
+    const options = input.split("|").map(opt => opt.trim()).filter(opt => opt);
+    if (options.length < 2) return message.reply(getLang("many"));
+
     try {
-      const input = args.join(" ");
-      const options = input.split("|").map(opt => opt.trim()).filter(opt => opt);
+      // Send initial processing message
+      const processingMsg = await message.reply({
+        body: "☣️ ATOMIC DECISION SYSTEM\n━━━━━━━━━━━━━━\n⚙️ | Initializing quantum analysis\n▰▱▱▱▱▱▱▱ 15%"
+      });
 
-      if (options.length < 2) return message.reply(getLang("many"));
+      // Simulate quantum decision process
+      const stages = [
+        "☣️ ATOMIC DECISION SYSTEM\n━━━━━━━━━━━━━━\n⚡ | Collapsing probability waves\n▰▰▰▱▱▱▱▱ 40%",
+        "☣️ ATOMIC DECISION SYSTEM\n━━━━━━━━━━━━━━\n🌀 | Stabilizing quantum states\n▰▰▰▰▰▱▱▱ 70%",
+        "☣️ ATOMIC DECISION SYSTEM\n━━━━━━━━━━━━━━\n✅ | Quantum superposition resolved\n▰▰▰▰▰▰▰▰ 100%"
+      ];
 
-      const chosen = options[Math.floor(Math.random() * options.length)];
-      return message.reply(`🤖 Bot bollo: "${chosen}"`);
+      for (const stage of stages) {
+        await new Promise(resolve => setTimeout(resolve, 1500));
+        await api.sendMessage({
+          body: stage,
+          messageID: processingMsg.messageID
+        }, event.threadID);
+      }
+
+      // Make the selection with quantum randomness
+      const chosenIndex = Math.floor(Math.random() * options.length);
+      const chosen = options[chosenIndex];
+      
+      // Format the result
+      const result = `☣️ ATOMIC DECISION SYSTEM\n━━━━━━━━━━━━━━
+🔮 | Quantum Choice: 
+┌───────────────────────
+│ ${chosen}
+└───────────────────────
+⚛️ Decision finalized at quantum level!`;
+
+      // Send final result
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      await message.reply({
+        body: result,
+        mentions: []
+      });
+
+      // Cleanup
+      api.unsend(processingMsg.messageID);
+
     } catch (err) {
-      console.error("[Choose CMD Error]", err);
-      return message.reply("😓 Internal error hoise. Try abar porer bar.");
+      console.error("☢️ ATOMIC DECISION ERROR:", err);
+      await message.reply({
+        body: "☣️ ATOMIC DECISION SYSTEM\n━━━━━━━━━━━━━━\n❌ | Quantum disturbance detected\n🔸 | " + (err.message || "Try again later")
+      });
     }
   }
 };
