@@ -5,18 +5,18 @@ const path = require("path");
 module.exports = {
   config: {
     name: "cdp",
-    aliases: [],
-    version: "2.0",
-    author: "🎩 𝐌𝐫.𝐒𝐦𝐨𝐤𝐞𝐲 • 𝐀𝐬𝐢𝐟 𝐌𝐚𝐡𝐦𝐮𝐝 🌠",
+    aliases: ["couple"],
+    version: "3.0",
+    author: "Asif Mahmud | ☣️ ATOMIC",
     countDown: 5,
     role: 0,
     shortDescription: {
-      en: "couple dp"
+      en: "☢️ Generate Atomic Couple DP"
     },
     longDescription: {
-      en: "Get a random couple display picture (DP)"
+      en: "⚛️ Create premium couple display pictures with quantum styling"
     },
-    category: "love",
+    category: "💎 Premium Love",
     guide: {
       en: "{pn}"
     }
@@ -27,34 +27,76 @@ module.exports = {
     await fs.ensureDir(tempDir);
 
     try {
-      const { data } = await axios.get("https://api.akyuu.xyz/api/coupledpp?apikey=akuu");
+      // Send processing message with typing animation
+      const processingMsg = await api.sendMessage({
+        body: "☣️ ATOMIC COUPLE SYSTEM\n━━━━━━━━━━━━━━\n⚙️ | Quantum entanglement initiated\n▰▱▱▱▱▱▱▱ 15%"
+      }, event.threadID);
 
-      if (!data.male || !data.female) {
-        return api.sendMessage("❌ Couldn't fetch couple DP. Try again later.", event.threadID, event.messageID);
+      // Update progress
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      await api.sendMessage({
+        body: "☣️ ATOMIC COUPLE SYSTEM\n━━━━━━━━━━━━━━\n⚡ | Generating particle pairs\n▰▰▰▱▱▱▱▱ 40%",
+        messageID: processingMsg.messageID
+      }, event.threadID);
+
+      // Fetch couple images
+      const { data } = await axios.get("https://api.akyuu.xyz/api/coupledpp?apikey=akuu");
+      
+      if (!data?.male || !data?.female) {
+        return api.sendMessage({
+          body: "☣️ ATOMIC COUPLE SYSTEM\n━━━━━━━━━━━━━━\n❌ | Quantum entanglement failed\n🔸 | Try again later"
+        }, event.threadID, processingMsg.messageID);
       }
 
-      const malePath = path.join(tempDir, "male.png");
-      const femalePath = path.join(tempDir, "female.png");
+      // Update progress
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      await api.sendMessage({
+        body: "☣️ ATOMIC COUPLE SYSTEM\n━━━━━━━━━━━━━━\n🌀 | Stabilizing love particles\n▰▰▰▰▰▱▱▱ 70%",
+        messageID: processingMsg.messageID
+      }, event.threadID);
 
-      const maleImg = await axios.get(data.male, { responseType: "arraybuffer" });
+      // Download images
+      const [maleImg, femaleImg] = await Promise.all([
+        axios.get(data.male, { responseType: "arraybuffer" }),
+        axios.get(data.female, { responseType: "arraybuffer" })
+      ]);
+
+      const malePath = path.join(tempDir, `male_${Date.now()}.png`);
+      const femalePath = path.join(tempDir, `female_${Date.now()}.png`);
+
       fs.writeFileSync(malePath, Buffer.from(maleImg.data));
-
-      const femaleImg = await axios.get(data.female, { responseType: "arraybuffer" });
       fs.writeFileSync(femalePath, Buffer.from(femaleImg.data));
 
-      const msg = "🫶 Bangla Love Couple DP ready ase ✨";
+      // Update progress
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      await api.sendMessage({
+        body: "☣️ ATOMIC COUPLE SYSTEM\n━━━━━━━━━━━━━━\n✅ | Bond formation complete\n▰▰▰▰▰▰▰▰ 100%",
+        messageID: processingMsg.messageID
+      }, event.threadID);
 
+      // Prepare final message
+      const msg = `☣️ ATOMIC COUPLE SYSTEM\n━━━━━━━━━━━━━━\n💖 | Quantum Love Pair Generated\n✨ | Perfect match found!\n\n⚛️ Enjoy your atomic couple display pictures`;
+
+      // Send final result
+      await new Promise(resolve => setTimeout(resolve, 1000));
       return api.sendMessage({
         body: msg,
         attachment: [
           fs.createReadStream(malePath),
           fs.createReadStream(femalePath)
         ]
-      }, event.threadID, event.messageID);
+      }, event.threadID, () => {
+        // Cleanup
+        fs.unlinkSync(malePath);
+        fs.unlinkSync(femalePath);
+        api.unsend(processingMsg.messageID);
+      });
 
     } catch (err) {
-      console.error("[CDP ERROR]", err);
-      return api.sendMessage("❌ API error hoye gese. Pore try koron.", event.threadID, event.messageID);
+      console.error("☢️ ATOMIC COUPLE ERROR:", err);
+      return api.sendMessage({
+        body: "☣️ ATOMIC COUPLE SYSTEM\n━━━━━━━━━━━━━━\n❌ | Quantum entanglement failed\n🔸 | " + (err.message || "Try again later")
+      }, event.threadID);
     }
   }
 };
