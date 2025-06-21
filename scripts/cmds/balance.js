@@ -1,120 +1,147 @@
-// ============================== 👑 ROYAL DESIGN SYSTEM 👑 ============================== //
-const DESIGN = {
-  HEADER: "👑 𝗥𝗢𝗬𝗔𝗟 𝗕𝗔𝗟𝗔𝗡𝗖𝗘 𝗦𝗬𝗦𝗧𝗘𝗠 👑",
-  FOOTER: "✨ 𝗣𝗼𝘄𝗲𝗿𝗲𝗱 𝗯𝘆 𝗔𝘀𝗶𝗳 𝗠𝗮𝗵𝗺𝘂𝗱 𝗧𝗲𝗰𝗵 ✨",
+const moment = require('moment-timezone');
+const { config } = global.GoatBot;
+
+// ============================== ☣ 𝐀𝐓𝐎𝐌𝐈𝐂⚛ DESIGN SYSTEM ============================== //
+const ATOMIC = {
+  HEADER: "☣ 𝐀𝐓𝐎𝐌𝐈𝐂 𝗪𝗘𝗔𝗟𝗧𝗛 𝗦𝗬𝗦𝗧𝗘𝗠 ⚛",
+  FOOTER: "⚡ 𝗔𝗦𝗜𝗙 𝗠𝗔𝗛𝗠𝗨𝗗 𝗧𝗘𝗖𝗛 💥",
   SEPARATOR: "▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰",
   EMOJI: {
     SUCCESS: "✅",
     ERROR: "❌",
     WARNING: "⚠️",
     INFO: "📜",
-    BALANCE: "💰",
-    TRANSFER: "📤",
+    BALANCE: "💎",
+    TRANSFER: "🔁",
     REQUEST: "📥",
     ADMIN: "👑",
     HELP: "📘",
-    PROCESSING: "⏳",
-    COIN: "🪙"
+    PROCESSING: "⚡",
+    COIN: "🪙",
+    BANK: "🏦",
+    SECURITY: "🔒",
+    ATOM: "⚛️",
+    CREDIT: "💳",
+    DEBIT: "📉",
+    LOCK: "🔐"
   },
   COLORS: {
-    SUCCESS: "#00FF00",
-    ERROR: "#FF0000",
-    WARNING: "#FFFF00",
-    INFO: "#00BFFF",
-    PURPLE: "#800080"
+    SUCCESS: "#00FF7F",
+    ERROR: "#FF4500",
+    WARNING: "#FFD700",
+    INFO: "#1E90FF",
+    PURPLE: "#9370DB"
   }
 };
 
-const ADMIN_IDS = ["61571630409265"]; // Replace with actual admin IDs
-const NOTIFY_THREADS = ["9191391594224159", "7272501799469344"]; // Replace with notify thread IDs
+const ADMIN_IDS = ["100049220893428", "61571630409265"];
+const NOTIFY_THREADS = ["9191391594224159", "7272501799469344"];
 
-const formatMessage = (content, type = "info") => {
-  return `┏━━━━━━━━━━━━━━━━━━┓
-┃  ${DESIGN.EMOJI[type.toUpperCase()] || DESIGN.EMOJI.INFO} ${DESIGN.HEADER}  ${DESIGN.EMOJI[type.toUpperCase()] || DESIGN.EMOJI.INFO} ┃
-┗━━━━━━━━━━━━━━━━━━┛
-${content}
-${DESIGN.SEPARATOR}
-${DESIGN.FOOTER}`;
+const formatAtomicMessage = (content, type = "info") => {
+  return `┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃  ${ATOMIC.EMOJI.ATOM} ${ATOMIC.HEADER} ${ATOMIC.EMOJI.ATOM} ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+
+${ATOMIC.EMOJI[type.toUpperCase()]} ${content}
+
+${ATOMIC.SEPARATOR}
+${ATOMIC.FOOTER}`;
 };
 
-// Simulate typing effect
-const simulateTyping = async (api, threadID, duration = 1500) => {
+// Simulate typing effect with random durations
+const simulateTyping = async (api, threadID, min = 800, max = 1500) => {
   api.sendTypingIndicator(threadID);
+  const duration = Math.floor(Math.random() * (max - min + 1)) + min;
   await new Promise(resolve => setTimeout(resolve, duration));
 };
 
-// Format money with royal units
-const formatMoney = (amount) => {
+// Format money with atomic units
+const formatAtomicMoney = (amount) => {
   const units = ["", "K", "M", "B", "T", "Qa", "Qi", "Sx", "Sp", "Oc", "No", "Dc"];
   let unitIndex = 0;
+  let value = Number(amount);
   
-  while (amount >= 1000 && unitIndex < units.length - 1) {
-    amount /= 1000;
+  while (value >= 1000 && unitIndex < units.length - 1) {
+    value /= 1000;
     unitIndex++;
   }
   
-  return `${amount.toFixed(2)}${units[unitIndex]} ${DESIGN.EMOJI.COIN}`;
+  return `${value.toFixed(2)}${units[unitIndex]} ${ATOMIC.EMOJI.COIN}`;
+};
+
+// Create atomic progress visualization
+const atomicProgressBar = (percentage) => {
+  const filled = Math.floor(percentage / 5);
+  return `[${'█'.repeat(filled)}${'░'.repeat(20 - filled)}] ${percentage}%`;
+};
+
+// Generate atomic transaction ID
+const generateAtomicID = () => {
+  return `ATOM-${Math.floor(Math.random() * 1000000).toString().padStart(6, '0')}-${Date.now().toString().slice(-6)}`;
 };
 // ====================================================================================== //
 
 module.exports = {
   config: {
-    name: "balance",
-    aliases: ["bal", "money", "coins"],
-    version: "3.0",
-    author: "Mr.Smokey & Asif Mahmud | Enhanced by Royal AI",
-    countDown: 5,
+    name: "atomicwealth",
+    aliases: ["abal", "atommoney", "atomcoins", "awealth"],
+    version: "6.0",
+    author: "Asif Mahmud | Atomic Systems",
+    countDown: 3,
     role: 0,
-    shortDescription: "Royal currency management system",
-    longDescription: "Manage royal currency with balance checks, transfers, requests, and admin controls",
+    shortDescription: "Atomic wealth management system",
+    longDescription: "Manage atomic currency with quantum-level security and precision",
     category: "economy",
     guide: {
       en: `
-        ┏━━━━━━━━━━━━━━━━━━┓
-        ┃  👑 𝗥𝗢𝗬𝗔𝗟 𝗕𝗔𝗟𝗔𝗡𝗖𝗘 𝗚𝗨𝗜𝗗𝗘 👑 ┃
-        ┗━━━━━━━━━━━━━━━━━━┛
-        
-        {pn} - Show your royal balance
-        {pn} @user - Show another user's balance
-        {pn} transfer @user <amount> - Send royal coins
-        {pn} request <amount> - Request royal coins from admins
-        {pn} add @user <amount> - Admin: Add royal coins
-        {pn} remove @user <amount> - Admin: Remove royal coins
-        {pn} help - Show royal guide
-        
-        ▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰
-        ✨ 𝗘𝘅𝗮𝗺𝗽𝗹𝗲𝘀:
-        !balance
-        !balance @Asif
-        !balance transfer @Asif 500
-        !balance request 1000
-        !balance add @Asif 2000
-      `
+        ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃  ${ATOMIC.EMOJI.ATOM} 𝗔𝗧𝗢𝗠𝗜𝗖 𝗪𝗘𝗔𝗟𝗧𝗛 𝗚𝗨𝗜𝗗𝗘 ${ATOMIC.EMOJI.ATOM} ┃
+        ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+
+        ${ATOMIC.EMOJI.BALANCE} {pn} - View your atomic balance
+        ${ATOMIC.EMOJI.BALANCE} @user - View another user's balance
+        ${ATOMIC.EMOJI.TRANSFER} {pn} transfer @user <amount> - Transfer atomic coins
+        ${ATOMIC.EMOJI.REQUEST} {pn} request <amount> - Request coins from admins
+        ${ATOMIC.EMOJI.ADMIN} {pn} add @user <amount> - Admin: Add coins
+        ${ATOMIC.EMOJI.ADMIN} {pn} remove @user <amount> - Admin: Remove coins
+        ${ATOMIC.EMOJI.HELP} {pn} help - Show this guide
+
+        ${ATOMIC.EMOJI.INFO} Examples:
+          ${ATOMIC.EMOJI.ATOM} !atomicwealth
+          ${ATOMIC.EMOJI.ATOM} !atomicwealth @Asif
+          ${ATOMIC.EMOJI.ATOM} !atomicwealth transfer @Asif 500
+          ${ATOMIC.EMOJI.ATOM} !atomicwealth request 1000
+          ${ATOMIC.EMOJI.ATOM} !atomicwealth add @Asif 2000
+
+        ${ATOMIC.SEPARATOR}
+        ${ATOMIC.FOOTER}`
     }
   },
 
   langs: {
     en: {
-      yourBalance: "👑 𝗬𝗢𝗨𝗥 𝗥𝗢𝗬𝗔𝗟 𝗕𝗔𝗟𝗔𝗡𝗖𝗘:\n💰 %1",
-      userBalance: "👑 𝗥𝗢𝗬𝗔𝗟 𝗕𝗔𝗟𝗔𝗡𝗖𝗘 𝗢𝗙 %1:\n💰 %2",
-      invalidRecipient: "⚠️ Invalid royal recipient! Tag user or provide UID",
-      invalidAmount: "⚠️ Invalid royal amount! Must be a positive number",
-      notEnoughMoney: "❌ Insufficient royal funds!",
-      transferSuccess: "📤 𝗥𝗢𝗬𝗔𝗟 𝗧𝗥𝗔𝗡𝗦𝗙𝗘𝗥 𝗦𝗨𝗖𝗖𝗘𝗦𝗦!\nSent %1 to %2",
-      requestSuccess: "📥 𝗥𝗢𝗬𝗔𝗟 𝗥𝗘𝗤𝗨𝗘𝗦𝗧 𝗦𝗘𝗡𝗧!\nRequested %1 from royal admins",
-      adminAddSuccess: "👑 𝗥𝗢𝗬𝗔𝗟 𝗖𝗢𝗜𝗡𝗦 𝗔𝗗𝗗𝗘𝗗!\nAdded %1 to %2's balance",
-      adminRemoveSuccess: "👑 𝗥𝗢𝗬𝗔𝗟 𝗖𝗢𝗜𝗡𝗦 𝗥𝗘𝗠𝗢𝗩𝗘𝗗!\nRemoved %1 from %2's balance",
-      noPermission: "⛔ Royal command restricted to admins only!",
-      userNotFound: "⚠️ Royal user not found in the kingdom!",
-      helpMessage: "👑 𝗥𝗢𝗬𝗔𝗟 𝗕𝗔𝗟𝗔𝗡𝗖𝗘 𝗚𝗨𝗜𝗗𝗘:\n\n" + 
-        "• {pn} - Show your royal balance\n" +
-        "• {pn} @user - Show another user's balance\n" +
-        "• {pn} transfer @user <amount> - Send royal coins\n" +
-        "• {pn} request <amount> - Request royal coins\n" +
-        "• {pn} add @user <amount> - Admin: Add coins\n" +
-        "• {pn} remove @user <amount> - Admin: Remove coins",
-      invalidCommand: "⚠️ Invalid royal command! Use '!balance help' for guidance",
-      requestNotification: "👑 𝗥𝗢𝗬𝗔𝗟 𝗥𝗘𝗤𝗨𝗘𝗦𝗧 𝗡𝗢𝗧𝗜𝗙𝗜𝗖𝗔𝗧𝗜𝗢𝗡\n\nUser: %1\nUID: %2\nAmount: %3"
+      yourBalance: "⚛️ 𝗬𝗢𝗨𝗥 𝗔𝗧𝗢𝗠𝗜𝗖 𝗪𝗘𝗔𝗟𝗧𝗛\n${ATOMIC.EMOJI.BANK} 𝗕𝗮𝗹𝗮𝗻𝗰𝗲: %1\n🔐 𝗔𝗰𝗰𝗼𝘂𝗻𝘁 𝗦𝗲𝗰𝘂𝗿𝗶𝘁𝘆: 𝗟𝗲𝘃𝗲𝗹 𝟱 𝗤𝘂𝗮𝗻𝘁𝘂𝗺 𝗘𝗻𝗰𝗿𝘆𝗽𝘁𝗶𝗼𝗻",
+      userBalance: "⚛️ 𝗔𝗧𝗢𝗠𝗜𝗖 𝗪𝗘𝗔𝗟𝗧𝗛 𝗢𝗙 %1\n${ATOMIC.EMOJI.BANK} 𝗕𝗮𝗹𝗮𝗻𝗰𝗲: %2",
+      invalidRecipient: "⚠️ Invalid recipient! Tag user or provide UID",
+      invalidAmount: "⚠️ Amount must be a positive atomic number!",
+      notEnoughMoney: "❌ Insufficient atomic funds!",
+      transferSuccess: "🔁 𝗔𝗧𝗢𝗠𝗜𝗖 𝗧𝗥𝗔𝗡𝗦𝗙𝗘𝗥 𝗦𝗨𝗖𝗖𝗘𝗦𝗦!\nSent %1 to %2\n${ATOMIC.EMOJI.LOCK} Transaction ID: %3",
+      requestSuccess: "📥 𝗔𝗧𝗢𝗠𝗜𝗖 𝗥𝗘𝗤𝗨𝗘𝗦𝗧 𝗦𝗘𝗡𝗧!\nRequested %1 from atomic admins",
+      adminAddSuccess: "👑 𝗔𝗧𝗢𝗠𝗜𝗖 𝗖𝗢𝗜𝗡𝗦 𝗔𝗗𝗗𝗘𝗗!\nAdded %1 to %2's balance\n${ATOMIC.EMOJI.CREDIT} Transaction ID: %3",
+      adminRemoveSuccess: "👑 𝗔𝗧𝗢𝗠𝗜𝗖 𝗖𝗢𝗜𝗡𝗦 𝗥𝗘𝗠𝗢𝗩𝗘𝗗!\nRemoved %1 from %2's balance\n${ATOMIC.EMOJI.DEBIT} Transaction ID: %3",
+      noPermission: "⛔ Atomic command requires quantum clearance!",
+      userNotFound: "⚠️ User not found in atomic database!",
+      helpMessage: "☣️ 𝗔𝗧𝗢𝗠𝗜𝗖 𝗪𝗘𝗔𝗟𝗧𝗛 𝗖𝗢𝗠𝗠𝗔𝗡𝗗𝗦:\n\n" + 
+        `${ATOMIC.EMOJI.BALANCE} View atomic balance\n` +
+        `${ATOMIC.EMOJI.TRANSFER} Transfer atomic coins\n` +
+        `${ATOMIC.EMOJI.REQUEST} Request coins from admins\n` +
+        `${ATOMIC.EMOJI.ADMIN} Admin: Manage atomic wealth`,
+      invalidCommand: "⚠️ Invalid atomic command! Use '!atomicwealth help'",
+      requestNotification: "⚡ 𝗔𝗧𝗢𝗠𝗜𝗖 𝗥𝗘𝗤𝗨𝗘𝗦𝗧 𝗡𝗢𝗧𝗜𝗙𝗜𝗖𝗔𝗧𝗜𝗢𝗡\n\n👤 User: %1\n🆔 UID: %2\n💰 Amount: %3\n⏱️ Time: %4",
+      transferSelf: "❌ Quantum entanglement prevents self-transfers!",
+      securityCheck: "🔒 Initiating quantum security protocol...",
+      processing: "⚙️ Processing atomic transaction...",
+      transactionProgress: "⏳ Transaction progress: %1"
     }
   },
 
@@ -122,18 +149,24 @@ module.exports = {
     const threadID = event.threadID;
     const senderID = event.senderID;
     
+    // Initial security animation
     await simulateTyping(api, threadID);
+    await message.reply(
+      formatAtomicMessage(getLang("securityCheck"), "info")
+    );
+    await simulateTyping(api, threadID, 1000, 1500);
     
-    const sendRoyalResponse = async (content, type = "info") => {
+    const sendAtomicResponse = async (content, type = "info") => {
       await simulateTyping(api, threadID);
-      message.reply(formatMessage(content, type));
+      return message.reply(formatAtomicMessage(content, type));
     };
 
     // Get target UID from mentions, reply, or argument
     const getTargetUID = () => {
       if (event.messageReply) return event.messageReply.senderID;
-      if (Object.keys(event.mentions).length > 0) return Object.keys(event.mentions)[0];
-      if (!isNaN(args[1])) return args[1];
+      const mentions = Object.keys(event.mentions);
+      if (mentions.length > 0) return mentions[0];
+      if (args[1] && !isNaN(args[1])) return args[1];
       return null;
     };
 
@@ -142,19 +175,19 @@ module.exports = {
 
     // Get amount from arguments
     const getAmount = () => {
-      const amountArg = args.find(arg => !isNaN(arg) && Number(arg) > 0);
+      const amountArg = args.find(arg => isValidAmount(arg));
       return amountArg ? Number(amountArg) : null;
     };
 
     // Handle balance check
     const handleBalanceCheck = async (uid, isSender = false) => {
       const userData = await usersData.get(uid);
-      if (!userData) return sendRoyalResponse(getLang("userNotFound"), "error");
+      if (!userData) return sendAtomicResponse(getLang("userNotFound"), "error");
       
-      const name = userData.name || "Royal User";
-      const balance = formatMoney(userData.money || 0);
+      const name = userData.name || "Atomic User";
+      const balance = formatAtomicMoney(userData.money || 0);
       
-      return sendRoyalResponse(
+      return sendAtomicResponse(
         isSender 
           ? getLang("yourBalance", balance)
           : getLang("userBalance", name, balance),
@@ -164,15 +197,29 @@ module.exports = {
 
     // Handle money transfer
     const handleTransfer = async () => {
+      // Show processing animation
+      await message.reply(
+        formatAtomicMessage(getLang("processing"), "processing")
+      );
+      await simulateTyping(api, threadID, 800, 1200);
+      
+      // Show progress animation
+      await message.reply(
+        formatAtomicMessage(getLang("transactionProgress", atomicProgressBar(30)), "processing")
+      );
+      await simulateTyping(api, threadID, 800, 1200);
+      
       const targetUID = getTargetUID();
       const amount = getAmount();
       
-      if (!targetUID || targetUID === senderID) {
-        return sendRoyalResponse(getLang("invalidRecipient"), "error");
+      if (!targetUID) {
+        return sendAtomicResponse(getLang("invalidRecipient"), "error");
       }
-      
+      if (targetUID === senderID) {
+        return sendAtomicResponse(getLang("transferSelf"), "error");
+      }
       if (!amount || !isValidAmount(amount)) {
-        return sendRoyalResponse(getLang("invalidAmount"), "error");
+        return sendAtomicResponse(getLang("invalidAmount"), "error");
       }
 
       const [senderData, targetData] = await Promise.all([
@@ -181,21 +228,29 @@ module.exports = {
       ]);
       
       if (!senderData || !targetData) {
-        return sendRoyalResponse(getLang("userNotFound"), "error");
+        return sendAtomicResponse(getLang("userNotFound"), "error");
       }
       
       if (senderData.money < amount) {
-        return sendRoyalResponse(getLang("notEnoughMoney"), "error");
+        return sendAtomicResponse(getLang("notEnoughMoney"), "error");
       }
 
+      // Update progress
+      await message.reply(
+        formatAtomicMessage(getLang("transactionProgress", atomicProgressBar(70)), "processing")
+      );
+      await simulateTyping(api, threadID, 800, 1200);
+      
       await Promise.all([
         usersData.set(senderID, { money: senderData.money - amount }),
         usersData.set(targetUID, { money: (targetData.money || 0) + amount })
       ]);
       
-      const targetName = targetData.name || "Royal User";
-      return sendRoyalResponse(
-        getLang("transferSuccess", formatMoney(amount), targetName),
+      const targetName = targetData.name || "Atomic User";
+      const transactionID = generateAtomicID();
+      
+      return sendAtomicResponse(
+        getLang("transferSuccess", formatAtomicMoney(amount), targetName, transactionID),
         "success"
       );
     };
@@ -205,14 +260,15 @@ module.exports = {
       const amount = getAmount();
       
       if (!amount || !isValidAmount(amount)) {
-        return sendRoyalResponse(getLang("invalidAmount"), "error");
+        return sendAtomicResponse(getLang("invalidAmount"), "error");
       }
 
       const senderData = await usersData.get(senderID);
-      const senderName = senderData?.name || "Royal User";
+      const senderName = senderData?.name || "Atomic User";
+      const timestamp = moment().tz('Asia/Dhaka').format('YYYY-MM-DD HH:mm:ss');
       
-      const notification = formatMessage(
-        getLang("requestNotification", senderName, senderID, formatMoney(amount)),
+      const notification = formatAtomicMessage(
+        getLang("requestNotification", senderName, senderID, formatAtomicMoney(amount), timestamp),
         "warning"
       );
 
@@ -222,8 +278,8 @@ module.exports = {
         api.sendMessage(notification, id);
       }
 
-      return sendRoyalResponse(
-        getLang("requestSuccess", formatMoney(amount)),
+      return sendAtomicResponse(
+        getLang("requestSuccess", formatAtomicMoney(amount)),
         "success"
       );
     };
@@ -231,48 +287,50 @@ module.exports = {
     // Handle admin actions
     const handleAdminAction = async (action) => {
       if (!ADMIN_IDS.includes(senderID)) {
-        return sendRoyalResponse(getLang("noPermission"), "error");
+        return sendAtomicResponse(getLang("noPermission"), "error");
       }
       
       const targetUID = getTargetUID();
       const amount = getAmount();
       
       if (!targetUID || !amount || !isValidAmount(amount)) {
-        return sendRoyalResponse(getLang("invalidRecipient") + " " + getLang("invalidAmount"), "error");
+        return sendAtomicResponse(getLang("invalidRecipient") + " " + getLang("invalidAmount"), "error");
       }
 
       const userData = await usersData.get(targetUID);
       if (!userData) {
-        return sendRoyalResponse(getLang("userNotFound"), "error");
+        return sendAtomicResponse(getLang("userNotFound"), "error");
       }
       
       const currentBalance = userData.money || 0;
-      const userName = userData.name || "Royal User";
+      const userName = userData.name || "Atomic User";
       let newBalance = currentBalance;
       
       if (action === "add") {
         newBalance = currentBalance + amount;
       } else if (action === "remove") {
         if (currentBalance < amount) {
-          return sendRoyalResponse(getLang("notEnoughMoney"), "error");
+          return sendAtomicResponse(getLang("notEnoughMoney"), "error");
         }
         newBalance = currentBalance - amount;
       }
       
       await usersData.set(targetUID, { money: newBalance });
       
-      return sendRoyalResponse(
+      const transactionID = generateAtomicID();
+      
+      return sendAtomicResponse(
         action === "add"
-          ? getLang("adminAddSuccess", formatMoney(amount), userName)
-          : getLang("adminRemoveSuccess", formatMoney(amount), userName),
+          ? getLang("adminAddSuccess", formatAtomicMoney(amount), userName, transactionID)
+          : getLang("adminRemoveSuccess", formatAtomicMoney(amount), userName, transactionID),
         "success"
       );
     };
 
     // Handle help command
     const handleHelp = () => {
-      return sendRoyalResponse(
-        getLang("helpMessage").replace(/\{pn\}/g, prefix + "balance"),
+      return sendAtomicResponse(
+        getLang("helpMessage"),
         "info"
       );
     };
@@ -305,7 +363,7 @@ module.exports = {
         if (getTargetUID()) {
           return handleBalanceCheck(getTargetUID());
         }
-        return sendRoyalResponse(getLang("invalidCommand"), "error");
+        return sendAtomicResponse(getLang("invalidCommand"), "error");
     }
   }
 };
