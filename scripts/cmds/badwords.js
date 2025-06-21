@@ -1,113 +1,138 @@
-// ============================== 👑 ROYAL DESIGN SYSTEM 👑 ============================== //
+const fs = require("fs-extra");
+const path = require("path");
+
+// ============================== ☣ 𝐀𝐓𝐎𝐌𝐈𝐂⚛ DESIGN SYSTEM ============================== //
 const DESIGN = {
-  HEADER: "👑 𝗥𝗢𝗬𝗔𝗟 𝗕𝗔𝗗𝗪𝗢𝗥𝗗𝗦 𝗦𝗬𝗦𝗧𝗘𝗠 👑",
-  FOOTER: "✨ 𝗣𝗼𝘄𝗲𝗿𝗲𝗱 𝗯𝘆 𝗔𝘀𝗶𝗳 𝗠𝗮𝗵𝗺𝘂𝗱 𝗧𝗲𝗰𝗵 ✨",
+  HEADER: "☣ 𝐀𝐓𝐎𝐌𝐈𝐂 𝗕𝗔𝗗𝗪𝗢𝗥𝗗𝗦 𝗦𝗬𝗦𝗧𝗘𝗠 ⚛",
+  FOOTER: "⚡ 𝗔𝗦𝗜𝗙 𝗠𝗔𝗛𝗠𝗨𝗗 𝗧𝗘𝗖𝗛 💥",
   SEPARATOR: "▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰",
   EMOJI: {
     SUCCESS: "✅",
     ERROR: "❌",
     WARNING: "⚠️",
     INFO: "📜",
-    BANNED: "🚫",
-    ADMIN: "👑",
-    LIST: "📜",
-    TOGGLE: "🔄",
+    BANNED: "☢",
+    ADMIN: "🛡️",
+    LIST: "📋",
+    TOGGLE: "🔛",
     UNWARN: "🧹",
-    PROCESSING: "⏳",
-    SHIELD: "🛡️"
+    PROCESSING: "⚡",
+    SHIELD: "🛡️",
+    ATOM: "⚛️",
+    LOCK: "🔒"
   },
   COLORS: {
-    SUCCESS: "#00FF00",
-    ERROR: "#FF0000",
-    WARNING: "#FFFF00",
-    INFO: "#00BFFF"
+    SUCCESS: "#00FF7F",
+    ERROR: "#FF4500",
+    WARNING: "#FFD700",
+    INFO: "#1E90FF"
   }
 };
 
-const ADMIN_ID = "61571630409265"; // Replace with actual admin ID
-
 const formatMessage = (content, type = "info") => {
-  return `┏━━━━━━━━━━━━━━━━━━┓
-┃  ${DESIGN.EMOJI[type.toUpperCase()] || DESIGN.EMOJI.INFO} ${DESIGN.HEADER}  ${DESIGN.EMOJI[type.toUpperCase()] || DESIGN.EMOJI.INFO} ┃
-┗━━━━━━━━━━━━━━━━━━┛
-${content}
+  return `┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃  ${DESIGN.EMOJI.ATOM} ${DESIGN.HEADER} ${DESIGN.EMOJI.ATOM} ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+
+${DESIGN.EMOJI[type.toUpperCase()]} ${content}
+
 ${DESIGN.SEPARATOR}
 ${DESIGN.FOOTER}`;
 };
 
-// Simulate typing effect
-const simulateTyping = async (api, threadID, duration = 1500) => {
+// Enhanced typing animation with random duration
+const simulateTyping = async (api, threadID, min = 800, max = 1500) => {
   api.sendTypingIndicator(threadID);
+  const duration = Math.floor(Math.random() * (max - min + 1)) + min;
   await new Promise(resolve => setTimeout(resolve, duration));
 };
 
-// Hide sensitive words
-function hideWord(str) {
-  if (str.length <= 2) return str[0] + "*";
-  return str[0] + "*".repeat(str.length - 2) + str.slice(-1);
-}
+// Escape special regex characters
+const escapeRegExp = (string) => {
+  return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+};
+
+// Hide sensitive words with atomic pattern
+const hideWord = (str) => {
+  if (str.length <= 2) return "•".repeat(str.length);
+  return str[0] + "•".repeat(str.length - 2) + str.slice(-1);
+};
+
+// Atomic visual effects
+const atomicProgress = (progress) => {
+  const filled = Math.floor(progress / 5);
+  return `[${'█'.repeat(filled)}${'░'.repeat(20 - filled)}] ${progress}%`;
+};
 // ====================================================================================== //
 
 module.exports = {
   config: {
-    name: "badwords",
-    aliases: ["bw", "wordfilter"],
-    version: "3.0",
-    author: "NTKhang & Asif Mahmud | Enhanced by Royal AI",
+    name: "atomicwords",
+    aliases: ["aw", "atomicfilter", "afilter"],
+    version: "4.0",
+    author: "Asif Mahmud | Atomic Systems",
     countDown: 5,
     role: 1,
-    shortDescription: "Royal word filtering system",
-    longDescription: "Manage banned words with royal security measures",
+    shortDescription: "Atomic word filtering system",
+    longDescription: "Manage banned words with futuristic ☣𝐀𝐓𝐎𝐌𝐈𝐂⚛ security measures",
     category: "moderation",
     guide: {
-      en: `
-        ┏━━━━━━━━━━━━━━━━━━┓
-        ┃  👑 𝗕𝗔𝗗𝗪𝗢𝗥𝗗𝗦 𝗚𝗨𝗜𝗗𝗘 👑 ┃
-        ┗━━━━━━━━━━━━━━━━━━┛
-        
-        {pn} add <words> - Add banned words (comma separated)
-        {pn} del <words> - Remove banned words
-        {pn} list [hide] - Show banned words (hide obscures words)
-        {pn} on/off - Enable/disable detection
-        {pn} unwarn <@user> - Remove warning
-        
-        ▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰
-        ✨ Examples:
-        !badwords add curse,slur
-        !badwords del curse
-        !badwords list hide
-        !badwords on
-        !badwords unwarn @user
-      `
+      en: `┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃  ${DESIGN.EMOJI.INFO} 𝗔𝗧𝗢𝗠𝗜𝗖 𝗙𝗜𝗟𝗧𝗘𝗥 𝗚𝗨𝗜𝗗𝗘 ${DESIGN.EMOJI.INFO} ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+
+${DESIGN.EMOJI.ADMIN} {pn} add <words> - Add atomic-banned words
+${DESIGN.EMOJI.ADMIN} {pn} del <words> - Remove banned words
+${DESIGN.EMOJI.LIST} {pn} list [hide] - Show banned words
+${DESIGN.EMOJI.TOGGLE} {pn} on/off - Toggle atomic filter
+${DESIGN.EMOJI.UNWARN} {pn} unwarn <@user> - Remove warning
+
+${DESIGN.EMOJI.INFO} Examples:
+  ${DESIGN.EMOJI.ATOM} {pn} add curse,slur
+  ${DESIGN.EMOJI.ATOM} {pn} del curse
+  ${DESIGN.EMOJI.ATOM} {pn} list hide
+  ${DESIGN.EMOJI.ATOM} {pn} on
+  ${DESIGN.EMOJI.ATOM} {pn} unwarn @user
+
+${DESIGN.SEPARATOR}
+${DESIGN.FOOTER}`
     }
   },
 
   langs: {
     en: {
-      onlyAdmin: "👑 Command restricted to admins only!",
-      missingWords: "⚠️ Please enter words to add",
-      addedSuccess: "🛡️ Added %1 banned word(s) to royal list",
-      alreadyExist: "⚠️ %1 word(s) already in list: %2",
-      tooShort: "⚠️ %1 word(s) too short (< 2 chars): %2",
-      missingWords2: "⚠️ Please enter words to delete",
-      deletedSuccess: "🛡️ Removed %1 banned word(s) from royal list",
-      notExist: "⚠️ %1 word(s) not in list: %2",
-      emptyList: "📜 Royal banned words list is empty",
-      badWordsList: "👑 𝗥𝗢𝗬𝗔𝗟 𝗕𝗔𝗡𝗡𝗘𝗗 𝗪𝗢𝗥𝗗𝗦 𝗟𝗜𝗦𝗧:\n%1",
-      turnedOn: "🛡️ Royal word filter activated!",
-      turnedOff: "🛡️ Royal word filter deactivated",
-      missingTarget: "⚠️ Please tag user, enter UID, or reply to message",
-      notWarned: "⚠️ User %1 has no royal warnings",
-      unwarned: "🧹 Removed royal warning for %1",
-      warned: "🚫 Royal alert: Banned word \"%1\" detected!\n⚠️ One more violation = kick!",
-      warned2: "🚫 Royal alert: Banned word \"%1\" detected again!\n👑 You're being removed from the kingdom!",
-      needAdmin: "❌ Bot needs admin power to enforce royal decrees!",
-      userKicked: "👑 User %1 has been banished from the kingdom!"
+      onlyAdmin: `${DESIGN.EMOJI.ERROR} Command restricted to atomic admins!`,
+      missingWords: `${DESIGN.EMOJI.WARNING} Enter words for atomic filter!`,
+      addedSuccess: `${DESIGN.EMOJI.SUCCESS} Added %1 word(s) to atomic core!`,
+      alreadyExist: `${DESIGN.EMOJI.WARNING} %1 word(s) already in core: %2`,
+      tooShort: `${DESIGN.EMOJI.WARNING} %1 word(s) too short: %2`,
+      missingWords2: `${DESIGN.EMOJI.WARNING} Enter words to remove from atomic core!`,
+      deletedSuccess: `${DESIGN.EMOJI.SUCCESS} Removed %1 word(s) from atomic core!`,
+      notExist: `${DESIGN.EMOJI.WARNING} %1 word(s) not in core: %2`,
+      emptyList: `${DESIGN.EMOJI.WARNING} Atomic core is empty!`,
+      badWordsList: `${DESIGN.EMOJI.LIST} ☣ 𝗔𝗧𝗢𝗠𝗜𝗖 𝗖𝗢𝗥𝗘 𝗪𝗢𝗥𝗗𝗦 📋\n%1`,
+      turnedOn: `${DESIGN.EMOJI.TOGGLE} Atomic filter ACTIVATED! ${DESIGN.EMOJI.SHIELD}`,
+      turnedOff: `${DESIGN.EMOJI.TOGGLE} Atomic filter DEACTIVATED!`,
+      missingTarget: `${DESIGN.EMOJI.WARNING} Tag user or reply to message!`,
+      notWarned: `${DESIGN.EMOJI.WARNING} User %1 has no atomic warnings!`,
+      unwarned: `${DESIGN.EMOJI.UNWARN} Removed atomic warning for %1`,
+      warned: `${DESIGN.EMOJI.WARNING} ☢ 𝗔𝗟𝗘𝗥𝗧: Banned word detected! **%1**\n${DESIGN.EMOJI.BANNED} Next violation = SYSTEM PURGE!`,
+      warned2: `${DESIGN.EMOJI.WARNING} ☢ 𝗖𝗥𝗜𝗧𝗜𝗖𝗔𝗟: Banned word detected! **%1**\n${DESIGN.EMOJI.BANNED} INITIATING SYSTEM PURGE!`,
+      needAdmin: `${DESIGN.EMOJI.ERROR} Requires admin for atomic purge!`,
+      userKicked: `${DESIGN.EMOJI.BANNED} User %1 PURGED from atomic grid!`,
+      processing: `${DESIGN.EMOJI.PROCESSING} Processing atomic command...`,
+      securityCheck: `${DESIGN.EMOJI.SHIELD} Running security protocols...`
     }
   },
 
   onStart: async function ({ message, event, args, threadsData, usersData, role, getLang, api }) {
     await simulateTyping(api, event.threadID);
+    
+    // Initial security animation
+    message.reply(
+      formatMessage(getLang("securityCheck"), "info")
+    );
+    await simulateTyping(api, event.threadID, 1000, 1500);
     
     const threadID = event.threadID;
     if (!await threadsData.get(threadID, "data.badWords")) {
@@ -121,35 +146,44 @@ module.exports = {
     const cmd = args[0]?.toLowerCase() || "";
     const input = args.slice(1).join(" ").split(/[,|]/).map(w => w.trim().toLowerCase()).filter(Boolean);
 
-    const sendRoyalResponse = async (content, type = "info") => {
-      await simulateTyping(api, event.threadID);
-      message.reply(formatMessage(content, type));
+    const sendAtomicResponse = (content, type = "info") => {
+      return formatMessage(content, type);
     };
 
     if (cmd === "add") {
-      if (role < 1) return sendRoyalResponse(getLang("onlyAdmin"), "error");
-      if (!input.length) return sendRoyalResponse(getLang("missingWords"), "error");
+      if (role < 1) return message.reply(sendAtomicResponse(getLang("onlyAdmin"), "error"));
+      if (!input.length) return message.reply(sendAtomicResponse(getLang("missingWords"), "error"));
 
       const added = [], exist = [], tooShort = [];
       for (const word of input) {
         if (word.length < 2) tooShort.push(word);
-        else if (!words.includes(word)) added.push(word), words.push(word);
-        else exist.push(word);
+        else if (!words.includes(word)) {
+          added.push(word);
+          words.push(word);
+        } else {
+          exist.push(word);
+        }
       }
-      
+
       await threadsData.set(threadID, words, "data.badWords.words");
-      
+
       let response = "";
-      if (added.length) response += `${DESIGN.EMOJI.SUCCESS} ${getLang("addedSuccess", added.length)}\n`;
-      if (exist.length) response += `${DESIGN.EMOJI.WARNING} ${getLang("alreadyExist", exist.length, exist.map(hideWord).join(", "))}\n`;
-      if (tooShort.length) response += `${DESIGN.EMOJI.WARNING} ${getLang("tooShort", tooShort.length, tooShort.join(", "))}`;
+      if (added.length) response += `\n${DESIGN.EMOJI.ATOM} ${getLang("addedSuccess", added.length)}`;
+      if (exist.length) response += `\n${DESIGN.EMOJI.WARNING} ${getLang("alreadyExist", exist.length, exist.map(hideWord).join(", "))}`;
+      if (tooShort.length) response += `\n${DESIGN.EMOJI.WARNING} ${getLang("tooShort", tooShort.length, tooShort.join(", "))}`;
+
+      // Progress animation
+      message.reply(
+        sendAtomicResponse(`${DESIGN.EMOJI.PROCESSING} Updating atomic core...\n${atomicProgress(30)}`, "processing")
+      );
+      await simulateTyping(api, event.threadID, 800, 1200);
       
-      return sendRoyalResponse(response, "success");
+      return message.reply(sendAtomicResponse(response, "success"));
     }
 
     if (["delete", "del", "remove"].includes(cmd)) {
-      if (role < 1) return sendRoyalResponse(getLang("onlyAdmin"), "error");
-      if (!input.length) return sendRoyalResponse(getLang("missingWords2"), "error");
+      if (role < 1) return message.reply(sendAtomicResponse(getLang("onlyAdmin"), "error"));
+      if (!input.length) return message.reply(sendAtomicResponse(getLang("missingWords2"), "error"));
 
       const deleted = [], notFound = [];
       for (const word of input) {
@@ -161,52 +195,77 @@ module.exports = {
           notFound.push(word);
         }
       }
-      
+
       await threadsData.set(threadID, words, "data.badWords.words");
-      
+
       let response = "";
-      if (deleted.length) response += `${DESIGN.EMOJI.SUCCESS} ${getLang("deletedSuccess", deleted.length)}\n`;
-      if (notFound.length) response += `${DESIGN.EMOJI.WARNING} ${getLang("notExist", notFound.length, notFound.join(", "))}`;
-      
-      return sendRoyalResponse(response, "success");
-    }
+      if (deleted.length) response += `\n${DESIGN.EMOJI.ATOM} ${getLang("deletedSuccess", deleted.length)}`;
+      if (notFound.length) response += `\n${DESIGN.EMOJI.WARNING} ${getLang("notExist", notFound.length, notFound.join(", "))}`;
 
-    if (["list", "show"].includes(cmd)) {
-      if (!words.length) return sendRoyalResponse(getLang("emptyList"), "warning");
-      
-      const hideMode = args[1] === "hide";
-      const list = words.map(word => hideMode ? hideWord(word) : word).join(", ");
-      return sendRoyalResponse(getLang("badWordsList", list), "info");
-    }
-
-    if (["on", "off"].includes(cmd)) {
-      if (role < 1) return sendRoyalResponse(getLang("onlyAdmin"), "error");
-      
-      await threadsData.set(threadID, cmd === "on", "settings.badWords");
-      return sendRoyalResponse(
-        cmd === "on" ? getLang("turnedOn") : getLang("turnedOff"),
-        "success"
+      // Progress animation
+      message.reply(
+        sendAtomicResponse(`${DESIGN.EMOJI.PROCESSING} Modifying atomic core...\n${atomicProgress(60)}`, "processing")
       );
+      await simulateTyping(api, event.threadID, 800, 1200);
+      
+      return message.reply(sendAtomicResponse(response, "success"));
+    }
+
+    if (["list", "show", "core"].includes(cmd)) {
+      if (!words.length) return message.reply(sendAtomicResponse(getLang("emptyList"), "warning"));
+
+      const hideMode = args[1] === "hide";
+      const list = words.map(word => 
+        hideMode ? hideWord(word) : word
+      ).map((w, i) => 
+        `${DESIGN.EMOJI.ATOM} ${i+1}. ${w}`
+      ).join("\n");
+      
+      return message.reply(sendAtomicResponse(
+        `${getLang("badWordsList")}\n\n${list}\n\n${DESIGN.EMOJI.LOCK} Total: ${words.length}`, 
+        "info"
+      ));
+    }
+
+    if (["on", "off", "activate", "deactivate"].includes(cmd)) {
+      if (role < 1) return message.reply(sendAtomicResponse(getLang("onlyAdmin"), "error"));
+
+      const state = ["on", "activate"].includes(cmd);
+      await threadsData.set(threadID, state, "settings.badWords");
+      
+      // System activation animation
+      message.reply(
+        sendAtomicResponse(`${DESIGN.EMOJI.PROCESSING} ${state ? "Activating" : "Deactivating"} atomic core...\n${atomicProgress(80)}`, "processing")
+      );
+      await simulateTyping(api, event.threadID, 1000, 1500);
+      
+      return message.reply(sendAtomicResponse(
+        state ? getLang("turnedOn") : getLang("turnedOff"),
+        "success"
+      ));
     }
 
     if (cmd === "unwarn") {
-      if (role < 1) return sendRoyalResponse(getLang("onlyAdmin"), "error");
-      
+      if (role < 1) return message.reply(sendAtomicResponse(getLang("onlyAdmin"), "error"));
+
       const userID = Object.keys(event.mentions)?.[0] || args[1] || event.messageReply?.senderID;
-      if (!userID || isNaN(userID)) return sendRoyalResponse(getLang("missingTarget"), "error");
-      
-      if (!violations[userID]) return sendRoyalResponse(getLang("notWarned", userID), "warning");
-      
+      if (!userID || isNaN(userID)) return message.reply(sendAtomicResponse(getLang("missingTarget"), "error"));
+
+      if (!violations[userID]) return message.reply(sendAtomicResponse(getLang("notWarned", userID), "warning"));
+
       violations[userID]--;
       if (violations[userID] === 0) delete violations[userID];
-      
+
       await threadsData.set(threadID, violations, "data.badWords.violationUsers");
       const userName = await usersData.getName(userID);
-      
-      return sendRoyalResponse(getLang("unwarned", userName), "success");
+
+      return message.reply(sendAtomicResponse(getLang("unwarned", userName), "success"));
     }
 
-    return sendRoyalResponse("👑 Invalid royal command! Use '!badwords guide' for assistance", "error");
+    return message.reply(sendAtomicResponse(
+      `${DESIGN.EMOJI.ERROR} Invalid atomic command!\n${DESIGN.EMOJI.INFO} Use '{pn} guide' for help`,
+      "error"
+    ));
   },
 
   onChat: async function ({ message, event, api, threadsData, getLang }) {
@@ -218,36 +277,42 @@ module.exports = {
     const threadData = await threadsData.get(threadID);
     if (!threadData?.settings?.badWords) return;
 
-    // Avoid triggering on command itself
-    const isCommand = global.GoatBot.commands.some(cmd => 
-      cmd.config.aliases?.some(alias => msg.startsWith(global.GoatBot.config.prefix + alias))
+    const isCommand = global.GoatBot.commands.some(cmd =>
+      (cmd.config.aliases || []).some(alias => msg.startsWith(global.GoatBot.config.prefix + alias))
     );
     if (isCommand) return;
 
     const badWords = threadData.data.badWords?.words || [];
     const violations = threadData.data.badWords?.violationUsers || {};
 
-    const sendRoyalAlert = async (content) => {
-      await simulateTyping(api, threadID);
+    const sendAtomicAlert = async (content) => {
+      await simulateTyping(api, threadID, 1000, 1500);
       message.reply(formatMessage(content, "warning"));
     };
 
     for (const word of badWords) {
-      const regex = new RegExp(`\\b${word}\\b`, "gi");
+      const regex = new RegExp(`\\b${escapeRegExp(word)}\\b`, "gi");
       if (regex.test(msg)) {
         if ((violations[senderID] || 0) < 1) {
           violations[senderID] = 1;
           await threadsData.set(threadID, violations, "data.badWords.violationUsers");
-          return sendRoyalAlert(getLang("warned", word));
+          await sendAtomicAlert(getLang("warned", word));
         } else {
-          await sendRoyalAlert(getLang("warned2", word));
-          
-          try {
-            await api.removeUserFromGroup(senderID, threadID);
-            const userName = await global.utils.getUserName(api, senderID);
-            message.reply(formatMessage(getLang("userKicked", userName), "error"));
-          } catch (err) {
-            sendRoyalAlert(getLang("needAdmin"));
+          await sendAtomicAlert(getLang("warned2", word));
+          const userName = senderID; // Using ID instead of name
+          let retries = 3;
+          while (retries > 0) {
+            try {
+              await api.removeUserFromGroup(senderID, threadID);
+              await message.reply(formatMessage(getLang("userKicked", userName), "error"));
+              break;
+            } catch (err) {
+              retries--;
+              if (retries === 0) {
+                await sendAtomicAlert(getLang("needAdmin"));
+              }
+              await new Promise(resolve => setTimeout(resolve, 1000));
+            }
           }
         }
         break;
