@@ -1,89 +1,116 @@
-// ✅ GoatBot Eval Command v2.0
-// 🔧 Fixed, Upgraded, Fully Working with Real Output Handling + Banglish Added
-
 const { removeHomeDir, log } = global.utils;
 
 module.exports = {
   config: {
     name: "eval",
-    version: "2.0",
-    author: "🎩 𝐌𝐫.𝐒𝐦𝐨𝐤𝐞𝐲 • 𝐀𝐬𝐢𝐟 𝐌𝐚𝐡𝐦𝐮𝐝 🌠",
+    version: "2.1",
+    author: "☣️ 𝐀𝐬𝐢𝐟 ⚛️",
     countDown: 5,
     role: 2,
     shortDescription: {
-      vi: "Test code nhanh",
-      en: "Test code quickly",
-      bn: "Code test korar jonne"
+      en: "⚡ Execute JavaScript code dynamically",
+      bn: "⚡ JavaScript কোড ডাইনামিক্যালি এক্সিকিউট করুন"
     },
     longDescription: {
-      vi: "Test code nhanh",
-      en: "Test code quickly",
-      bn: "Taratari kono code test korar jonne"
+      en: "🔧 Powerful code evaluation with enhanced output formatting and error handling",
+      bn: "🔧 শক্তিশালী কোড ইভ্যালুয়েশন উন্নত আউটপুট ফরম্যাটিং এবং এরর হ্যান্ডলিং সহ"
     },
-    category: "owner",
+    category: "👑 Owner",
     guide: {
-      vi: "{pn} <đoạn code cần test>",
-      en: "{pn} <code to test>",
-      bn: "{pn} <test korar code>"
+      en: "{pn} <code>",
+      bn: "{pn} <কোড>"
     }
   },
 
   langs: {
-    vi: { error: "❌ Đã có lỗi xảy ra:" },
-    en: { error: "❌ An error occurred:" },
-    bn: { error: "❌ Somossa hoise:" }
+    en: { 
+      error: "☢️ 𝗘𝗩𝗥𝗢𝗥 𝗢𝗖𝗖𝗨𝗥𝗘𝗗:",
+      success: "⚡ 𝗘𝗩𝗔𝗟 𝗦𝗨𝗖𝗖𝗘𝗦𝗦𝗙𝗨𝗟𝗟𝗬 𝗘𝗫𝗘𝗖𝗨𝗧𝗘𝗗:",
+      undefined: "🫥 𝗨𝗡𝗗𝗘𝗙𝗜𝗡𝗘𝗗"
+    },
+    bn: {
+      error: "☢️ 𝗘𝗥𝗥𝗢𝗥 𝗛𝗢𝗜𝗦𝗘:",
+      success: "⚡ 𝗦𝗔𝗙𝗔𝗟𝗬 𝗘𝗫𝗘𝗖𝗨𝗧𝗘 𝗛𝗢𝗜𝗦𝗘:",
+      undefined: "🫥 𝗔𝗡𝗗𝗘𝗙𝗜𝗡𝗘𝗗"
+    }
   },
 
   onStart: async function (context) {
-    const {
-      api,
-      args,
-      message,
-      getLang,
-      event,
-      threadsData,
-      usersData,
-      dashBoardData,
-      globalData,
-      threadModel,
-      userModel,
-      dashBoardModel,
-      globalModel,
-      role,
-      commandName
-    } = context;
-
+    const { api, args, message, getLang } = context;
     const lang = getLang();
 
-    const code = args.join(" ");
-    if (!code) return message.reply("⚠️ | Kono code likho eval er por");
-
-    try {
-      const result = await eval(`(async () => { ${code} })()`);
-      message.reply(format(result));
-    } catch (err) {
-      log.err("eval command", err);
-      message.reply(`${lang.error}\n${formatError(err)}`);
+    if (!args[0]) {
+      return message.reply("☣️ 𝗣𝗟𝗘𝗔𝗦𝗘 𝗣𝗥𝗢𝗩𝗜𝗗𝗘 𝗖𝗢𝗗𝗘 𝗧𝗢 𝗘𝗩𝗔𝗟𝗨𝗔𝗧𝗘\n\n" + 
+                         "⚡ 𝗘𝗫𝗔𝗠𝗣𝗟𝗘:\n" + 
+                         "• eval 2+2\n" + 
+                         "• eval api.sendMessage('Hi', event.threadID)");
     }
 
-    function format(result) {
-      if (typeof result === "undefined") return "undefined";
-      if (typeof result === "function") return result.toString();
-      if (typeof result === "object") {
+    try {
+      const startTime = Date.now();
+      const result = await eval(`(async () => { ${args.join(" ")} })()`);
+      const executionTime = Date.now() - startTime;
+      
+      const formattedResult = this.formatResult(result, lang);
+      const successMessage = `⚡ 𝗔𝗧𝗢𝗠𝗜𝗖 𝗘𝗩𝗔𝗟 𝗥𝗘𝗦𝗨𝗟𝗧 ⚛️\n\n` +
+                           `📝 𝗖𝗢𝗗𝗘:\n${args.join(" ")}\n\n` +
+                           `✅ ${lang.success}\n${formattedResult}\n\n` +
+                           `⏱️ 𝗘𝗫𝗘𝗖𝗨𝗧𝗜𝗢𝗡 𝗧𝗜𝗠𝗘: ${executionTime}ms`;
+      
+      message.reply(successMessage);
+    } catch (err) {
+      log.error("eval command", err);
+      const errorMessage = `☢️ 𝗔𝗧𝗢𝗠𝗜𝗖 𝗘𝗩𝗔𝗟 𝗙𝗔𝗜𝗟𝗘𝗗 ⚛️\n\n` +
+                         `📝 𝗖𝗢𝗗𝗘:\n${args.join(" ")}\n\n` +
+                         `❌ ${lang.error}\n${this.formatError(err)}`;
+      
+      message.reply(errorMessage);
+    }
+  },
+
+  formatResult: function(result, lang) {
+    if (result === undefined) return lang.undefined;
+    if (result === null) return "⛔ 𝗡𝗨𝗟𝗟";
+    
+    switch (typeof result) {
+      case "function":
+        return "🔧 𝗙𝗨𝗡𝗖𝗧𝗜𝗢𝗡:\n" + result.toString();
+      case "object":
         if (result instanceof Map) {
           const obj = {};
           result.forEach((v, k) => (obj[k] = v));
-          return `Map(${result.size}):\n` + JSON.stringify(obj, null, 2);
+          return `🗺️ 𝗠𝗔𝗣 (${result.size}):\n` + this.safeStringify(obj);
         }
-        return JSON.stringify(result, null, 2);
-      }
-      return result.toString();
+        if (result instanceof Set) {
+          return `📦 𝗦𝗘𝗧 (${result.size}):\n` + this.safeStringify([...result]);
+        }
+        return "📊 𝗢𝗕𝗝𝗘𝗖𝗧:\n" + this.safeStringify(result);
+      case "string":
+        return `📄 𝗦𝗧𝗥𝗜𝗡𝗚:\n${result}`;
+      case "number":
+        return `🔢 𝗡𝗨𝗠𝗕𝗘𝗥:\n${result}`;
+      case "boolean":
+        return `🔘 𝗕𝗢𝗢𝗟𝗘𝗔𝗡:\n${result}`;
+      default:
+        return "✨ 𝗨𝗡𝗞𝗡𝗢𝗪𝗡 𝗧𝗬𝗣𝗘:\n" + this.safeStringify(result);
     }
+  },
 
-    function formatError(err) {
-      return removeHomeDir(
-        err.stack ? err.stack : JSON.stringify(err, null, 2) || "Unknown error"
-      );
-    }
+  safeStringify: function(obj, indent = 2) {
+    const cache = new Set();
+    return JSON.stringify(obj, (key, value) => {
+      if (typeof value === "object" && value !== null) {
+        if (cache.has(value)) return "[Circular]";
+        cache.add(value);
+      }
+      return value;
+    }, indent);
+  },
+
+  formatError: function(err) {
+    const stack = err.stack ? removeHomeDir(err.stack) : "No stack trace";
+    return `🛠️ 𝗘𝗥𝗥𝗢𝗥 𝗧𝗬𝗣𝗘: ${err.name || "Unknown"}\n\n` +
+           `📜 𝗠𝗘𝗦𝗦𝗔𝗚𝗘:\n${err.message || "No message"}\n\n` +
+           `🔍 𝗦𝗧𝗔𝗖𝗞 𝗧𝗥𝗔𝗖𝗘:\n${stack}`;
   }
 };
