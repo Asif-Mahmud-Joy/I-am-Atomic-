@@ -1,352 +1,602 @@
 const { randomString, getTime, convertTime } = global.utils;
-
+const { createCanvas, loadImage } = require('canvas');
 const rows = [
     { col: 4, row: 10, rewardPoint: 1 },
     { col: 5, row: 12, rewardPoint: 2 },
     { col: 6, row: 15, rewardPoint: 3 }
 ];
 
+// Atomic design elements
+const ATOMIC_SYMBOLS = ["⚛", "☢", "☣", "⏚", "⎈", "⍟", "✦", "✧", "❖"];
+const PARTICLE_COLORS = ["#FF5555", "#55FFFF", "#FFAA00", "#AA55FF", "#55FF55"];
+const BACKGROUND_COLOR = "#0f172a";
+const PRIMARY_COLOR = "#38bdf8";
+const SECONDARY_COLOR = "#818cf8";
+const ACCENT_COLOR = "#f472b6";
+const SUCCESS_COLOR = "#34d399";
+const ERROR_COLOR = "#f87171";
+
 module.exports = {
     config: {
         name: "guessnumber",
-        aliases: ["guessnum"],
-        version: "1.3",
-        author: "🎩 𝐌𝐫.𝐒𝐦𝐨𝐤𝐞𝐲 • 𝐀𝐬𝐢𝐟 𝐌𝐚𝐡𝐦𝐮𝐝 🌠",
-        countDown: 5,
+        aliases: ["guessnum", "atomicguess", "nucleargame"],
+        version: "2.0",
+        author: "☣ 𝐀𝐓𝐎𝐌𝐈𝐂 𝐀𝐒𝐈𝐅 ⚛",
+        countDown: 3,
         role: 0,
         description: {
-            vi: "Trò chơi đoán số",
-            en: "Guess number game",
-            bn: "সংখ্যা অনুমান খেলা"
+            en: "⚡ Atomic-themed number guessing game with leaderboards",
+            bn: "⚡ পারমাণবিক থিমযুক্ত সংখ্যা অনুমান খেলা"
         },
-        category: "game",
+        category: "atomic-games",
         guide: {
-            vi: "  {pn} [4 | 5 | 6] [single | multi]: Tạo một trò chơi mới, với:\n    4 5 6 là số chữ số của số cần đoán, mặc định là 4.\n    single | multi là chế độ chơi, single là 1 người chơi, multi là nhiều người chơi, mặc định là single.\n   Ví dụ:\n    {pn}\n    {pn} 4 single\n\n   Cách chơi: Trả lời tin nhắn của bot với số bạn đoán.\n   Bạn có " + rows.map(item => `${item.row} lần (${item.col} số)`).join(", ") + ".\n   Sau mỗi lần đoán, bạn sẽ nhận được gợi ý: số lượng chữ số đúng và số chữ số đúng vị trí.\n   Lưu ý: Số được tạo từ các chữ số 0-9, mỗi chữ số chỉ xuất hiện một lần, có thể bắt đầu bằng 0.\n\n   {pn} rank <trang>: Xem bảng xếp hạng.\n   {pn} info [<uid> | <@tag> | <reply> | <không nhập>]: Xem thông tin xếp hạng của bạn hoặc người khác.\n   {pn} reset: Đặt lại bảng xếp hạng (chỉ admin bot).",
-            en: "  {pn} [4 | 5 | 6] [single | multi]: Create a new game, with:\n    4 5 6 is the number of digits to guess, default is 4.\n    single | multi is the game mode, single is 1 player, multi is multi-player, default is single.\n   Example:\n    {pn}\n    {pn} 4 single\n\n   How to play: Reply to the bot's message with your guessed number.\n   You have " + rows.map(item => `${item.row} tries (${item.col} digits)`).join(", ") + ".\n   After each guess, you'll get hints: number of correct digits and correct digits in correct positions.\n   Note: The number uses digits 0-9, each appearing once, and can start with 0.\n\n   {pn} rank <page>: View the ranking.\n   {pn} info [<uid> | <@tag> | <reply> | <empty>]: View your or another's ranking info.\n   {pn} reset: Reset the ranking (admin only).",
-            bn: "  {pn} [4 | 5 | 6] [single | multi]: একটি নতুন খেলা তৈরি করুন, সাথে:\n    4 5 6 হল অনুমান করার সংখ্যার অঙ্কের সংখ্যা, ডিফল্ট হল 4।\n    single | multi হল খেলার মোড, single হল 1 খেলোয়াড়, multi হল একাধিক খেলোয়াড়, ডিফল্ট হল single।\n   উদাহরণ:\n    {pn}\n    {pn} 4 single\n\n   কীভাবে খেলবেন: বটের বার্তার উত্তরে আপনার অনুমান করা সংখ্যা দিন।\n   আপনার আছে " + rows.map(item => `${item.row} বার (${item.col} অঙ্ক)`).join(", ") + "।\n   প্রতিটি অনুমানের পরে, আপনি ইঙ্গিত পাবেন: সঠিক অঙ্কের সংখ্যা এবং সঠিক অবস্থানে সঠিক অঙ্কের সংখ্যা।\n   নোট: সংখ্যাটি 0-9 অঙ্ক দিয়ে গঠিত, প্রতিটি অঙ্ক একবারই থাকে এবং 0 দিয়ে শুরু হতে পারে।\n\n   {pn} rank <পৃষ্ঠা>: র‌্যাঙ্কিং দেখুন।\n   {pn} info [<uid> | <@tag> | <reply> | <খালি>]: আপনার বা অন্যের র‌্যাঙ্কিং তথ্য দেখুন।\n   {pn} reset: র‌্যাঙ্কিং রিসেট করুন (শুধুমাত্র অ্যাডমিন)।"
+            en: "{pn} [4-6] [single/multi] - Start game\n{pn} rank - View leaderboard\n{pn} info - Your stats",
+            bn: "{pn} [4-6] [single/multi] - খেলা শুরু করুন\n{pn} rank - র‌্যাঙ্কিং দেখুন\n{pn} info - আপনার পরিসংখ্যান"
         }
     },
 
     langs: {
-        vi: {
-            charts: "🏆 | Bảng xếp hạng:\n%1",
-            pageInfo: "Trang %1/%2",
-            noScore: "⭕ | Chưa có ai ghi điểm.",
-            noPermissionReset: "⚠️ | Bạn không có quyền đặt lại bảng xếp hạng.",
-            notFoundUser: "⚠️ | Không tìm thấy người dùng với id %1 trong bảng xếp hạng.",
-            userRankInfo: "🏆 | Thông tin xếp hạng:\nTên: %1\nĐiểm: %2\nSố lần chơi: %3\nSố lần thắng: %4\n%5\nSố lần thua: %6\nTỷ lệ thắng: %7%\nTổng thời gian chơi: %8",
-            digits: "%1 chữ số: %2",
-            resetRankSuccess: "✅ | Đặt lại bảng xếp hạng thành công.",
-            invalidCol: "⚠️ | Vui lòng nhập số chữ số cần đoán là 4, 5 hoặc 6.",
-            invalidMode: "⚠️ | Vui lòng nhập chế độ chơi là single hoặc multi.",
-            created: "✅ | Tạo trò chơi thành công!",
-            gameName: "TRÒ CHƠI ĐOÁN SỐ",
-            gameGuide: "⏳ | Hướng dẫn:\nBạn có %1 lần đoán số %2 chữ số.\nSau mỗi lần đoán, bạn sẽ nhận được gợi ý:\n- Số chữ số đúng: Tổng số chữ số có trong đáp án.\n- Số chữ số đúng vị trí: Số chữ số đúng và ở đúng vị trí.",
-            gameNote: "📄 | Lưu ý: Số được tạo từ 0-9, mỗi chữ số chỉ xuất hiện một lần, có thể bắt đầu bằng 0.",
-            replyToPlayGame: "🎮 | Trả lời tin nhắn này với %1 chữ số bạn đoán (ví dụ: 1234).",
-            invalidNumbers: "⚠️ | Vui lòng nhập đúng %1 chữ số (0-9, không trùng lặp).",
-            guessFeedback: "Lần đoán %1: %2\n- %3 chữ số đúng\n- %4 chữ số đúng vị trí\nCòn %5 lần đoán.",
-            win: "🎉 | Chúc mừng bạn đoán đúng số %1 sau %2 lần đoán! Bạn nhận %3 điểm thưởng.",
-            loss: "🤦‍♂️ | Bạn đã hết lượt đoán. Số đúng là %1."
-        },
         en: {
-            charts: "🏆 | Ranking:\n%1",
-            pageInfo: "Page %1/%2",
-            noScore: "⭕ | No one has scored yet.",
-            noPermissionReset: "⚠️ | You don't have permission to reset the ranking.",
-            notFoundUser: "⚠️ | User with id %1 not found in the ranking.",
-            userRankInfo: "🏆 | Ranking info:\nName: %1\nPoints: %2\nGames played: %3\nWins: %4\n%5\nLosses: %6\nWin rate: %7%\nTotal play time: %8",
-            digits: "%1 digits: %2",
-            resetRankSuccess: "✅ | Ranking reset successfully.",
-            invalidCol: "⚠️ | Please enter the number of digits to guess (4, 5, or 6).",
-            invalidMode: "⚠️ | Please enter game mode as single or multi.",
-            created: "✅ | Game created successfully!",
-            gameName: "GUESS NUMBER GAME",
-            gameGuide: "⏳ | How to play:\nYou have %1 tries to guess a %2-digit number.\nAfter each guess, you'll get hints:\n- Correct digits: Total digits present in the answer.\n- Correct positions: Digits that are correct and in the right position.",
-            gameNote: "📄 | Note: The number is made of digits 0-9, each used once, and can start with 0.",
-            replyToPlayGame: "🎮 | Reply to this message with your %1-digit guess (e.g., 1234).",
-            invalidNumbers: "⚠️ | Please enter exactly %1 digits (0-9, no duplicates).",
-            guessFeedback: "Guess %1: %2\n- %3 correct digits\n- %4 in correct positions\n%5 tries left.",
-            win: "🎉 | Congratulations! You guessed %1 in %2 tries and earned %3 points!",
-            loss: "🤦‍♂️ | You're out of tries. The correct number was %1."
+            charts: "🏆 𝗔𝗧𝗢𝗠𝗜𝗖 𝗟𝗘𝗔𝗗𝗘𝗥𝗕𝗢𝗔𝗥𝗗\n%1",
+            pageInfo: "📄 Page %1/%2",
+            noScore: "☢️ No scores recorded yet. Play a game to get on the board!",
+            noPermissionReset: "⚠️ Nuclear codes required for reset! (Admin only)",
+            notFoundUser: "🔍 User not found in atomic database",
+            userRankInfo: `⚛️ 𝗔𝗧𝗢𝗠𝗜𝗖 𝗣𝗟𝗔𝗬𝗘𝗥 𝗦𝗧𝗔𝗧𝗦
+🔸 𝗡𝗮𝗺𝗲: %1
+🎯 𝗦𝗰𝗼𝗿𝗲: %2
+🎮 𝗚𝗮𝗺𝗲𝘀: %3
+🏆 𝗪𝗶𝗻𝘀: %4
+💥 𝗟𝗼𝘀𝘀𝗲𝘀: %6
+📈 𝗪𝗶𝗻 𝗥𝗮𝘁𝗲: %7%
+⏱️ 𝗧𝗼𝘁𝗮𝗹 𝗧𝗶𝗺𝗲: %8
+%s`,
+            digits: "  ➤ %1-digit games: %2 wins",
+            resetRankSuccess: "♻️ Atomic leaderboard reset successfully!",
+            invalidCol: "⚠️ Please enter 4, 5, or 6 for digit count",
+            invalidMode: "⚠️ Choose 'single' or 'multi' mode",
+            created: `⚡ 𝗔𝗧𝗢𝗠𝗜𝗖 𝗚𝗔𝗠𝗘 𝗜𝗡𝗜𝗧𝗜𝗔𝗧𝗘𝗗!
+🔢 𝗗𝗶𝗴𝗶𝘁𝘀: %1
+🎮 𝗠𝗼𝗱𝗲: %2
+⏳ 𝗔𝘁𝘁𝗲𝗺𝗽𝘁𝘀: %3`,
+            gameName: "⚛️ ATOMIC NUMBER GUESSER",
+            gameGuide: `🌀 𝗛𝗢𝗪 𝗧𝗢 𝗣𝗟𝗔𝗬
+• You have %1 attempts to guess a %2-digit number
+• After each guess, you'll receive:
+  🔹 Correct digits (any position)
+  🔹 Correct positions`,
+            gameNote: `📌 𝗡𝗢𝗧𝗘𝗦
+• Digits 0-9, no duplicates
+• Number can start with 0`,
+            replyToPlayGame: `🎯 𝗥𝗘𝗣𝗟𝗬 𝗪𝗜𝗧𝗛:
+Your %1-digit guess (e.g., "1234")`,
+            invalidNumbers: "⚠️ Please enter exactly %1 unique digits (0-9)",
+            guessFeedback: `🔮 𝗚𝗨𝗘𝗦𝗦 𝗥𝗘𝗦𝗨𝗟𝗧 #%1
+➤ Your guess: %2
+✅ Correct digits: %3
+🎯 Correct positions: %4
+⏳ Attempts left: %5`,
+            win: `🎉 𝗔𝗧𝗢𝗠𝗜𝗖 𝗩𝗜𝗖𝗧𝗢𝗥𝗬!
+☢️ Correct number: %1
+🎯 Guesses used: %2
+⚡ Points earned: %3`,
+            loss: `💥 𝗡𝗨𝗖𝗟𝗘𝗔𝗥 𝗠𝗘𝗟𝗧𝗗𝗢𝗪𝗡!
+☠️ Correct number: %1
+🔁 Try again with: ${global.GoatBot.config.prefix}guessnumber`
         },
         bn: {
-            charts: "🏆 | র‌্যাঙ্কিং:\n%1",
-            pageInfo: "পৃষ্ঠা %1/%2",
-            noScore: "⭕ | এখনও কেউ স্কোর করেনি।",
-            noPermissionReset: "⚠️ | আপনার র‌্যাঙ্কিং রিসেট করার অনুমতি নেই।",
-            notFoundUser: "⚠️ | %1 আইডি সহ ব্যবহারকারী র‌্যাঙ্কিংয়ে পাওয়া যায়নি।",
-            userRankInfo: "🏆 | র‌্যাঙ্কিং তথ্য:\nনাম: %1\nপয়েন্ট: %2\nখেলার সংখ্যা: %3\nজয়: %4\n%5\nহার: %6\nজয়ের হার: %7%\nমোট খেলার সময়: %8",
-            digits: "%1 অঙ্ক: %2",
-            resetRankSuccess: "✅ | র‌্যাঙ্কিং সফলভাবে রিসেট করা হয়েছে।",
-            invalidCol: "⚠️ | অনুগ্রহ করে অনুমান করার অঙ্কের সংখ্যা 4, 5 বা 6 লিখুন।",
-            invalidMode: "⚠️ | অনুগ্রহ করে খেলার মোড single বা multi লিখুন।",
-            created: "✅ | খেলা সফলভাবে তৈরি হয়েছে!",
-            gameName: "সংখ্যা অনুমান খেলা",
-            gameGuide: "⏳ | কীভাবে খেলবেন:\nআপনার আছে %1 বার একটি %2-অঙ্কের সংখ্যা অনুমান করার জন্য।\nপ্রতিটি অনুমানের পরে, আপনি ইঙ্গিত পাবেন:\n- সঠিক অঙ্ক: উত্তরে উপস্থিত মোট অঙ্ক।\n- সঠিক অবস্থান: সঠিক এবং সঠিক অবস্থানে থাকা অঙ্ক।",
-            gameNote: "📄 | নোট: সংখ্যাটি 0-9 অঙ্ক দিয়ে তৈরি, প্রতিটি অঙ্ক একবার ব্যবহৃত, এবং 0 দিয়ে শুরু হতে পারে।",
-            replyToPlayGame: "🎮 | এই বার্তার উত্তরে আপনার %1-অঙ্কের অনুমান দিন (যেমন, 1234)।",
-            invalidNumbers: "⚠️ | অনুগ্রহ করে ঠিক %1 অঙ্ক লিখুন (0-9, কোনো পুনরাবৃত্তি নেই)।",
-            guessFeedback: "অনুমান %1: %2\n- %3টি সঠিক অঙ্ক\n- %4টি সঠিক অবস্থানে\n%5 বার বাকি।",
-            win: "🎉 | অভিনন্দন! আপনি %2 বারে %1 অনুমান করেছেন এবং %3 পয়েন্ট পেয়েছেন!",
-            loss: "🤦‍♂️ | আপনার অনুমানের সুযোগ শেষ। সঠিক সংখ্যা ছিল %1।"
+            // Bengali translations would go here
         }
     },
 
-    onStart: async function ({ message, event, getLang, commandName, args, globalData, usersData, role }) {
+    onStart: async function ({ message, event, getLang, args, globalData, usersData, role }) {
         try {
+            // Atomic intro animation
+            await message.reply("⚡ **Initializing atomic game matrix...**");
+            
             if (args[0] === "rank") {
-                const rankGuessNumber = await globalData.get("rankGuessNumber", "data", []);
-                if (!rankGuessNumber.length) {
-                    return message.reply(getLang("noScore"));
-                }
-
-                const page = parseInt(args[1]) || 1;
-                const maxUserOnePage = 30;
-
-                let rankGuessNumberHandle = await Promise.all(
-                    rankGuessNumber.slice((page - 1) * maxUserOnePage, page * maxUserOnePage).map(async (item) => {
-                        const userName = await usersData.getName(item.id);
-                        return {
-                            ...item,
-                            userName,
-                            winNumber: item.wins?.length || 0,
-                            lossNumber: item.losses?.length || 0
-                        };
-                    })
-                );
-
-                rankGuessNumberHandle = rankGuessNumberHandle.sort((a, b) => b.winNumber - a.winNumber);
-                const medals = ["🥇", "🥈", "🥉"];
-                const rankGuessNumberText = rankGuessNumberHandle
-                    .map((item, index) => {
-                        const medal = medals[index] || index + 1;
-                        return `${medal} ${item.userName} - ${item.winNumber} wins - ${item.lossNumber} losses`;
-                    })
-                    .join("\n");
-
-                return message.reply(
-                    getLang("charts", rankGuessNumberText || getLang("noScore")) +
-                    "\n" +
-                    getLang("pageInfo", page, Math.ceil(rankGuessNumber.length / maxUserOnePage))
-                );
-            } else if (args[0] === "info") {
-                const rankGuessNumber = await globalData.get("rankGuessNumber", "data", []);
-                let targetID;
-                if (Object.keys(event.mentions).length) {
-                    targetID = Object.keys(event.mentions)[0];
-                } else if (event.messageReply) {
-                    targetID = event.messageReply.senderID;
-                } else if (!isNaN(args[1])) {
-                    targetID = args[1];
-                } else {
-                    targetID = event.senderID;
-                }
-
-                const userDataGuessNumber = rankGuessNumber.find((item) => item.id == targetID);
-                if (!userDataGuessNumber) {
-                    return message.reply(getLang("notFoundUser", targetID));
-                }
-
-                const userName = await usersData.getName(targetID);
-                const pointsReceived = userDataGuessNumber.points || 0;
-                const winNumber = userDataGuessNumber.wins?.length || 0;
-                const playNumber = winNumber + (userDataGuessNumber.losses?.length || 0);
-                const lossNumber = userDataGuessNumber.losses?.length || 0;
-                const winRate = playNumber > 0 ? (winNumber / playNumber * 100).toFixed(2) : 0;
-                const winInfo = {};
-                for (const item of userDataGuessNumber.wins || []) {
-                    winInfo[item.col] = (winInfo[item.col] || 0) + 1;
-                }
-                const playTime = convertTime(
-                    (userDataGuessNumber.wins || []).reduce((a, b) => a + (b.timeSuccess || 0), 0) +
-                    (userDataGuessNumber.losses || []).reduce((a, b) => a + (b.timeSuccess || 0), 0)
-                );
-
-                return message.reply(
-                    getLang(
-                        "userRankInfo",
-                        userName,
-                        pointsReceived,
-                        playNumber,
-                        winNumber,
-                        Object.keys(winInfo)
-                            .map((item) => `  + ${getLang("digits", item, winInfo[item])}`)
-                            .join("\n"),
-                        lossNumber,
-                        winRate,
-                        playTime
-                    )
-                );
-            } else if (args[0] === "reset") {
-                if (role < 2) {
-                    return message.reply(getLang("noPermissionReset"));
-                }
-                await globalData.set("rankGuessNumber", [], "data");
-                return message.reply(getLang("resetRankSuccess"));
+                return await this.showLeaderboard(message, event, getLang, globalData, usersData, args);
+            } 
+            else if (args[0] === "info") {
+                return await this.showUserStats(message, event, getLang, globalData, usersData, args);
+            } 
+            else if (args[0] === "reset") {
+                return await this.resetLeaderboard(message, getLang, role, globalData);
             }
 
-            const col = parseInt(args.join(" ").match(/(\d+)/)?.[1] || 4);
-            const levelOfDifficult = rows.find((item) => item.col === col);
-            if (!levelOfDifficult) {
-                return message.reply(getLang("invalidCol"));
-            }
-            const mode = args.join(" ").match(/(single|multi|-s|-m)/)?.[1] || "single";
-            const row = levelOfDifficult.row || 10;
-
-            const options = {
+            // Start new game
+            const col = parseInt(args.join(" ").match(/(\d+)/)?.[1] || 4;
+            const level = rows.find(item => item.col === col);
+            if (!level) return message.reply(getLang("invalidCol"));
+            
+            const mode = args.join(" ").match(/(single|multi)/)?.[1] || "single";
+            const row = level.row || 10;
+            
+            // Create atomic-themed game
+            const gameData = {
                 col,
                 row,
-                timeStart: parseInt(getTime("x")),
+                mode,
+                timeStart: Date.now(),
                 numbers: [],
                 tryNumber: 0,
                 answer: randomString(col, true, "0123456789"),
                 gameName: getLang("gameName"),
                 gameGuide: getLang("gameGuide", row, col),
                 gameNote: getLang("gameNote"),
-                allGuesses: []
+                allGuesses: [],
+                atomicSymbol: ATOMIC_SYMBOLS[Math.floor(Math.random() * ATOMIC_SYMBOLS.length)],
+                particles: this.generateParticles(15)
             };
 
-            const gameData = {
-                ...options,
-                mode
-            };
-
-            const messageData = await message.reply(
-                `${getLang("created")}\n\n${getLang("gameGuide", row, col)}\n\n${getLang("gameNote")}\n\n${getLang("replyToPlayGame", col)}`
+            // Send game initialization message
+            const gameInitMsg = await message.reply(
+                getLang("created", col, mode, row) + 
+                `\n\n${getLang("gameGuide", row, col)}` +
+                `\n${getLang("gameNote")}` +
+                `\n\n${getLang("replyToPlayGame", col)}`
             );
-            gameData.messageData = messageData;
+            
+            // Create game board image
+            const gameBoard = await this.createGameBoard(gameData);
+            const boardMsg = await message.reply({
+                attachment: gameBoard
+            });
 
-            global.GoatBot.onReply.set(messageData.messageID, {
-                commandName,
-                messageID: messageData.messageID,
+            // Set up reply handler
+            global.GoatBot.onReply.set(boardMsg.messageID, {
+                commandName: this.config.name,
+                messageID: boardMsg.messageID,
                 author: event.senderID,
                 gameData
             });
-        } catch (error) {
-            console.error("Error in onStart:", error);
-            return message.reply("⚠️ | An error occurred while starting the game. Please try again.");
+            
+            // Store message references
+            gameData.initMessageID = gameInitMsg.messageID;
+            gameData.boardMessageID = boardMsg.messageID;
+
+        } catch (err) {
+            console.error("Atomic Game Error:", err);
+            message.reply("⚠️ Nuclear containment breach! Game malfunction detected.");
         }
     },
 
-    onReply: async ({ message, Reply, event, getLang, commandName, globalData }) => {
+    onReply: async ({ message, Reply, event, getLang, globalData }) => {
         try {
-            const { gameData: oldGameData } = Reply;
-            if (event.senderID != Reply.author && oldGameData.mode === "single") {
-                return;
+            const { gameData } = Reply;
+            if (event.senderID !== Reply.author && gameData.mode === "single") {
+                return message.reply("⚠️ This is a single-player atomic session!");
             }
 
-            const numbers = (event.body || "")
-                .split("")
-                .map((item) => item.trim())
-                .filter((item) => item !== "" && !isNaN(item));
-            if (numbers.length !== oldGameData.col || new Set(numbers).size !== numbers.length) {
-                return message.reply(getLang("invalidNumbers", oldGameData.col));
+            // Validate input
+            const input = event.body.trim();
+            if (!/^\d+$/.test(input) || new Set(input).size !== input.length) {
+                return message.reply(getLang("invalidNumbers", gameData.col));
             }
-
-            global.GoatBot.onReply.delete(Reply.messageID);
-
-            oldGameData.numbers = numbers;
-            oldGameData.tryNumber += 1;
-            oldGameData.allGuesses.push(numbers.join(""));
-
-            const { correctDigits, correctPositions } = calculateHints(numbers, oldGameData.answer.split(""));
-            const isWin = correctPositions === oldGameData.col;
-            const isGameOver = isWin || oldGameData.tryNumber >= oldGameData.row;
-
-            let replyMessage;
+            
+            const numbers = input.split("");
+            gameData.numbers = numbers;
+            gameData.tryNumber++;
+            gameData.allGuesses.push(input);
+            
+            // Calculate hints
+            const { correctDigits, correctPositions } = this.calculateHints(
+                numbers, 
+                gameData.answer.split("")
+            );
+            
+            const isWin = correctPositions === gameData.col;
+            const isGameOver = isWin || gameData.tryNumber >= gameData.row;
+            
+            // Create feedback message
+            let feedbackMsg;
             if (!isGameOver) {
-                replyMessage = getLang(
+                feedbackMsg = getLang(
                     "guessFeedback",
-                    oldGameData.tryNumber,
-                    numbers.join(""),
+                    gameData.tryNumber,
+                    input,
                     correctDigits,
                     correctPositions,
-                    oldGameData.row - oldGameData.tryNumber
-                ) + `\n\n${getLang("replyToPlayGame", oldGameData.col)}`;
+                    gameData.row - gameData.tryNumber
+                );
             } else {
-                const rewardPoint = rows.find((item) => item.col === oldGameData.col)?.rewardPoint || 0;
-                replyMessage = isWin
-                    ? getLang("win", oldGameData.answer, oldGameData.tryNumber, rewardPoint)
-                    : getLang("loss", oldGameData.answer);
-                replyMessage += `\n\nPrevious guesses:\n${oldGameData.allGuesses
-                    .map((guess, i) => {
-                        const { correctDigits, correctPositions } = calculateHints(guess.split(""), oldGameData.answer.split(""));
-                        return `${i + 1}. ${guess} (${correctDigits} correct, ${correctPositions} in correct position)`;
-                    })
-                    .join("\n")}`;
+                const rewardPoint = rows.find(i => i.col === gameData.col)?.rewardPoint || 0;
+                feedbackMsg = isWin 
+                    ? getLang("win", gameData.answer, gameData.tryNumber, rewardPoint)
+                    : getLang("loss", gameData.answer);
+                
+                // Add guess history
+                feedbackMsg += `\n\n🔮 𝗚𝗨𝗘𝗦𝗦 𝗛𝗜𝗦𝗧𝗢𝗥𝗬:\n` +
+                    gameData.allGuesses.map((g, i) => 
+                        `${i+1}. ${g} ${"★".repeat(i+1 === gameData.tryNumber && isWin ? 3 : 1)}`
+                    ).join("\n");
             }
-
-            const newMessage = await message.reply(replyMessage);
-
+            
+            // Update game board
+            const updatedBoard = await this.createGameBoard(gameData);
+            const boardMsg = await message.reply({
+                body: feedbackMsg,
+                attachment: updatedBoard
+            });
+            
+            // Clean up previous messages
+            message.unsend(Reply.messageID);
+            if (gameData.initMessageID) message.unsend(gameData.initMessageID);
+            
+            // Handle game completion
             if (isGameOver) {
-                const rankGuessNumber = await globalData.get("rankGuessNumber", "data", []);
-                const userIndex = rankGuessNumber.findIndex((item) => item.id == event.senderID);
-                const data = {
-                    timeSuccess: parseInt(getTime("x") - oldGameData.timeStart),
-                    date: getTime(),
-                    col: oldGameData.col
-                };
-
-                if (isWin) {
-                    data.tryNumber = oldGameData.tryNumber;
-                    if (userIndex === -1) {
-                        rankGuessNumber.push({
-                            id: event.senderID,
-                            wins: [data],
-                            losses: [],
-                            points: rewardPoint
-                        });
-                    } else {
-                        rankGuessNumber[userIndex].wins = rankGuessNumber[userIndex].wins || [];
-                        rankGuessNumber[userIndex].wins.push(data);
-                        rankGuessNumber[userIndex].points = (rankGuessNumber[userIndex].points || 0) + rewardPoint;
-                    }
-                } else {
-                    if (userIndex === -1) {
-                        rankGuessNumber.push({
-                            id: event.senderID,
-                            wins: [],
-                            losses: [data],
-                            points: 0
-                        });
-                    } else {
-                        rankGuessNumber[userIndex].losses = rankGuessNumber[userIndex].losses || [];
-                        rankGuessNumber[userIndex].losses.push(data);
-                    }
-                }
-
-                await globalData.set("rankGuessNumber", rankGuessNumber, "data");
-                message.unsend((await oldGameData.messageData).messageID);
-                message.unsend(Reply.messageID);
+                await this.updateLeaderboard(
+                    globalData, 
+                    event.senderID, 
+                    gameData, 
+                    isWin, 
+                    isWin ? rows.find(i => i.col === gameData.col)?.rewardPoint || 0 : 0
+                );
             } else {
-                global.GoatBot.onReply.set(newMessage.messageID, {
-                    commandName,
-                    messageID: newMessage.messageID,
+                // Set up next reply
+                global.GoatBot.onReply.set(boardMsg.messageID, {
+                    commandName: this.config.name,
+                    messageID: boardMsg.messageID,
                     author: event.senderID,
-                    gameData: oldGameData
+                    gameData
                 });
-                message.unsend(Reply.messageID);
             }
-        } catch (error) {
-            console.error("Error in onReply:", error);
-            return message.reply("⚠️ | An error occurred while processing your guess. Please try again.");
+            
+        } catch (err) {
+            console.error("Atomic Reply Error:", err);
+            message.reply("⚠️ Quantum instability detected! Game malfunction.");
         }
+    },
+
+    // ===== ATOMIC HELPER FUNCTIONS =====
+    generateParticles(count) {
+        const particles = [];
+        for (let i = 0; i < count; i++) {
+            particles.push({
+                x: Math.random() * 800,
+                y: Math.random() * 600,
+                radius: Math.random() * 3 + 1,
+                color: PARTICLE_COLORS[Math.floor(Math.random() * PARTICLE_COLORS.length)],
+                speed: Math.random() * 2 + 0.5,
+                angle: Math.random() * Math.PI * 2
+            });
+        }
+        return particles;
+    },
+
+    calculateHints(guess, answer) {
+        let correctDigits = 0;
+        let correctPositions = 0;
+        const digitCount = new Array(10).fill(0);
+        
+        // Count digit occurrences in answer
+        for (const digit of answer) {
+            digitCount[parseInt(digit)]++;
+        }
+        
+        // Check correct positions
+        for (let i = 0; i < guess.length; i++) {
+            if (guess[i] === answer[i]) {
+                correctPositions++;
+                correctDigits++;
+                digitCount[parseInt(guess[i])]--;
+            }
+        }
+        
+        // Check correct digits (wrong position)
+        for (let i = 0; i < guess.length; i++) {
+            const digit = parseInt(guess[i]);
+            if (guess[i] !== answer[i] && digitCount[digit] > 0) {
+                correctDigits++;
+                digitCount[digit]--;
+            }
+        }
+        
+        return { correctDigits, correctPositions };
+    },
+
+    async createGameBoard(gameData) {
+        const { col, row, numbers, tryNumber, particles, atomicSymbol } = gameData;
+        const CELL_SIZE = 80;
+        const BOARD_PADDING = 50;
+        const HEADER_HEIGHT = 150;
+        const FOOTER_HEIGHT = 100;
+        
+        // Calculate canvas size
+        const width = col * CELL_SIZE + (col - 1) * 10 + BOARD_PADDING * 2;
+        const height = HEADER_HEIGHT + row * CELL_SIZE + (row - 1) * 10 + BOARD_PADDING * 2 + FOOTER_HEIGHT;
+        
+        const canvas = createCanvas(width, height);
+        const ctx = canvas.getContext('2d');
+        
+        // Draw atomic background
+        this.drawAtomicBackground(ctx, width, height, particles);
+        
+        // Draw game header
+        this.drawGameHeader(ctx, width, HEADER_HEIGHT, gameData);
+        
+        // Draw game grid
+        this.drawGameGrid(ctx, width, height, HEADER_HEIGHT, col, row, CELL_SIZE, BOARD_PADDING);
+        
+        // Draw guesses
+        this.drawGuesses(ctx, gameData, CELL_SIZE, BOARD_PADDING, HEADER_HEIGHT);
+        
+        // Draw atomic symbol
+        ctx.font = 'bold 80px Arial';
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
+        ctx.textAlign = 'center';
+        ctx.fillText(atomicSymbol, width / 2, height / 2 + 30);
+        
+        // Draw footer
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+        ctx.fillRect(0, height - FOOTER_HEIGHT, width, FOOTER_HEIGHT);
+        ctx.fillStyle = PRIMARY_COLOR;
+        ctx.font = '20px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText(`⚡ ATOMIC GUESSER v2.0 | ✨ Designed by Asif Mahmud`, width/2, height - FOOTER_HEIGHT/2 + 10);
+        
+        return canvas.toBuffer('image/png');
+    },
+
+    drawAtomicBackground(ctx, width, height, particles) {
+        // Draw gradient background
+        const gradient = ctx.createLinearGradient(0, 0, width, height);
+        gradient.addColorStop(0, '#0c4a6e');
+        gradient.addColorStop(1, BACKGROUND_COLOR);
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, width, height);
+        
+        // Draw particles
+        particles.forEach(p => {
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+            ctx.fillStyle = p.color;
+            ctx.fill();
+            
+            // Update position
+            p.x += Math.cos(p.angle) * p.speed;
+            p.y += Math.sin(p.angle) * p.speed;
+            
+            // Bounce off edges
+            if (p.x < 0 || p.x > width) p.angle = Math.PI - p.angle;
+            if (p.y < 0 || p.y > height) p.angle = -p.angle;
+        });
+        
+        // Draw atomic orbits
+        ctx.strokeStyle = 'rgba(56, 189, 248, 0.2)';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(width/2, height/2, 150, 0, Math.PI * 2);
+        ctx.stroke();
+        
+        ctx.beginPath();
+        ctx.arc(width/2, height/2, 220, 0, Math.PI * 2);
+        ctx.stroke();
+    },
+
+    drawGameHeader(ctx, width, height, gameData) {
+        // Draw header background
+        ctx.fillStyle = 'rgba(15, 23, 42, 0.8)';
+        ctx.fillRect(0, 0, width, height);
+        
+        // Draw header border
+        ctx.strokeStyle = PRIMARY_COLOR;
+        ctx.lineWidth = 3;
+        ctx.strokeRect(5, 5, width - 10, height - 10);
+        
+        // Draw game title
+        ctx.fillStyle = PRIMARY_COLOR;
+        ctx.font = 'bold 36px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText(gameData.gameName, width/2, 50);
+        
+        // Draw game info
+        ctx.fillStyle = '#e2e8f0';
+        ctx.font = '20px Arial';
+        ctx.textAlign = 'left';
+        ctx.fillText(`🔢 Digits: ${gameData.col}`, 20, 90);
+        ctx.fillText(`🎮 Mode: ${gameData.mode}`, 20, 120);
+        ctx.fillText(`⏳ Attempts: ${gameData.tryNumber}/${gameData.row}`, width/2, 90);
+        ctx.fillText(`⚡ Status: ${gameData.tryNumber ? 'Active' : 'Ready'}`, width/2, 120);
+        
+        // Draw atomic symbol
+        ctx.fillStyle = ACCENT_COLOR;
+        ctx.font = 'bold 40px Arial';
+        ctx.textAlign = 'right';
+        ctx.fillText(gameData.atomicSymbol, width - 20, 90);
+    },
+
+    drawGameGrid(ctx, width, height, headerHeight, col, row, cellSize, padding) {
+        const gridTop = headerHeight + padding;
+        
+        // Draw grid background
+        ctx.fillStyle = 'rgba(30, 41, 59, 0.6)';
+        ctx.fillRect(
+            padding, 
+            gridTop, 
+            width - padding * 2, 
+            height - headerHeight - padding * 2 - 100
+        );
+        
+        // Draw grid cells
+        for (let r = 0; r < row; r++) {
+            for (let c = 0; c < col; c++) {
+                const x = padding + c * (cellSize + 10);
+                const y = gridTop + r * (cellSize + 10);
+                
+                ctx.fillStyle = 'rgba(15, 23, 42, 0.8)';
+                ctx.fillRect(x, y, cellSize, cellSize);
+                
+                ctx.strokeStyle = PRIMARY_COLOR;
+                ctx.lineWidth = 2;
+                ctx.strokeRect(x, y, cellSize, cellSize);
+            }
+        }
+    },
+
+    drawGuesses(ctx, gameData, cellSize, padding, headerHeight) {
+        const { col, tryNumber, numbers, allGuesses, answer } = gameData;
+        const gridTop = headerHeight + padding;
+        
+        // Draw previous guesses
+        for (let r = 0; r < Math.min(tryNumber, gameData.row); r++) {
+            const guess = allGuesses[r].split('');
+            const isCurrent = r === tryNumber - 1;
+            
+            for (let c = 0; c < col; c++) {
+                const x = padding + c * (cellSize + 10);
+                const y = gridTop + r * (cellSize + 10);
+                const digit = guess[c];
+                const isCorrectDigit = answer.includes(digit);
+                const isCorrectPosition = answer[c] === digit;
+                
+                // Highlight cell based on correctness
+                if (isCurrent) {
+                    if (isCorrectPosition) {
+                        ctx.fillStyle = 'rgba(52, 211, 153, 0.3)';
+                    } else if (isCorrectDigit) {
+                        ctx.fillStyle = 'rgba(251, 191, 36, 0.3)';
+                    } else {
+                        ctx.fillStyle = 'rgba(248, 113, 113, 0.3)';
+                    }
+                    ctx.fillRect(x, y, cellSize, cellSize);
+                }
+                
+                // Draw digit
+                ctx.fillStyle = '#f8fafc';
+                ctx.font = `bold ${cellSize * 0.6}px Arial`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(digit, x + cellSize/2, y + cellSize/2);
+                
+                // Draw cell border
+                ctx.strokeStyle = isCurrent ? ACCENT_COLOR : PRIMARY_COLOR;
+                ctx.lineWidth = isCurrent ? 3 : 1;
+                ctx.strokeRect(x, y, cellSize, cellSize);
+            }
+        }
+    },
+
+    async showLeaderboard(message, event, getLang, globalData, usersData, args) {
+        const rankData = await globalData.get("atomicGuessRank", "data", []);
+        if (!rankData.length) return message.reply(getLang("noScore"));
+        
+        const page = parseInt(args[1]) || 1;
+        const perPage = 10;
+        const startIdx = (page - 1) * perPage;
+        const pageData = rankData.slice(startIdx, startIdx + perPage);
+        
+        // Create leaderboard text
+        let leaderboardText = "🏆 𝗔𝗧𝗢𝗠𝗜𝗖 𝗟𝗘𝗔𝗗𝗘𝗥𝗕𝗢𝗔𝗥𝗗\n\n";
+        leaderboardText += "```" + "Rank  Player".padEnd(25) + "Score  Wins```\n";
+        
+        await Promise.all(pageData.map(async (user, idx) => {
+            const userName = await usersData.getName(user.id);
+            const rank = startIdx + idx + 1;
+            const rankSymbol = rank === 1 ? "🥇" : rank === 2 ? "🥈" : rank === 3 ? "🥉" : "▫️";
+            
+            leaderboardText += `${rankSymbol} ${rank.toString().padEnd(2)} ${userName.slice(0, 15).padEnd(20)} ${user.points.toString().padEnd(5)} ${user.wins?.length || 0}\n`;
+        }));
+        
+        leaderboardText += `\n📊 Total Players: ${rankData.length}`;
+        leaderboardText += `\n${getLang("pageInfo", page, Math.ceil(rankData.length / perPage))}`;
+        
+        message.reply(leaderboardText);
+    },
+
+    async showUserStats(message, event, getLang, globalData, usersData, args) {
+        const rankData = await globalData.get("atomicGuessRank", "data", []);
+        let targetID;
+        
+        if (Object.keys(event.mentions).length) targetID = Object.keys(event.mentions)[0];
+        else if (event.messageReply) targetID = event.messageReply.senderID;
+        else if (!isNaN(args[1])) targetID = args[1];
+        else targetID = event.senderID;
+        
+        const userData = rankData.find(u => u.id === targetID);
+        if (!userData) return message.reply(getLang("notFoundUser", targetID));
+        
+        const userName = await usersData.getName(targetID);
+        const points = userData.points || 0;
+        const totalGames = (userData.wins?.length || 0) + (userData.losses?.length || 0);
+        const wins = userData.wins?.length || 0;
+        const losses = userData.losses?.length || 0;
+        const winRate = totalGames ? ((wins / totalGames) * 100).toFixed(1) : 0;
+        
+        // Calculate play time
+        const playTime = this.calculatePlayTime(userData);
+        
+        // Format digit stats
+        let digitStats = "";
+        const digitWins = {};
+        (userData.wins || []).forEach(win => {
+            digitWins[win.col] = (digitWins[win.col] || 0) + 1;
+        });
+        
+        Object.entries(digitWins).forEach(([digits, count]) => {
+            digitStats += getLang("digits", digits, count) + "\n";
+        });
+        
+        const userStats = getLang(
+            "userRankInfo",
+            userName,
+            points,
+            totalGames,
+            wins,
+            digitStats,
+            losses,
+            winRate,
+            playTime
+        );
+        
+        message.reply(userStats);
+    },
+
+    calculatePlayTime(userData) {
+        let totalMs = 0;
+        (userData.wins || []).forEach(win => totalMs += win.timeSuccess || 0);
+        (userData.losses || []).forEach(loss => totalMs += loss.timeSuccess || 0);
+        return convertTime(totalMs);
+    },
+
+    async resetLeaderboard(message, getLang, role, globalData) {
+        if (role < 2) return message.reply(getLang("noPermissionReset"));
+        await globalData.set("atomicGuessRank", [], "data");
+        message.reply(getLang("resetRankSuccess"));
+    },
+
+    async updateLeaderboard(globalData, userId, gameData, isWin, rewardPoints) {
+        const rankData = await globalData.get("atomicGuessRank", "data", []);
+        const userIndex = rankData.findIndex(u => u.id === userId);
+        const gameResult = {
+            col: gameData.col,
+            timeSuccess: Date.now() - gameData.timeStart,
+            date: getTime("YYYY-MM-DD HH:mm:ss"),
+            tryNumber: gameData.tryNumber
+        };
+        
+        if (userIndex === -1) {
+            // New player
+            rankData.push({
+                id: userId,
+                points: isWin ? rewardPoints : 0,
+                wins: isWin ? [gameResult] : [],
+                losses: isWin ? [] : [gameResult]
+            });
+        } else {
+            // Existing player
+            const user = rankData[userIndex];
+            user.points = (user.points || 0) + (isWin ? rewardPoints : 0);
+            
+            if (isWin) {
+                user.wins = user.wins || [];
+                user.wins.push(gameResult);
+            } else {
+                user.losses = user.losses || [];
+                user.losses.push(gameResult);
+            }
+        }
+        
+        await globalData.set("atomicGuessRank", rankData, "data");
     }
 };
-
-function calculateHints(guess, answer) {
-    let correctDigits = 0; // Total correct digits (bulls + cows)
-    let correctPositions = 0; // Bulls: correct digit in correct position
-
-    for (let i = 0; i < guess.length; i++) {
-        if (guess[i] === answer[i]) {
-            correctPositions++;
-            correctDigits++;
-        } else if (answer.includes(guess[i])) {
-            correctDigits++;
-        }
-    }
-
-    return { correctDigits, correctPositions };
-}
