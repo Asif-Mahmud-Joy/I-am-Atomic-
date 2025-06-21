@@ -1,140 +1,237 @@
 module.exports = {
   config: {
     name: "count",
-    version: "1.4",
-    author: "🎩 𝐌𝐫.𝐒𝐦𝐨𝐤𝐞𝐲 • 𝐀𝐬𝐢𝐟 𝐌𝐚𝐡𝐦𝐮𝐝 🌠",
-    countDown: 5,
+    version: "2.0",
+    author: "Asif",
+    countDown: 3,
     role: 0,
-    description: {
-      vi: "Xem số lượng tin nhắn của thành viên (tính từ lúc bot vào nhóm)",
-      en: "Check how many messages each member sent (since bot joined group)",
-      bn: "Group e kotogula message pathaise ta dekha jai"
+    shortDescription: {
+      en: "⚡ Atomic Message Counter",
+      bn: "⚡ অ্যাটমিক মেসেজ কাউন্টার"
     },
-    category: "box chat",
+    longDescription: {
+      en: "Track message statistics with atomic design visualization",
+      bn: "অ্যাটমিক ডিজাইনের সাথে মেসেজ পরিসংখ্যান ট্র্যাক করুন"
+    },
+    category: "⚡ Atomic",
     guide: {
-      vi: "   {pn}: xem tin nhắn của bạn\n   {pn} @tag: xem tin nhắn người được tag\n   {pn} all: xem tin nhắn mọi người",
-      en: "   {pn}: see your messages\n   {pn} @tag: see tagged users\n   {pn} all: see all members",
-      bn: "   {pn}: nijer message dekho\n   {pn} @tag: tag kora member er dekho\n   {pn} all: shobar dekho"
+      en: "{pn} [@tag | all]",
+      bn: "{pn} [@ট্যাগ | all]"
     }
   },
 
   langs: {
     en: {
-      count: "Message count of group members:",
-      endMessage: "Names not shown = 0 messages",
-      page: "Page [%1/%2]",
-      reply: "Reply with page number to see more",
-      result: "%1 rank %2 with %3 messages",
-      yourResult: "You're ranked %1 and sent %2 messages in this group",
-      invalidPage: "Invalid page number"
+      leaderboard: "⚡ ATOMIC MESSAGE LEADERBOARD ⚡",
+      yourStats: "🌟 YOUR ATOMIC STATS 🌟",
+      userStats: "⚛️ USER MESSAGE STATS ⚛️",
+      rank: "🏆 Rank",
+      messages: "💬 Messages",
+      position: "📍 Position",
+      pageInfo: "📄 Page %1/%2",
+      nextPage: "⏭️ Reply with page number to view next",
+      noMessages: "🌌 Zero messages detected in quantum field",
+      medal: ["🥇", "🥈", "🥉", "🔹", "🔸"]
     },
     bn: {
-      count: "Group member der message count:",
-      endMessage: "Jar naam nai tar message nai",
-      page: "Page [%1/%2]",
-      reply: "Reply dao page number diye aro dekhte",
-      result: "%1 %2 position e ache with %3 message",
-      yourResult: "Tumi %1 position e acho with %2 message",
-      invalidPage: "Thik page number dao"
+      leaderboard: "⚡ অ্যাটমিক মেসেজ লিডারবোর্ড ⚡",
+      yourStats: "🌟 আপনার পরিসংখ্যান 🌟",
+      userStats: "⚛️ ব্যবহারকারীর পরিসংখ্যান ⚛️",
+      rank: "🏆 র‌্যাঙ্ক",
+      messages: "💬 মেসেজ",
+      position: "📍 অবস্থান",
+      pageInfo: "📄 পাতা %1/%2",
+      nextPage: "⏭️ পরের পাতার জন্য পেজ নম্বর দিয়ে রিপ্লাই করুন",
+      noMessages: "🌌 কোয়ান্টাম ক্ষেত্রে শূন্য বার্তা সনাক্ত করা হয়েছে",
+      medal: ["🥇", "🥈", "🥉", "🔹", "🔸"]
     }
   },
 
   onStart: async function ({ args, threadsData, message, event, api, commandName, getLang }) {
-    const { threadID, senderID } = event;
-    const threadData = await threadsData.get(threadID);
-    const usersInGroup = (await api.getThreadInfo(threadID)).participantIDs;
-    let members = threadData.members || [];
+    try {
+      const { threadID, senderID } = event;
+      const threadData = await threadsData.get(threadID);
+      const usersInGroup = (await api.getThreadInfo(threadID)).participantIDs;
+      
+      // Get members and filter inactive
+      let members = threadData.members || [];
+      members = members.filter(m => usersInGroup.includes(m.userID));
+      
+      // Add missing members
+      for (const participantID of usersInGroup) {
+        if (!members.some(m => m.userID === participantID)) {
+          members.push({
+            userID: participantID,
+            name: await global.utils.getUserName(api, participantID),
+            count: 0
+          });
+        }
+      }
 
-    const list = members
-      .filter(m => usersInGroup.includes(m.userID))
-      .map((m, index) => ({
-        name: m.name,
-        count: m.count || 0,
-        uid: m.userID,
-        stt: 0
-      }));
+      // Sort by message count
+      members.sort((a, b) => b.count - a.count);
+      members.forEach((member, index) => member.rank = index + 1);
 
-    list.sort((a, b) => b.count - a.count);
-    list.forEach((user, i) => user.stt = i + 1);
+      // Atomic Design Visualization
+      const getProgressBar = (count, max) => {
+        const barLength = 10;
+        const progress = Math.min(1, count / max);
+        const filled = Math.round(progress * barLength);
+        return '█'.repeat(filled) + '▁'.repeat(barLength - filled);
+      };
 
-    const lang = getLang();
-    const getUser = uid => list.find(user => user.uid == uid);
+      const maxMessages = members[0]?.count || 1;
 
-    if (args[0]) {
-      if (args[0].toLowerCase() == "all") {
-        const allPages = global.utils.splitPage(list, 50);
+      if (args[0]?.toLowerCase() === "all") {
+        // Atomic Leaderboard
+        const lang = getLang();
+        const itemsPerPage = 10;
+        const totalPages = Math.ceil(members.length / itemsPerPage);
         let page = parseInt(args[1]) || 1;
-        if (page < 1 || page > allPages.totalPage) return message.reply(lang.invalidPage);
-        let msg = lang.count;
-        allPages.allPage[page - 1].forEach(u => {
-          if (u.count > 0) msg += `\n${u.stt}/ ${u.name}: ${u.count}`;
+        
+        if (page < 1 || page > totalPages) {
+          return message.reply(lang.pageInfo.replace("%1", page).replace("%2", totalPages));
+        }
+
+        const startIdx = (page - 1) * itemsPerPage;
+        const pageData = members.slice(startIdx, startIdx + itemsPerPage);
+        
+        let leaderboard = `╔═══════  ${lang.leaderboard}  ═══════╗\n`;
+        leaderboard += `║ ${lang.rank.padEnd(6)} ${lang.messages.padEnd(8)} 👤 User\n`;
+        leaderboard += `╟${"─".repeat(45)}╢\n`;
+        
+        pageData.forEach(user => {
+          const medal = lang.medal[user.rank - 1] || `${user.rank}.`;
+          const progressBar = getProgressBar(user.count, maxMessages);
+          leaderboard += `║ ${medal.padEnd(6)} ${String(user.count).padEnd(8)} ${user.name}\n`;
+          leaderboard += `║      ${progressBar} ${Math.round((user.count/maxMessages)*100)}%\n`;
+          leaderboard += `╟${"─".repeat(45)}╢\n`;
         });
-        msg += `\n${lang.page.replace('%1', page).replace('%2', allPages.totalPage)}`;
-        msg += `\n${lang.reply}\n\n${lang.endMessage}`;
-        return message.reply(msg, (err, info) => {
-          if (!err) global.GoatBot.onReply.set(info.messageID, {
+        
+        leaderboard += `║ ${lang.pageInfo.replace("%1", page).replace("%2", totalPages)}\n`;
+        leaderboard += `║ ${lang.nextPage}\n`;
+        leaderboard += `╚═══════════════════════════════╝`;
+        
+        return message.reply(leaderboard, (err, info) => {
+          global.GoatBot.onReply.set(info.messageID, {
             commandName,
             messageID: info.messageID,
-            splitPage: allPages,
+            members,
+            page,
+            totalPages,
             author: senderID
           });
         });
-      } else if (event.mentions) {
-        let msg = "";
-        for (const id in event.mentions) {
-          const u = getUser(id);
-          if (u) msg += `\n${lang.result.replace('%1', u.name).replace('%2', u.stt).replace('%3', u.count)}`;
-        }
-        return message.reply(msg || lang.endMessage);
       }
+      else if (Object.keys(event.mentions).length > 0) {
+        // User-specific stats
+        const lang = getLang();
+        let userStats = `╔══════  ${lang.userStats}  ══════╗\n`;
+        
+        for (const id in event.mentions) {
+          const user = members.find(u => u.userID === id);
+          if (user) {
+            const medal = lang.medal[user.rank - 1] || `${user.rank}.`;
+            const progressBar = getProgressBar(user.count, maxMessages);
+            userStats += `║ 👤 ${user.name}\n`;
+            userStats += `║ ${lang.rank}: ${medal}\n`;
+            userStats += `║ ${lang.messages}: ${user.count}\n`;
+            userStats += `║ ${progressBar} ${Math.round((user.count/maxMessages)*100)}%\n`;
+            userStats += `╟${"─".repeat(35)}╢\n`;
+          }
+        }
+        
+        userStats += `╚═══════════════════════════╝`;
+        return message.reply(userStats);
+      }
+      else {
+        // Personal stats
+        const user = members.find(u => u.userID === senderID);
+        const lang = getLang();
+        const medal = lang.medal[user.rank - 1] || `${user.rank}.`;
+        const progressBar = getProgressBar(user.count, maxMessages);
+        
+        const personalStats = `╔══════  ${lang.yourStats}  ══════╗\n` +
+                              `║ ${lang.position}: ${medal}\n` +
+                              `║ ${lang.messages}: ${user.count}\n` +
+                              `║ ${progressBar} ${Math.round((user.count/maxMessages)*100)}%\n` +
+                              `╚═══════════════════════════╝`;
+                              
+        return message.reply(personalStats);
+      }
+    } catch (error) {
+      console.error("Atomic Count Error:", error);
+      message.reply("⚠️ Quantum fluctuation detected! Please try again.");
     }
-
-    const u = getUser(senderID);
-    return message.reply(lang.yourResult.replace('%1', u.stt).replace('%2', u.count));
   },
 
-  onReply: ({ message, event, Reply, commandName, getLang }) => {
+  onReply: async ({ message, event, Reply, commandName, getLang }) => {
     const { senderID, body } = event;
-    const { author, splitPage } = Reply;
-    if (author != senderID) return;
+    const { author, members, page, totalPages } = Reply;
+    
+    if (author !== senderID) {
+      return message.reply("🔒 Quantum signature mismatch! Access denied.");
+    }
 
-    const page = parseInt(body);
-    if (isNaN(page) || page < 1 || page > splitPage.totalPage) return message.reply(getLang("invalidPage"));
+    const newPage = parseInt(body);
+    if (isNaN(newPage) return;
+    
+    const lang = getLang();
+    const itemsPerPage = 10;
+    const maxMessages = members[0]?.count || 1;
+    
+    const getProgressBar = (count, max) => {
+      const barLength = 10;
+      const progress = Math.min(1, count / max);
+      const filled = Math.round(progress * barLength);
+      return '█'.repeat(filled) + '▁'.repeat(barLength - filled);
+    };
 
-    let msg = getLang("count");
-    splitPage.allPage[page - 1].forEach(u => {
-      if (u.count > 0) msg += `\n${u.stt}/ ${u.name}: ${u.count}`;
+    const startIdx = (newPage - 1) * itemsPerPage;
+    const pageData = members.slice(startIdx, startIdx + itemsPerPage);
+    
+    let leaderboard = `╔═══════  ${lang.leaderboard}  ═══════╗\n`;
+    leaderboard += `║ ${lang.rank.padEnd(6)} ${lang.messages.padEnd(8)} 👤 User\n`;
+    leaderboard += `╟${"─".repeat(45)}╢\n`;
+    
+    pageData.forEach(user => {
+      const medal = lang.medal[user.rank - 1] || `${user.rank}.`;
+      const progressBar = getProgressBar(user.count, maxMessages);
+      leaderboard += `║ ${medal.padEnd(6)} ${String(user.count).padEnd(8)} ${user.name}\n`;
+      leaderboard += `║      ${progressBar} ${Math.round((user.count/maxMessages)*100)}%\n`;
+      leaderboard += `╟${"─".repeat(45)}╢\n`;
     });
-    msg += `\n${getLang("page", page, splitPage.totalPage)}\n${getLang("reply")}\n\n${getLang("endMessage")}`;
-
-    message.reply(msg, (err, info) => {
-      if (!err) {
-        message.unsend(Reply.messageID);
-        global.GoatBot.onReply.set(info.messageID, {
-          commandName,
-          messageID: info.messageID,
-          splitPage,
-          author: senderID
-        });
-      }
+    
+    leaderboard += `║ ${lang.pageInfo.replace("%1", newPage).replace("%2", totalPages)}\n`;
+    leaderboard += `║ ${lang.nextPage}\n`;
+    leaderboard += `╚═══════════════════════════════╝`;
+    
+    message.reply(leaderboard, (err, info) => {
+      message.unsend(Reply.messageID);
+      global.GoatBot.onReply.set(info.messageID, {
+        commandName,
+        messageID: info.messageID,
+        members,
+        page: newPage,
+        totalPages,
+        author: senderID
+      });
     });
   },
 
   onChat: async ({ usersData, threadsData, event }) => {
     const { senderID, threadID } = event;
     let members = await threadsData.get(threadID, "members") || [];
-    const index = members.findIndex(u => u.userID == senderID);
+    const userIndex = members.findIndex(u => u.userID === senderID);
 
-    if (index === -1) {
+    if (userIndex === -1) {
       members.push({
         userID: senderID,
         name: await usersData.getName(senderID),
-        nickname: null,
-        inGroup: true,
         count: 1
       });
     } else {
-      members[index].count = (members[index].count || 0) + 1;
+      members[userIndex].count = (members[userIndex].count || 0) + 1;
     }
 
     await threadsData.set(threadID, members, "members");
