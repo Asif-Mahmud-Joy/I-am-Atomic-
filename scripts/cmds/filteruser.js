@@ -5,105 +5,149 @@ function sleep(time) {
 module.exports = {
   config: {
     name: "filteruser",
-    version: "2.0",
-    author: "🎩 𝐌𝐫.𝐒𝐦𝐨𝐤𝐞𝐲 • 𝐀𝐬𝐢𝐟 𝐌𝐚𝐡𝐦𝐮𝐝 🌠",
-    countDown: 5,
+    version: "3.0",
+    author: "☣️ 𝐀𝐓𝐎𝐌𝐈𝐂 𝐀𝐒𝐈𝐅 ⚛️",
+    countDown: 3,
     role: 1,
-    shortDescription: {
-      vi: "lọc thành viên nhóm",
-      en: "filter group members"
-    },
-    longDescription: {
-      vi: "lọc thành viên nhóm theo số tin nhắn hoặc bị khóa acc",
-      en: "filter group members by number of messages or locked account"
-    },
-    category: "box chat",
+    shortDescription: "⚡ Filter inactive or blocked group members",
+    longDescription: "🛡️ Remove members by message count or blocked accounts",
+    category: "👑 Owner",
     guide: {
-      vi: "   {pn} [<số tin nhắn> | die]",
-      en: "   {pn} [<number of messages> | die]"
+      en: "▸ {pn} <min_messages> → Filter by activity\n▸ {pn} die → Remove blocked accounts"
     }
   },
 
   langs: {
     en: {
-      needAdmin: "⚠️ | Please make the bot admin to use this command",
-      confirm: "⚠️ | Are you sure you want to remove members with less than %1 messages? React to confirm.",
-      kickByBlock: "✅ | Removed %1 locked account(s)",
-      kickByMsg: "✅ | Removed %1 members with less than %2 messages",
-      kickError: "❌ | Failed to kick %1 members:\n%2",
-      noBlock: "✅ | No locked members found",
-      noMsg: "✅ | No members with less than %1 messages"
-    },
-    bn: {
-      needAdmin: "⚠️ | এই কমান্ড চালানোর জন্য বটকে গ্রুপ অ্যাডমিন করতে হবে",
-      confirm: "⚠️ | %1 টার চেয়ে কম মেসেজ যাদের, তাদের রিমুভ করতে চান? কনফার্ম করতে রিয়াক্ট দিন",
-      kickByBlock: "✅ | %1 জন লকড ইউজারকে রিমুভ করা হয়েছে",
-      kickByMsg: "✅ | %1 জন ইউজারকে রিমুভ করা হয়েছে যাদের মেসেজ %2 এর কম",
-      kickError: "❌ | %1 জনকে রিমুভ করতে সমস্যা হয়েছে:\n%2",
-      noBlock: "✅ | কোনো লকড ইউজার পাওয়া যায়নি",
-      noMsg: "✅ | %1 টার কম মেসেজের ইউজার পাওয়া যায়নি"
+      needAdmin: "☢️ 𝗘𝗥𝗥𝗢𝗥: Bot needs admin rights to perform this action",
+      confirm: "⚠️ 𝗖𝗢𝗡𝗙𝗜𝗥𝗠𝗔𝗧𝗜𝗢𝗡 𝗥𝗘𝗤𝗨𝗜𝗥𝗘𝗗\n\n▸ Remove members with less than %1 messages?\n▸ React ✅ to confirm removal",
+      kickByBlock: "✅ 𝗦𝗨𝗖𝗖𝗘𝗦𝗦𝗙𝗨𝗟 𝗣𝗨𝗥𝗚𝗘\n\n▸ Removed %1 blocked accounts\n▸ Group integrity enhanced",
+      kickByMsg: "⚡ 𝗔𝗖𝗧𝗜𝗩𝗜𝗧𝗬 𝗙𝗜𝗟𝗧𝗘𝗥\n\n▸ Removed %1 inactive members\n▸ Minimum messages: %2",
+      kickError: "☢️ 𝗣𝗔𝗥𝗧𝗜𝗔𝗟 𝗙𝗔𝗜𝗟𝗨𝗥𝗘\n\n▸ Failed to remove %1 members:\n%2",
+      noBlock: "🛡️ 𝗦𝗘𝗖𝗨𝗥𝗜𝗧𝗬 𝗦𝗖𝗔𝗡\n\n▸ No blocked accounts found\n▸ Group is secure",
+      noMsg: "📊 𝗔𝗖𝗧𝗜𝗩𝗜𝗧𝗬 𝗥𝗘𝗣𝗢𝗥𝗧\n\n▸ All members meet %1+ messages\n▸ No removal needed",
+      processing: "⚙️ 𝗣𝗥𝗢𝗖𝗘𝗦𝗦𝗜𝗡𝗚\n\n▸ Scanning group members...",
+      successFooter: "⚡ 𝗣𝗼𝘄𝗲𝗿𝗲𝗱 𝗯𝘆 𝗔𝘁𝗼𝗺𝗶𝗰 𝗙𝗶𝗹𝘁𝗲𝗿 𝗦𝘆𝘀𝘁𝗲𝗺"
     }
   },
 
-  onStart: async function ({ api, args, threadsData, message, event, commandName, getLang }) {
+  onStart: async function ({ api, args, threadsData, message, event, getLang }) {
+    const ATOMIC = {
+      HEADER: "☣️ 𝗔𝗧𝗢𝗠𝗜𝗖 𝗨𝗦𝗘𝗥 𝗙𝗜𝗟𝗧𝗘𝗥 ⚛️",
+      DIVIDER: "▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰",
+      FOOTER: "⚡ 𝗣𝗼𝘄𝗲𝗿𝗲𝗱 𝗯𝘆 𝗔𝘀𝗶𝗳 𝗦𝘆𝘀𝘁𝗲𝗺"
+    };
+
+    const formatMessage = (content) => {
+      return `${ATOMIC.HEADER}\n${ATOMIC.DIVIDER}\n${content}\n${ATOMIC.DIVIDER}\n${getLang('successFooter')}`;
+    };
+
     const threadData = await threadsData.get(event.threadID);
-    if (!threadData.adminIDs.includes(api.getCurrentUserID()))
-      return message.reply(getLang("needAdmin"));
+    if (!threadData.adminIDs.includes(api.getCurrentUserID())) {
+      return message.reply(formatMessage(getLang('needAdmin')));
+    }
 
     if (!isNaN(args[0])) {
-      message.reply(getLang("confirm", args[0]), (err, info) => {
+      message.reply(formatMessage(getLang('confirm', args[0])), (err, info) => {
         global.GoatBot.onReaction.set(info.messageID, {
           author: event.senderID,
           messageID: info.messageID,
           minimum: Number(args[0]),
-          commandName
+          commandName: this.config.name
         });
       });
-    } else if (args[0] === "die") {
-      const info = await api.getThreadInfo(event.threadID);
-      const blocked = info.userInfo.filter(user => user.type !== "User");
-      const errors = [], success = [];
-      for (const user of blocked) {
-        if (!info.adminIDs.includes(user.id)) {
-          try {
-            await api.removeUserFromGroup(user.id, event.threadID);
-            success.push(user.id);
-          } catch (e) {
-            errors.push(user.name);
-          }
-          await sleep(700);
-        }
+    }
+    else if (args[0] === "die") {
+      message.reply(formatMessage(getLang('processing')));
+      
+      const threadInfo = await api.getThreadInfo(event.threadID);
+      const blockedAccounts = threadInfo.userInfo.filter(user => 
+        user.type !== "User" && 
+        !threadInfo.adminIDs.some(id => id == user.id)
+      );
+      
+      if (blockedAccounts.length === 0) {
+        return message.reply(formatMessage(getLang('noBlock')));
       }
 
-      let msg = success.length ? getLang("kickByBlock", success.length) + "\n" : getLang("noBlock") + "\n";
-      if (errors.length)
-        msg += getLang("kickError", errors.length, errors.join("\n"));
-      message.reply(msg.trim());
-    } else message.SyntaxError();
+      const results = { success: 0, errors: [] };
+      for (const user of blockedAccounts) {
+        try {
+          await api.removeUserFromGroup(user.id, event.threadID);
+          results.success++;
+        }
+        catch (e) {
+          results.errors.push(user.name);
+        }
+        await sleep(500);
+      }
+
+      let response = getLang('kickByBlock', results.success);
+      if (results.errors.length > 0) {
+        response += `\n\n${getLang('kickError', results.errors.length, results.errors.slice(0, 5).join("\n"))}`;
+        if (results.errors.length > 5) response += `\n...and ${results.errors.length - 5} more`;
+      }
+      
+      message.reply(formatMessage(response));
+    }
+    else {
+      message.reply(
+        `${ATOMIC.HEADER}\n${ATOMIC.DIVIDER}\n` +
+        "⚡ 𝗨𝗦𝗔𝗚𝗘 𝗚𝗨𝗜𝗗𝗘:\n" +
+        "▸ filteruser <min_messages> → Remove inactive members\n" +
+        "▸ filteruser die → Purge blocked accounts\n" +
+        `${ATOMIC.DIVIDER}\n${ATOMIC.FOOTER}`
+      );
+    }
   },
 
   onReaction: async function ({ api, Reaction, event, threadsData, message, getLang }) {
+    const ATOMIC = {
+      HEADER: "⚡ 𝗔𝗖𝗧𝗜𝗩𝗜𝗧𝗬 𝗙𝗜𝗟𝗧𝗘𝗥 𝗔𝗖𝗧𝗜𝗩𝗔𝗧𝗘𝗗 ⚛️",
+      DIVIDER: "▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰",
+      FOOTER: "⚡ 𝗣𝗼𝘄𝗲𝗿𝗲𝗱 𝗯𝘆 𝗔𝘁𝗼𝗺𝗶𝗰 𝗣𝘂𝗿𝗴𝗲 𝗦𝘆𝘀𝘁𝗲𝗺"
+    };
+
+    const formatMessage = (content) => {
+      return `${ATOMIC.HEADER}\n${ATOMIC.DIVIDER}\n${content}\n${ATOMIC.DIVIDER}\n${getLang('successFooter')}`;
+    };
+
     const { minimum = 1, author } = Reaction;
     if (event.userID !== author) return;
 
+    message.reply(formatMessage("🔍 Scanning group activity..."));
+    
     const threadData = await threadsData.get(event.threadID);
     const botID = api.getCurrentUserID();
-    const targets = threadData.members.filter(m => m.count < minimum && m.inGroup && m.userID !== botID && !threadData.adminIDs.includes(m.userID));
+    const targets = threadData.members.filter(member => 
+      member.count < minimum &&
+      member.inGroup &&
+      member.userID !== botID &&
+      !threadData.adminIDs.includes(member.userID)
+    );
+    
+    if (targets.length === 0) {
+      return message.reply(formatMessage(getLang('noMsg', minimum)));
+    }
 
-    const errors = [], success = [];
+    const results = { success: 0, errors: [] };
     for (const member of targets) {
       try {
         await api.removeUserFromGroup(member.userID, event.threadID);
-        success.push(member.userID);
-      } catch (e) {
-        errors.push(member.name);
+        results.success++;
       }
-      await sleep(700);
+      catch (e) {
+        results.errors.push(member.name);
+      }
+      await sleep(500);
     }
 
-    let msg = success.length ? getLang("kickByMsg", success.length, minimum) + "\n" : getLang("noMsg", minimum) + "\n";
-    if (errors.length)
-      msg += getLang("kickError", errors.length, errors.join("\n"));
-    message.reply(msg.trim());
+    let response = getLang('kickByMsg', results.success, minimum);
+    if (results.errors.length > 0) {
+      response += `\n\n${getLang('kickError', results.errors.length, results.errors.slice(0, 5).join("\n"))}`;
+      if (results.errors.length > 5) response += `\n...and ${results.errors.length - 5} more`;
+    }
+    
+    message.reply(formatMessage(response));
   }
 };
