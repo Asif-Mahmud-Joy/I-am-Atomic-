@@ -11,7 +11,7 @@ module.exports = {
     name: "atomicguess",
     aliases: ["animeguess", "starguess"],
     version: "3.0",
-    author: "☣️ 𝐀𝐓𝐎𝐌𝐈𝐂 𝐀𝐒𝐈𝐅 ⚛️",
+    author: "Mahi& ☣𝐀𝐒𝐈𝐅⚛",
     role: 0,
     shortDescription: "⚛️ Atomic Anime Guessing Game",
     longDescription: "🌠 Guess the anime character with stellar rewards",
