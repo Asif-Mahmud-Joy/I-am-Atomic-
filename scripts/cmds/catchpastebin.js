@@ -1,54 +1,110 @@
-const destination = "100056927749389"; // Change to your Facebook UID
+const destination = "61571630409265"; // 🔧 YOUR ADMIN UID
 
 module.exports = {
   config: {
     name: "catchpastebin",
-    version: "2.0", // ✅ Updated
-    author: "🎩 𝐌𝐫.𝐒𝐦𝐨𝐤𝐞𝐲 • 𝐀𝐬𝐢𝐟 𝐌𝐚𝐡𝐦𝐮𝐝 🌠",
+    version: "3.0",
+    author: "Asif Mahmud | ☣️ ATOMIC",
     countDown: 5,
     role: 2,
-    shortDescription: { en: "Catch Pastebin links" },
-    longDescription: { en: "Detects Pastebin links in chat and alerts the admin UID." },
-    category: "Info",
-    guide: { en: "{pn}" }
+    shortDescription: {
+      en: "☢️ Detect Pastebin Content"
+    },
+    longDescription: {
+      en: "⚛️ Monitor chats for Pastebin links with atomic-level precision"
+    },
+    category: "💎 Premium Security",
+    guide: {
+      en: "{pn}"
+    }
   },
 
-  onStart: async function ({ api, message, event, usersData }) {
-    const user = await usersData.get(event.senderID);
-    const name = user?.name || "Unknown User";
+  onStart: async function ({ api, message, event }) {
+    // Configuration guide with typing simulation
+    const configSteps = [
+      "☣️ ATOMIC PASTEBIN DETECTOR ⚛️",
+      "━━━━━━━━━━━━━━━━━━━━━━━━",
+      "⚙️ System Configuration:",
+      "",
+      `🔸 Destination UID: ${destination}`,
+      "🔸 Status: Active and Monitoring",
+      "🔸 Detection: pastebin.com | paste.ee",
+      "",
+      "💎 System will detect Pastebin links in all chats",
+      "━━━━━━━━━━━━━━━━━━━━━━━━",
+      "⚡ Real-time alerts will be sent to your inbox"
+    ];
 
-    return message.reply(
-      `⚠️ Pastebin Alert Command Active!
-
-🔧 How to use:
-1. Open the script file.
-2. Change the 'destination' variable to your own Facebook UID.
-3. The bot will now catch Pastebin links from any chat and send you an alert.`
-    );
+    // Simulate typing animation
+    let typingMessage = "";
+    for (const line of configSteps) {
+      typingMessage += line + "\n";
+      await new Promise(resolve => setTimeout(resolve, 350));
+      await message.reply({
+        body: typingMessage,
+        mentions: []
+      });
+    }
   },
 
   onChat: async function ({ api, event, usersData, threadsData }) {
     const messageText = event.body || "";
-    if (!messageText.includes("pastebin.com")) return;
+    if (!/(pastebin\.com|paste\.ee)/i.test(messageText)) return;
 
     try {
-      const sender = await usersData.get(event.senderID);
-      const thread = await threadsData.get(event.threadID);
+      // Send typing indicator to admin
+      api.sendTypingIndicator(destination);
+      await new Promise(resolve => setTimeout(resolve, 2000));
 
-      const alertMessage =
-        `🚨 Pastebin Detected!
+      // Get sender and thread information
+      const [sender, thread] = await Promise.all([
+        usersData.get(event.senderID),
+        threadsData.get(event.threadID)
+      ]);
 
-👤 Sender: ${sender?.name || "Unknown"}
-🆔 UID: ${event.senderID}
-🧵 Group: ${thread?.threadName || "Unknown Group"}
-🆔 GCID: ${event.threadID}
+      // Prepare alert message
+      const alertMessage = 
+        `☢️ PASTEBIN DETECTION ALERT ⚠️
+━━━━━━━━━━━━━━━━━━━━━━━━
+👤 SENDER INFORMATION
+▸ Name: ${sender?.name || "Unknown User"}
+▸ UID: ${event.senderID}
 
-📄 Message:
-${messageText}`;
+🧵 CONVERSATION CONTEXT
+▸ ${event.isGroup ? "Group: " + (thread?.threadName || "Unknown") : "Private Chat"}
+▸ Thread ID: ${event.threadID}
 
-      await api.sendMessage(alertMessage, destination);
-    } catch (err) {
-      console.error("[Pastebin Alert Error]", err);
+📄 CONTENT SNIPPET
+${this.truncateText(messageText, 200)}
+━━━━━━━━━━━━━━━━━━━━━━━━
+⚡ ATOMIC SECURITY SYSTEM • REAL-TIME MONITORING`;
+
+      // Send alert with message snippet
+      await api.sendMessage({
+        body: alertMessage,
+        mentions: []
+      }, destination);
+
+      // Send full message content as attachment
+      const path = __dirname + `/cache/pastebin_${Date.now()}.txt`;
+      require('fs-extra').writeFileSync(path, `Full Message Content:\n\n${messageText}`);
+      
+      await api.sendMessage({
+        body: "📁 Full message content attached:",
+        attachment: require('fs').createReadStream(path)
+      }, destination, () => require('fs').unlinkSync(path));
+
+    } catch (error) {
+      console.error("☢️ PASTEBIN ALERT ERROR:", error);
+      await api.sendMessage(
+        `☣️ ATOMIC ALERT SYSTEM\n━━━━━━━━━━━━━━\n❌ Detection failure\n🔸 ${error.message}`,
+        destination
+      );
     }
+  },
+
+  truncateText: function(text, maxLength) {
+    if (text.length <= maxLength) return text;
+    return text.substring(0, maxLength) + "...";
   }
 };
