@@ -1,13 +1,15 @@
-async function checkShortCut(nickname, uid, usersData) {
+async function processNickname(nickname, uid, usersData) {
   try {
-    if (/\{userName\}/gi.test(nickname)) {
-      nickname = nickname.replace(/\{userName\}/gi, await usersData.getName(uid));
-    }
-    if (/\{userID\}/gi.test(nickname)) {
-      nickname = nickname.replace(/\{userID\}/gi, uid);
-    }
-    return nickname;
-  } catch (e) {
+    const replacements = {
+      "{userName}": await usersData.getName(uid),
+      "{userID}": uid
+    };
+
+    return Object.entries(replacements).reduce((result, [key, value]) => {
+      return result.replace(new RegExp(key, "gi"), value);
+    }, nickname);
+  } catch (error) {
+    console.error("Error processing nickname:", error);
     return nickname;
   }
 }
@@ -15,92 +17,133 @@ async function checkShortCut(nickname, uid, usersData) {
 module.exports = {
   config: {
     name: "setname",
-    version: "1.4",
-    author: "Mr.Smokey [Asif Mahmud]",
+    aliases: ["nickname", "changenick"],
+    version: "2.0.0",
+    author: "NTKhang & Upgraded by ✨Asif✨",
     countDown: 5,
-    role: 0,
-    shortDescription: {
-      vi: "Đổi biệt danh",
-      en: "Change nickname",
-      bn: "নাম পরিবর্তন করুন"
+    role: 1, // Requires admin privileges
+    description: {
+      en: "Advanced nickname management system for group chats",
+      vi: "Hệ thống quản lý biệt danh nâng cao cho nhóm chat",
+      bn: "গ্রুপ চ্যাটের জন্য উন্নত নাম ব্যবস্থাপনা সিস্টেম"
     },
-    longDescription: {
-      vi: "Đổi biệt danh của thành viên trong nhóm chat",
-      en: "Change nickname of members in chat",
-      bn: "চ্যাটের সদস্যদের নাম পরিবর্তন করুন"
-    },
-    category: "box chat",
+    category: "administration",
     guide: {
-      vi: {
-        body: "   {pn} <nickname>: thay đổi biệt danh của bản thân"
-          + "\n   {pn} @tags <nickname>: thay đổi biệt danh của những thành viên được tag"
-          + "\n   {pn} all <nickname>: thay đổi biệt danh của tất cả thành viên trong nhóm chat"
-          + "\n\n   Với các shortcut có sẵn:"
-          + "\n   + {userName}: tên của thành viên"
-          + "\n   + {userID}: ID của thành viên",
-        attachment: {
-          [`${__dirname}/assets/guide/setname_1.png`]: "https://i.ibb.co/gFh23zb/guide1.png",
-          [`${__dirname}/assets/guide/setname_2.png`]: "https://i.ibb.co/BNWHKgj/guide2.png"
-        }
-      },
-      en: {
-        body: "   {pn} <nickname>: change your nickname"
-          + "\n   {pn} @tags <nickname>: change nickname of tagged members"
-          + "\n   {pn} all <nickname>: change nickname of all chat members"
-          + "\n\nShortcuts:"
-          + "\n   + {userName}: member's name"
-          + "\n   + {userID}: member's ID",
-        attachment: {
-          [`${__dirname}/assets/guide/setname_1.png`]: "https://i.ibb.co/gFh23zb/guide1.png",
-          [`${__dirname}/assets/guide/setname_2.png`]: "https://i.ibb.co/BNWHKgj/guide2.png"
-        }
-      },
-      bn: {
-        body: "   {pn} <nickname>: নিজের নাম পরিবর্তন করুন"
-          + "\n   {pn} @tags <nickname>: ট্যাগ করা সদস্যদের নাম পরিবর্তন করুন"
-          + "\n   {pn} all <nickname>: সকল সদস্যের নাম পরিবর্তন করুন"
-          + "\n\nশর্টকাট ব্যবহার করুন:"
-          + "\n   + {userName}: সদস্যের নাম"
-          + "\n   + {userID}: সদস্যের আইডি"
-      }
+      en: `📌 Command Guide:
+• {pn} <nickname> - Change your nickname
+• {pn} @tags <nickname> - Change nicknames of tagged members
+• {pn} all <nickname> - Change nicknames of all members
+
+🔄 Available placeholders:
+- {userName} - Member's name
+- {userID} - Member's ID
+
+⚠️ Note: You need admin privileges to change others' nicknames`,
+      bn: `📌 ব্যবহার নির্দেশিকা:
+• {pn} <নাম> - আপনার নাম পরিবর্তন করুন
+• {pn} @ট্যাগ <নাম> - ট্যাগ করা সদস্যদের নাম পরিবর্তন করুন
+• {pn} all <নাম> - সকল সদস্যের নাম পরিবর্তন করুন
+
+🔄 ব্যবহারযোগ্য প্লেসহোল্ডার:
+- {userName} - সদস্যের নাম
+- {userID} - সদস্যের আইডি
+
+⚠️ নোট: অন্যের নাম পরিবর্তন করতে আপনার অ্যাডমিন অধিকার প্রয়োজন`
     }
   },
 
   langs: {
-    vi: {
-      error: "Đã có lỗi xảy ra, thử tắt tính năng liên kết mời trong nhóm và thử lại sau"
-    },
     en: {
-      error: "An error occurred, try disabling the invite link feature and try again"
+      success: "✅ Nicknames updated successfully",
+      noPermission: "⛔ You don't have permission to change nicknames",
+      invalidFormat: "⚠️ Please provide a valid nickname format",
+      error: "❌ An error occurred while updating nicknames",
+      help: `📚 Need help? Use '{pn} guide' for detailed instructions`
     },
     bn: {
-      error: "একটি সমস্যা হয়েছে, গ্রুপের ইনভাইট লিংক অপশন বন্ধ করে আবার চেষ্টা করুন"
+      success: "✅ নাম সফলভাবে আপডেট করা হয়েছে",
+      noPermission: "⛔ আপনার নাম পরিবর্তন করার অনুমতি নেই",
+      invalidFormat: "⚠️ একটি বৈধ নাম ফরম্যাট প্রদান করুন",
+      error: "❌ নাম আপডেট করার সময় একটি ত্রুটি ঘটেছে",
+      help: `📚 সাহায্য প্রয়োজন? '{pn} guide' ব্যবহার করুন বিস্তারিত নির্দেশনার জন্য`
     }
   },
 
-  onStart: async function ({ args, message, event, api, usersData, getLang }) {
-    const mentions = Object.keys(event.mentions);
-    let uids = [];
-    let nickname = args.join(" ");
-
-    if (args[0] === "all") {
-      uids = (await api.getThreadInfo(event.threadID)).participantIDs;
-      nickname = args.slice(1).join(" ");
-    } else if (mentions.length > 0) {
-      uids = mentions;
-      const mentionedNames = Object.values(event.mentions).join("|");
-      nickname = nickname.replace(new RegExp(mentionedNames, "g"), "").trim();
-    } else {
-      uids = [event.senderID];
-      nickname = nickname.trim();
-    }
-
+  onStart: async function ({ 
+    message, 
+    event, 
+    args, 
+    api, 
+    usersData, 
+    getLang,
+    prefix,
+    role
+  }) {
     try {
-      for (const uid of uids) {
-        const finalName = await checkShortCut(nickname, uid, usersData);
-        await api.changeNickname(finalName, event.threadID, uid);
+      const { threadID, senderID, mentions } = event;
+      const lang = getLang;
+
+      if (!args.length || args[0] === "help") {
+        return message.reply(lang("help").replace(/{pn}/g, prefix + this.config.name));
       }
-    } catch (e) {
+
+      // Determine targets and nickname
+      let targetUIDs = [];
+      let nickname = args.join(" ");
+
+      if (args[0].toLowerCase() === "all") {
+        if (role < 1) return message.reply(lang("noPermission"));
+        const threadInfo = await api.getThreadInfo(threadID);
+        targetUIDs = threadInfo.participantIDs;
+        nickname = args.slice(1).join(" ");
+      } 
+      else if (Object.keys(mentions).length > 0) {
+        if (role < 1) return message.reply(lang("noPermission"));
+        targetUIDs = Object.keys(mentions);
+        
+        // Remove mentions from nickname
+        const mentionNames = Object.values(mentions).map(name => 
+          name.replace(/[-\/\\^$*+?.()|[\]{}]/g, "\\$&")
+        ).join("|");
+        
+        nickname = nickname.replace(new RegExp(mentionNames, "g"), "").trim();
+      } 
+      else {
+        targetUIDs = [senderID];
+        nickname = nickname.trim();
+      }
+
+      if (!nickname) {
+        return message.reply(lang("invalidFormat"));
+      }
+
+      // Process nicknames in batches to avoid rate limiting
+      const batchSize = 5;
+      const batches = [];
+      
+      for (let i = 0; i < targetUIDs.length; i += batchSize) {
+        batches.push(targetUIDs.slice(i, i + batchSize));
+      }
+
+      for (const batch of batches) {
+        await Promise.all(batch.map(async uid => {
+          try {
+            const processedNickname = await processNickname(nickname, uid, usersData);
+            await api.changeNickname(processedNickname, threadID, uid);
+          } catch (error) {
+            console.error(`Error changing nickname for ${uid}:`, error);
+          }
+        }));
+        
+        // Add delay between batches
+        if (batches.indexOf(batch) < batches.length - 1) {
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        }
+      }
+
+      return message.reply(lang("success"));
+    } catch (error) {
+      console.error("Error in setname command:", error);
       return message.reply(getLang("error"));
     }
   }
