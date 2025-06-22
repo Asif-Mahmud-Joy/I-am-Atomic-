@@ -1,100 +1,124 @@
 const axios = require('axios');
 const fs = require('fs-extra');
-
 const { getStreamFromURL } = global.utils;
 
 const pathDir = __dirname + '/assets/hubble';
 const pathData = pathDir + '/nasa.json';
 
-if (!fs.existsSync(pathDir)) fs.mkdirSync(pathDir);
+if (!fs.existsSync(pathDir)) 
+    fs.mkdirSync(pathDir, { recursive: true });
 
 let hubbleData;
 
 module.exports = {
-  config: {
-    name: "hubble",
-    version: "2.0",
-    author: "𝐀𝐬𝐢𝐟 𝐌𝐚𝐡𝐦𝐮𝐝",
-    countDown: 5,
-    role: 0,
-    description: {
-      vi: "Xem ảnh từ Hubble",
-      en: "View Hubble images"
+    config: {
+        name: "hubble",
+        version: "2.0",
+        author: "𝐀𝐬𝐢𝐟 𝐌𝐚𝐡𝐦𝐮𝐝",
+        countDown: 5,
+        role: 0,
+        description: {
+            en: "View Hubble Space Telescope images",
+            bn: "Hubble মহাকাশ টেলিস্কোপের ছবি দেখুন"
+        },
+        category: "owner",
+        guide: {
+            en: "{pn} <date (mm-dd)>",
+            bn: "{pn} <তারিখ (মাস-দিন)>"
+        }
     },
-    category: "owner",
-    guide: {
-      en: "{pn} <date (mm-dd)>"
-    }
-  },
 
-  langs: {
-    vi: {
-      invalidDate: "Ngày tháng bạn nhập vào không hợp lệ, vui lòng nhập lại theo định dạng mm-dd",
-      noImage: "Không có ảnh nào được tìm thấy trong ngày này"
+    langs: {
+        en: {
+            invalidDate: "The date you entered is invalid, please enter again in the mm-dd format",
+            noImage: "No images were found on this day",
+            error: "Sorry, an error occurred while processing your request"
+        },
+        bn: {
+            invalidDate: "আপনার দেওয়া তারিখটি সঠিক নয়, অনুগ্রহ করে মাস-দিন ফরম্যাটে আবার লিখুন",
+            noImage: "এই দিনে কোন ছবি পাওয়া যায়নি",
+            error: "দুঃখিত, আপনার অনুরোধ প্রক্রিয়া করার সময় একটি ত্রুটি ঘটেছে"
+        }
     },
-    en: {
-      invalidDate: "The date you entered is invalid, please enter again in the mm-dd format",
-      noImage: "No images were found on this day"
+
+    onLoad: async function () {
+        try {
+            if (!fs.existsSync(pathData)) {
+                const res = await axios.get(
+                    'https://raw.githubusercontent.com/ntkhang03/Goat-Bot-V2/main/scripts/cmds/assets/hubble/nasa.json',
+                    { timeout: 10000 }
+                );
+                fs.writeFileSync(pathData, JSON.stringify(res.data, null, 2));
+            }
+            hubbleData = JSON.parse(fs.readFileSync(pathData));
+        }
+        catch (err) {
+            console.error("[Hubble Command] Initialization error:", err);
+        }
     },
-    bn: {
-      invalidDate: "Date ta thik na. mm-dd format e abar dao.",
-      noImage: "Oi date e kono image pai nai."
+
+    onStart: async function ({ message, args, getLang }) {
+        try {
+            const date = args[0] || "";
+            if (!date) {
+                return message.reply(getLang('invalidDate'));
+            }
+
+            const dateText = checkValidDate(date);
+            if (!dateText) {
+                return message.reply(getLang('invalidDate'));
+            }
+
+            const data = hubbleData.find(e => e.date.startsWith(dateText));
+            if (!data) {
+                return message.reply(getLang('noImage'));
+            }
+
+            const { image, name, caption, url } = data;
+            const imgUrl = 'https://imagine.gsfc.nasa.gov/hst_bday/images/' + image;
+            
+            message.reply({
+                body: `📅 তারিখ: ${dateText}\n🌀 নাম: ${name}\n📖 বিবরণ: ${caption}\n🔗 সোর্স: ${url}`,
+                attachment: await getStreamFromURL(imgUrl)
+            });
+        }
+        catch (err) {
+            console.error("[Hubble Command] Execution error:", err);
+            message.reply(getLang('error'));
+        }
     }
-  },
-
-  onLoad: async function () {
-    try {
-      if (!fs.existsSync(pathData)) {
-        const res = await axios.get('https://raw.githubusercontent.com/ntkhang03/Goat-Bot-V2/main/scripts/cmds/assets/hubble/nasa.json');
-        fs.writeFileSync(pathData, JSON.stringify(res.data, null, 2));
-      }
-      hubbleData = JSON.parse(fs.readFileSync(pathData));
-    } catch (err) {
-      console.error("[hubble command load error]", err);
-    }
-  },
-
-  onStart: async function ({ message, args, getLang }) {
-    try {
-      const date = args[0] || "";
-      const dateText = checkValidDate(date);
-      if (!date || !dateText)
-        return message.reply(getLang('invalidDate'));
-
-      const data = hubbleData.find(e => e.date.startsWith(dateText));
-      if (!data)
-        return message.reply(getLang('noImage'));
-
-      const { image, name, caption, url } = data;
-      const imgUrl = 'https://imagine.gsfc.nasa.gov/hst_bday/images/' + image;
-      const getImage = await getStreamFromURL(imgUrl);
-
-      const msg = `\uD83D\uDCC5 Date: ${dateText}\n\uD83C\uDF00 Name: ${name}\n\uD83D\uDCD6 Caption: ${caption}\n\uD83D\uDD17 Source: ${url}`;
-      message.reply({
-        body: msg,
-        attachment: getImage
-      });
-    } catch (err) {
-      console.error("[hubble command error]", err);
-      message.reply("\uD83D\uDE1E Sorry, image download e somossa hoise.");
-    }
-  }
 };
 
-const monthText = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+const monthText = [
+    'January', 'February', 'March', 'April', 'May', 'June', 
+    'July', 'August', 'September', 'October', 'November', 'December'
+];
+
 function checkValidDate(date) {
-  const dateArr = date.split(/[-/]/);
-  if (dateArr.length !== 2) return false;
+    const dateArr = date.split(/[-/]/);
+    if (dateArr.length !== 2) return null;
 
-  let [a, b] = dateArr.map(x => parseInt(x));
-  let month = a <= 12 ? a : b;
-  let day = a <= 12 ? b : a;
+    let [a, b] = dateArr.map(x => parseInt(x));
+    if (isNaN(a) || isNaN(b)) return null;
 
-  if (isNaN(month) || isNaN(day)) return false;
-  if (month < 1 || month > 12) return false;
-  if (day < 1 || day > 31) return false;
-  if (month === 2 && day > 29) return false;
-  if ([4, 6, 9, 11].includes(month) && day > 30) return false;
+    let month, day;
+    if (a <= 12 && b <= 31) {
+        month = a;
+        day = b;
+    } 
+    else if (b <= 12 && a <= 31) {
+        month = b;
+        day = a;
+    }
+    else {
+        return null;
+    }
 
-  return monthText[month - 1] + ' ' + day;
+    // Validate date ranges
+    if (month < 1 || month > 12) return null;
+    if (day < 1 || day > 31) return null;
+    if (month === 2 && day > 29) return null;
+    if ([4, 6, 9, 11].includes(month) && day > 30) return null;
+
+    return `${monthText[month - 1]} ${day}`;
 }
