@@ -1,126 +1,146 @@
 module.exports = {
   config: {
-    name: "setrole2",
-    version: "2.0",
-    author: "Mr.Smokey [Asif Mahmud]",
+    name: "setrole",
+    aliases: ["cmdrole", "commandrole"],
+    version: "3.0.0",
+    author: "NTKhang & Upgraded by ✨Asif✨",
     countDown: 5,
-    role: 1,
-    shortDescription: {
-      vi: "Chỉnh sửa role của lệnh",
-      en: "Edit command role",
-      bn: "কমান্ডের রোল সম্পাদনা করুন"
+    role: 1, // Requires admin privileges
+    description: {
+      en: "Advanced command role management system",
+      vi: "Hệ thống quản lý role lệnh nâng cao",
+      bn: "কমান্ড রোল ব্যবস্থাপনা সিস্টেম"
     },
-    longDescription: {
-      vi: "Chỉnh sửa quyền truy cập (role) cho các lệnh có role < 2",
-      en: "Edit access level (role) of commands with role < 2",
-      bn: "role < 2 এর জন্য কমান্ডগুলোর অ্যাক্সেস লেভেল পরিবর্তন করুন"
-    },
-    category: "info",
+    category: "administration",
     guide: {
-      vi: `
-{pn} <commandName> <role>: cập nhật quyền truy cập cho lệnh
-+ 0: Mọi người
-+ 1: Quản trị viên
-+ default: Reset về mặc định
-Ví dụ:
-  {pn} rank 1
-  {pn} rank 0
-  {pn} rank default
+      en: `📌 Command Guide:
+• {pn} <command> <role> - Set role for command
+  - 0: All members
+  - 1: Admins only
+  - default: Reset to default
+• {pn} list - View modified commands
+• {pn} help - Show this help menu
 
-{pn} view|viewrole|show: Xem danh sách lệnh đã chỉnh sửa role`,
-      en: `
-{pn} <commandName> <role>: update role for command
-+ 0: Everyone
-+ 1: Admins only
-+ default: Reset to default
-Example:
-  {pn} rank 1
-  {pn} rank 0
-  {pn} rank default
+🔐 Note: Only works for commands with default role < 2`,
+      bn: `📌 ব্যবহার নির্দেশিকা:
+• {pn} <command> <role> - কমান্ডের জন্য রোল সেট করুন
+  - 0: সব সদস্য
+  - 1: শুধুমাত্র অ্যাডমিন
+  - default: ডিফল্টে রিসেট করুন
+• {pn} list - পরিবর্তিত কমান্ড দেখুন
+• {pn} help - এই সাহায্য মেনু দেখুন
 
-{pn} view|viewrole|show: See modified command roles`,
-      bn: `
-{pn} <commandName> <role>: কমান্ডের রোল সেট করুন
-+ 0: সবাই ব্যবহার করতে পারবে
-+ 1: শুধু অ্যাডমিন
-+ default: ডিফল্ট রোলে রিসেট
-উদাহরণ:
-  {pn} rank 1
-  {pn} rank 0
-  {pn} rank default
-
-{pn} view|viewrole|show: কোন কোন কমান্ডে রোল চেঞ্জ হয়েছে তা দেখুন`
+🔐 নোট: শুধুমাত্র ডিফল্ট রোল < 2 এর কমান্ডের জন্য কাজ করে`
     }
   },
 
   langs: {
-    vi: {
-      noEditedCommand: "✅ Không có lệnh nào bị chỉnh role trong nhóm này",
-      editedCommand: "⚠️ Danh sách lệnh đã chỉnh role:\n",
-      noPermission: "❗ Chỉ admin mới được dùng lệnh này",
-      commandNotFound: "Không tìm thấy lệnh \"%1\"",
-      noChangeRole: "❗ Không thể thay đổi role của lệnh \"%1\"",
-      resetRole: "✅ Đã reset role về mặc định cho lệnh \"%1\"",
-      changedRole: "✅ Đã cập nhật role của lệnh \"%1\" thành %2"
-    },
     en: {
-      noEditedCommand: "✅ No commands have modified roles in this group",
-      editedCommand: "⚠️ Commands with modified roles:\n",
-      noPermission: "❗ Only admins can use this command",
-      commandNotFound: "Command \"%1\" not found",
-      noChangeRole: "❗ Cannot change role of command \"%1\"",
-      resetRole: "✅ Reset role of \"%1\" to default",
-      changedRole: "✅ Updated role of \"%1\" to %2"
+      noModified: "ℹ️ No commands have modified roles",
+      modifiedList: "📜 Commands with modified roles:\n%1",
+      noPermission: "⛔ Only admins can modify command roles",
+      notFound: "❌ Command \"%1\" not found",
+      cantModify: "❌ Can't modify role for command \"%1\"",
+      reset: "🔄 Reset role for \"%1\" to default",
+      updated: "✅ Updated role for \"%1\" to %2",
+      invalidRole: "⚠️ Invalid role value. Use 0, 1 or 'default'",
+      error: "❌ An error occurred: %1",
+      help: `📚 Need help? Use '{pn} guide' for detailed instructions`
     },
     bn: {
-      noEditedCommand: "✅ এই গ্রুপে কোনো কমান্ডের রোল পরিবর্তন করা হয়নি",
-      editedCommand: "⚠️ পরিবর্তিত রোলসহ কমান্ডসমূহ:\n",
-      noPermission: "❗ শুধু অ্যাডমিনরা এই কমান্ড ব্যবহার করতে পারবে",
-      commandNotFound: "\"%1\" নামক কোনো কমান্ড পাওয়া যায়নি",
-      noChangeRole: "❗ \"%1\" কমান্ডের রোল পরিবর্তন করা যাবে না",
-      resetRole: "✅ \"%1\" কমান্ডের রোল ডিফল্টে রিসেট করা হয়েছে",
-      changedRole: "✅ \"%1\" কমান্ডের রোল %2 এ আপডেট করা হয়েছে"
+      noModified: "ℹ️ কোনো কমান্ডের রোল পরিবর্তন করা হয়নি",
+      modifiedList: "📜 পরিবর্তিত রোলসহ কমান্ডসমূহ:\n%1",
+      noPermission: "⛔ শুধুমাত্র অ্যাডমিনরা কমান্ড রোল পরিবর্তন করতে পারে",
+      notFound: "❌ \"%1\" কমান্ডটি পাওয়া যায়নি",
+      cantModify: "❌ \"%1\" কমান্ডের রোল পরিবর্তন করা যাবে না",
+      reset: "🔄 \"%1\" কমান্ডের রোল ডিফল্টে রিসেট করা হয়েছে",
+      updated: "✅ \"%1\" কমান্ডের রোল %2 এ আপডেট করা হয়েছে",
+      invalidRole: "⚠️ অবৈধ রোল মান। 0, 1 বা 'default' ব্যবহার করুন",
+      error: "❌ একটি ত্রুটি ঘটেছে: %1",
+      help: `📚 সাহায্য প্রয়োজন? '{pn} guide' ব্যবহার করুন বিস্তারিত নির্দেশনার জন্য`
     }
   },
 
-  onStart: async function ({ message, event, args, role, threadsData, getLang }) {
-    const { commands, aliases } = global.GoatBot;
-    const setRole = await threadsData.get(event.threadID, "data.setRole", {});
+  onStart: async function ({ 
+    message, 
+    event, 
+    args, 
+    role, 
+    threadsData, 
+    getLang,
+    prefix
+  }) {
+    try {
+      const { commands, aliases } = global.GoatBot;
+      const action = args[0]?.toLowerCase();
+      const lang = getLang;
 
-    const input = args[0]?.toLowerCase();
-    if (["view", "viewrole", "show"].includes(input)) {
-      if (!Object.keys(setRole).length)
-        return message.reply(getLang("noEditedCommand"));
-      let msg = getLang("editedCommand");
-      for (const cmd in setRole) msg += `- ${cmd} => ${setRole[cmd]}\n`;
-      return message.reply(msg);
+      // Show help if no action specified
+      if (!action || action === "help") {
+        return message.reply(lang("help").replace(/{pn}/g, prefix + this.config.name));
+      }
+
+      // Get current role settings
+      const customRoles = await threadsData.get(event.threadID, "data.commandRoles", {});
+
+      // Handle list action
+      if (["list", "view", "show"].includes(action)) {
+        if (!Object.keys(customRoles).length) {
+          return message.reply(lang("noModified"));
+        }
+        
+        const list = Object.entries(customRoles)
+          .map(([cmd, role]) => `• ${cmd}: ${role}`)
+          .join("\n");
+        
+        return message.reply(lang("modifiedList", list));
+      }
+
+      // Handle role modification
+      if (role < 1) {
+        return message.reply(lang("noPermission"));
+      }
+
+      const [commandName, newRole] = args;
+      if (!commandName || !newRole) {
+        return message.SyntaxError();
+      }
+
+      // Validate new role
+      if (!["0", "1", "default"].includes(newRole.toLowerCase())) {
+        return message.reply(lang("invalidRole"));
+      }
+
+      // Find the command
+      const command = commands.get(commandName.toLowerCase()) || 
+                     commands.get(aliases.get(commandName.toLowerCase()));
+      
+      if (!command) {
+        return message.reply(lang("notFound", commandName));
+      }
+
+      const actualCommandName = command.config.name;
+      
+      // Check if command can be modified
+      if (command.config.role > 1) {
+        return message.reply(lang("cantModify", actualCommandName));
+      }
+
+      // Process role change
+      if (newRole.toLowerCase() === "default") {
+        delete customRoles[actualCommandName];
+        await threadsData.set(event.threadID, customRoles, "data.commandRoles");
+        return message.reply(lang("reset", actualCommandName));
+      }
+
+      const numericRole = parseInt(newRole);
+      customRoles[actualCommandName] = numericRole;
+      await threadsData.set(event.threadID, customRoles, "data.commandRoles");
+      return message.reply(lang("updated", actualCommandName, numericRole));
+
+    } catch (error) {
+      console.error("Error in setrole command:", error);
+      return message.reply(lang("error", error.message));
     }
-
-    if (!args[0] || (!args[1] && args[1] !== 0))
-      return message.SyntaxError();
-    if (role < 1)
-      return message.reply(getLang("noPermission"));
-
-    let commandName = args[0].toLowerCase();
-    let newRole = args[1];
-
-    const command = commands.get(commandName) || commands.get(aliases.get(commandName));
-    if (!command)
-      return message.reply(getLang("commandNotFound", commandName));
-
-    commandName = command.config.name;
-    if (command.config.role > 1)
-      return message.reply(getLang("noChangeRole", commandName));
-
-    if (newRole === "default" || newRole === command.config.role.toString()) {
-      delete setRole[commandName];
-      await threadsData.set(event.threadID, setRole, "data.setRole");
-      return message.reply(getLang("resetRole", commandName));
-    }
-
-    newRole = parseInt(newRole);
-    setRole[commandName] = newRole;
-    await threadsData.set(event.threadID, setRole, "data.setRole");
-    return message.reply(getLang("changedRole", commandName, newRole));
   }
 };
