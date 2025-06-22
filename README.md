@@ -1,8 +1,8 @@
-<h1 align="center">🌫 𝐌𝐫.𝐒𝐦𝐨𝐤𝐞𝐲 🎩</h1>
+<h1 align="center">𝐀𝐭𝐨𝐦𝐢𝐜</h1>
 
 <p align="center">
-  <a href="https://files.catbox.moe/qptlr8.mp4">
-    <img src="https://files.catbox.moe/k8kwue.jpg" alt="Watch demo video" width="400"/>
+  <a href="https://files.catbox.moe/op5iay.mp4">
+    <img src="https://files.catbox.moe/e7bozl.jpg" alt="Watch demo video" width="400"/>
   </a>
 </p>
 
@@ -13,8 +13,7 @@
 - 👑 Name: **𝐀𝐬𝐢𝐟 𝐌𝐚𝐡𝐦𝐮𝐝**
 - 🏙️ From: **Dhaka** 
 - 🎂 Age: **18+**
--### 🇧🇩 *𝐌𝐫.𝐒𝐦𝐨𝐤𝐞𝐲* | *𝐀𝐬𝐢𝐟 𝐌𝐚𝐡𝐦𝐮𝐝* 🌿
----
+
 
 ## ⚙️ HOW TO RUN ON RENDER
 
