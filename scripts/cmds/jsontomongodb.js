@@ -1,16 +1,15 @@
-
 const fs = require("fs-extra");
 
 module.exports = {
   config: {
     name: "jsontomongodb",
-    aliases: ["jsontomongo"],
-    version: "2.0",
-    author: "Mr.Smokey [Asif Mahmud]",
+    aliases: ["jsontomongo", "syncmongo"],
+    version: "3.0",
+    author: "𝐀𝐬𝐢𝐟 𝐌𝐚𝐡𝐦𝐮𝐝",
     countDown: 5,
     role: 2,
-    shortDescription: "Sync JSON to MongoDB",
-    longDescription: "Synchronize all bot data from json to mongodb",
+    shortDescription: "Sync JSON data to MongoDB",
+    longDescription: "Synchronizes bot data from JSON files to MongoDB collections",
     category: "owner",
     guide: {
       en: "{pn} <thread | user | dashboard | global | all>"
@@ -19,86 +18,133 @@ module.exports = {
 
   langs: {
     en: {
-      invalidDatabase: "❌ Please switch database to mongodb in config then restart the bot to use this command",
-      missingFile: "❌ You haven't copied the data file %1 into the database/data folder",
-      formatInvalid: "❌ Data format is invalid",
-      error: "❌ An error occurred:\n%1: %2",
-      success: "✅ Successfully synchronized %1 data from json to MongoDB!"
+      invalidDatabase: "❌ Please switch to MongoDB in config.json and restart bot",
+      missingFile: "❌ Missing data file: %1",
+      formatInvalid: "❌ Invalid data format in %1",
+      error: "❌ Error: %1\n%2",
+      success: "✅ %1 data synced to MongoDB (%2 documents)",
+      progress: "⏳ Syncing %1 data to MongoDB...",
+      complete: "✅ All data synchronization complete!",
+      invalidType: "⚠️ Invalid data type. Use: thread, user, dashboard, global, or all"
     },
     bn: {
-      invalidDatabase: "❌ এই কমান্ড ইউজ করতে হলে config ফাইলে database টাইপ 'mongodb' করতে হবে, তারপর বট রিস্টার্ট করুন।",
-      missingFile: "❌ %1 নামের ফাইল database/data ফোল্ডারে পাওয়া যায়নি।",
-      formatInvalid: "❌ ডাটা ফরম্যাট সঠিক না।",
-      error: "❌ একটা সমস্যা হইছে:\n%1: %2",
-      success: "✅ %1 ডাটা json থেকে MongoDB তে সফলভাবে সিংক করা হয়েছে!"
+      invalidDatabase: "❌ config.json-এ MongoDB ব্যবহার করতে বট রিস্টার্ট করুন",
+      missingFile: "❌ ফাইল খুঁজে পাওয়া যায়নি: %1",
+      formatInvalid: "❌ %1 ফাইলে ভুল ডাটা ফরম্যাট",
+      error: "❌ ত্রুটি: %1\n%2",
+      success: "✅ %1 ডাটা MongoDB-তে সিংক করা হয়েছে (%2 ডকুমেন্ট)",
+      progress: "⏳ %1 ডাটা MongoDB-তে সিংক করা হচ্ছে...",
+      complete: "✅ সব ডাটা সফলভাবে সিংক করা হয়েছে!",
+      invalidType: "⚠️ ভুল ডাটা টাইপ। ব্যবহার করুন: thread, user, dashboard, global, বা all"
     }
   },
 
   onStart: async function ({ args, message, threadModel, userModel, dashBoardModel, globalModel, getLang }) {
-    if (global.GoatBot.config.database.type !== "mongodb")
-      return message.reply(getLang("invalidDatabase"));
-
-    const typeMap = {
-      thread: ["threadsData.json", threadModel, "threadID"],
-      user: ["usersData.json", userModel, "userID"],
-      dashboard: ["dashBoardData.json", dashBoardModel, "email"],
-      global: ["globalData.json", globalModel, "key"]
-    };
-
-    const target = args[0];
-    if (target === "all") {
-      for (const [type] of Object.entries(typeMap)) {
-        await syncData(type, ...typeMap[type], message, getLang);
+    try {
+      // Database check
+      if (global.GoatBot.config.database.type !== "mongodb") {
+        return message.reply(getLang("invalidDatabase"));
       }
-    } else if (typeMap[target]) {
-      await syncData(target, ...typeMap[target], message, getLang);
-    } else {
-      return message.SyntaxError();
+
+      const dataTypes = {
+        thread: { 
+          model: threadModel, 
+          file: "threadsData.json", 
+          idField: "threadID",
+          dbKey: "allThreadData"
+        },
+        user: { 
+          model: userModel, 
+          file: "usersData.json", 
+          idField: "userID",
+          dbKey: "allUserData"
+        },
+        dashboard: { 
+          model: dashBoardModel, 
+          file: "dashBoardData.json", 
+          idField: "email",
+          dbKey: "allDashBoardData"
+        },
+        global: { 
+          model: globalModel, 
+          file: "globalData.json", 
+          idField: "key",
+          dbKey: "allGlobalData"
+        }
+      };
+
+      const target = args[0]?.toLowerCase();
+
+      // Sync all data types
+      if (target === "all") {
+        for (const [type, config] of Object.entries(dataTypes)) {
+          message.reply(getLang("progress", type));
+          const result = await this.syncDataType(config, getLang);
+          message.reply(getLang("success", type, result.count));
+        }
+        return message.reply(getLang("complete"));
+      }
+
+      // Sync specific data type
+      if (dataTypes[target]) {
+        message.reply(getLang("progress", target));
+        const result = await this.syncDataType(dataTypes[target], getLang);
+        return message.reply(getLang("success", target, result.count));
+      }
+
+      // Invalid type
+      return message.reply(getLang("invalidType"));
+    } catch (err) {
+      console.error("JSON to MongoDB Sync Error:", err);
+      return message.reply(getLang("error", err.name, err.message));
     }
-  }
-};
+  },
 
-async function syncData(type, fileName, model, idField, message, getLang) {
-  const filePath = `${process.cwd()}/database/data/${fileName}`;
-  if (!fs.existsSync(filePath))
-    return message.reply(getLang("missingFile", fileName));
+  syncDataType: async function (config, getLang) {
+    const { model, file, idField, dbKey } = config;
+    const filePath = `${__dirname}/../../data/${file}`;
 
-  let jsonData;
-  try {
-    jsonData = require(filePath);
-    delete require.cache[require.resolve(filePath)];
-  } catch {
-    return message.reply(getLang("formatInvalid"));
-  }
+    // File existence check
+    if (!fs.existsSync(filePath)) {
+      throw new Error(getLang("missingFile", file));
+    }
 
-  try {
-    const bulkOps = jsonData.map(entry => {
-      const exists = global.db[`all${capitalize(type)}Data`]?.find(item => item[idField] === entry[idField]);
-      return exists
-        ? {
-            updateOne: {
-              filter: { [idField]: entry[idField] },
-              update: entry
+    // Read and parse JSON data
+    let jsonData;
+    try {
+      jsonData = fs.readJsonSync(filePath);
+    } catch (err) {
+      throw new Error(getLang("formatInvalid", file));
+    }
+
+    // Prepare bulk operations
+    const bulkOps = [];
+    const existingData = global.db[dbKey] || [];
+
+    for (const item of jsonData) {
+      const exists = existingData.some(dbItem => dbItem[idField] === item[idField]);
+      
+      bulkOps.push({
+        [exists ? "updateOne" : "insertOne"]: exists
+          ? {
+              filter: { [idField]: item[idField] },
+              update: { $set: item }
             }
-          }
-        : {
-            insertOne: {
-              document: entry
-            }
-          };
-    });
+          : { document: item }
+      });
+    }
 
+    // Execute bulk operations
     if (bulkOps.length > 0) {
       await model.bulkWrite(bulkOps);
-      global.db[`all${capitalize(type)}Data`] = await model.find({}).lean();
     }
 
-    return message.reply(getLang("success", capitalize(type)));
-  } catch (err) {
-    return message.reply(getLang("error", err.name, err.message));
-  }
-}
+    // Refresh global data
+    global.db[dbKey] = await model.find().lean();
 
-function capitalize(str) {
-  return str.charAt(0).toUpperCase() + str.slice(1);
-}
+    return {
+      count: bulkOps.length,
+      type: dbKey
+    };
+  }
+};
