@@ -1,57 +1,110 @@
 const axios = require('axios');
 
-// ✅ Updated & fallback API added
-const getImgurApi = async () => {
-  try {
-    const base = await axios.get("https://raw.githubusercontent.com/nazrul4x/Noobs/main/Apis.json");
-    return base.data.csb || "https://csb-api.onrender.com"; // fallback API
-  } catch (err) {
-    console.warn("❌ API fetch failed, using fallback API");
-    return "https://csb-api.onrender.com";
-  }
-};
+const API_ENDPOINTS = [
+  "https://csb-api.onrender.com/nazrul/imgur",
+  "https://nazrul-api.onrender.com/nazrul/imgur",
+  "https://noobs-api.onrender.com/nazrul/imgur"
+];
 
 module.exports = {
   config: {
     name: "imgur",
-    version: "1.1.0",
+    version: "2.0",
     role: 0,
-    author: "🎩 𝐌𝐫.𝐒𝐦𝐨𝐤𝐞𝐲 • 𝐀𝐬𝐢𝐟 𝐌𝐚𝐡𝐦𝐮𝐝 🌠",
-    shortDescription: "Upload image to Imgur",
-    countDown: 0,
-    category: "imgur",
+    author: "𝐀𝐬𝐢𝐟 𝐌𝐚𝐡𝐦𝐮𝐝",
+    shortDescription: {
+      en: "Upload images to Imgur",
+      bn: "Imgur-এ ছবি আপলোড করুন"
+    },
+    longDescription: {
+      en: "Upload images to Imgur and get direct links",
+      bn: "Imgur-এ ছবি আপলোড করে সরাসরি লিঙ্ক পান"
+    },
+    category: "media",
     guide: {
-      en: '[reply to image to upload to Imgur]'
+      en: "{pn} [reply to image]",
+      bn: "{pn} [ছবিতে রিপ্লাই করুন]"
+    },
+    countDown: 10
+  },
+
+  langs: {
+    en: {
+      noImage: "🖼️ Please reply to an image or attach an image",
+      uploading: "⏳ Uploading your image to Imgur...",
+      success: "✅ Image uploaded successfully!\n\n🔗 Direct Link: {link}\n\n📌 Copy Link: `{link}`",
+      error: "❌ Failed to upload image. Please try again later",
+      invalidResponse: "⚠️ Received invalid response from server",
+      noEndpoint: "🚫 All upload endpoints failed. Try again later"
+    },
+    bn: {
+      noImage: "🖼️ অনুগ্রহ করে একটি ছবিতে রিপ্লাই করুন বা ছবি সংযুক্ত করুন",
+      uploading: "⏳ আপনার ছবি Imgur-এ আপলোড করা হচ্ছে...",
+      success: "✅ ছবি সফলভাবে আপলোড হয়েছে!\n\n🔗 সরাসরি লিঙ্ক: {link}\n\n📌 লিঙ্ক কপি করুন: `{link}`",
+      error: "❌ ছবি আপলোড করতে ব্যর্থ হয়েছে। পরে আবার চেষ্টা করুন",
+      invalidResponse: "⚠️ সার্ভার থেকে অবৈধ প্রতিক্রিয়া পাওয়া গেছে",
+      noEndpoint: "🚫 সব আপলোড এন্ডপইন্ট ব্যর্থ হয়েছে। পরে আবার চেষ্টা করুন"
     }
   },
 
-  onStart: async ({ api, event }) => {
-    let imageUrl;
-
-    if (event.type === "message_reply" && event.messageReply.attachments?.length > 0) {
-      imageUrl = event.messageReply.attachments[0].url;
-    } else if (event.attachments?.length > 0) {
-      imageUrl = event.attachments[0].url;
-    } else {
-      return api.sendMessage('🖼️ দয়া করে কোনো ছবিতে রিপ্লাই দিন অথবা ছবি আপলোড করুন।', event.threadID, event.messageID);
-    }
-
+  onStart: async function ({ api, event, message, getLang }) {
     try {
-      const apiUrl = await getImgurApi();
-      const res = await axios.get(`${apiUrl}/nazrul/imgur?link=${encodeURIComponent(imageUrl)}`);
-
-      if (!res.data || !res.data.uploaded || !res.data.uploaded.image) {
-        return api.sendMessage("⚠️ ইমেজ আপলোড হয়নি। আবার চেষ্টা করুন।", event.threadID, event.messageID);
+      // Check for image attachment
+      const imageUrl = this.getImageUrl(event);
+      if (!imageUrl) {
+        return message.reply(getLang('noImage'));
       }
 
-      const uploadedLink = res.data.uploaded.image;
-      return api.sendMessage(`✅ আপলোড সম্পন্ন:
+      // Send uploading notification
+      message.reply(getLang('uploading'));
 
-🔗 ${uploadedLink}`, event.threadID, event.messageID);
+      // Try all API endpoints
+      for (const endpoint of API_ENDPOINTS) {
+        try {
+          const result = await this.uploadToImgur(endpoint, imageUrl);
+          if (result.success) {
+            return message.reply(getLang('success', { link: result.link }));
+          }
+        } catch (error) {
+          console.error(`Endpoint ${endpoint} failed:`, error);
+        }
+      }
 
+      // All endpoints failed
+      message.reply(getLang('noEndpoint'));
     } catch (error) {
-      console.error("❌ Imgur upload error:", error);
-      return api.sendMessage("🚫 ইমেজ আপলোড করার সময় সমস্যা হয়েছে। পরে আবার চেষ্টা করুন।", event.threadID, event.messageID);
+      console.error('Imgur command error:', error);
+      message.reply(getLang('error'));
     }
+  },
+
+  getImageUrl: function (event) {
+    if (event.type === "message_reply" && 
+        event.messageReply.attachments?.length > 0 &&
+        event.messageReply.attachments[0].type === "photo") {
+      return event.messageReply.attachments[0].url;
+    } 
+    
+    if (event.attachments?.length > 0 && 
+        event.attachments[0].type === "photo") {
+      return event.attachments[0].url;
+    }
+    
+    return null;
+  },
+
+  uploadToImgur: async function (endpoint, imageUrl) {
+    const response = await axios.get(`${endpoint}?link=${encodeURIComponent(imageUrl)}`, {
+      timeout: 10000
+    });
+
+    if (!response.data || !response.data.uploaded || !response.data.uploaded.image) {
+      throw new Error('Invalid response structure');
+    }
+
+    return {
+      success: true,
+      link: response.data.uploaded.image
+    };
   }
 };
