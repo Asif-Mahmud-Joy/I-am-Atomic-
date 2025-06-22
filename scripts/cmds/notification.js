@@ -4,25 +4,23 @@ const axios = require("axios");
 module.exports = {
   config: {
     name: "notification",
-    aliases: ["notify"], // ✅ Removed duplicate alias "noti" to avoid conflict
-    version: "1.7",
-    author: "✨ Mr.Smokey [Asif Mahmud] ✨",
+    aliases: ["notify", "announce"],
+    version: "2.0",
+    author: "𝐀𝐬𝐢𝐟 𝐌𝐚𝐡𝐦𝐮𝐝",
     countDown: 5,
     role: 2,
     shortDescription: {
-      vi: "Gửi thông báo từ admin đến all box",
-      en: "Send notification from admin to all box",
-      bn: "Admin theke sob group e notification pathano"
+      en: "Send notifications to all groups",
+      bn: "সব গ্রুপে বিজ্ঞপ্তি পাঠান"
     },
     longDescription: {
-      vi: "Gửi thông báo từ admin đến all box",
-      en: "Send notification from admin to all box",
-      bn: "Admin theke shob group e message o image er notification pathano"
+      en: "Send messages to all groups with detailed status reports",
+      bn: "সমস্ত গ্রুপে বার্তা পাঠান এবং বিস্তারিত অবস্থা রিপোর্ট পান"
     },
     category: "owner",
     guide: {
-      en: "{pn} your message here",
-      bn: "{pn} apnar message likhun"
+      en: "{pn} [message]",
+      bn: "{pn} [বার্তা]"
     },
     envConfig: {
       delayPerGroup: 300
@@ -31,81 +29,152 @@ module.exports = {
 
   langs: {
     en: {
-      missingMessage: "Please enter the message you want to send to all groups",
-      notification: "🔔 Notification from bot admin (do not reply)",
-      sendingNotification: "Sending notification to %1 groups...",
+      missingMessage: "📝 Please enter the message you want to send",
+      notification: "📢 Notification from Bot Admin\n━━━━━━━━━━━━━━\n",
+      sendingNotification: "⏳ Sending notification to %1 groups...",
       sentNotification: "✅ Successfully sent to %1 groups",
-      errorSendingNotification: "❌ Failed to send to %1 groups:\n%2"
+      errorSendingNotification: "❌ Failed to send to %1 groups",
+      successTitle: "📬 Notification Summary",
+      attachmentNotice: "\n\n📎 Attachment included",
+      groupList: "📋 Group List:\n",
+      errorList: "⚠️ Errors occurred in:\n",
+      noGroups: "❌ No groups found to send notification"
     },
     bn: {
-      missingMessage: "🔴 Apnar message ta likhun ja pathate chan sob group e",
-      notification: "🔔 Bot admin theke notun notification (reply korben na)",
-      sendingNotification: "📨 Notification pathano hocche %1 group e...",
-      sentNotification: "✅ Sothik bhabe %1 group e pathano hoyeche",
-      errorSendingNotification: "❌ %1 group e pathate somossa hoise:\n%2"
+      missingMessage: "📝 অনুগ্রহ করে বার্তাটি লিখুন",
+      notification: "📢 বট অ্যাডমিন থেকে বিজ্ঞপ্তি\n━━━━━━━━━━━━━━\n",
+      sendingNotification: "⏳ %1 টি গ্রুপে বিজ্ঞপ্তি পাঠানো হচ্ছে...",
+      sentNotification: "✅ %1 টি গ্রুপে সফলভাবে পাঠানো হয়েছে",
+      errorSendingNotification: "❌ %1 টি গ্রুপে পাঠানো যায়নি",
+      successTitle: "📬 বিজ্ঞপ্তির সারাংশ",
+      attachmentNotice: "\n\n📎 সংযুক্তি যুক্ত করা হয়েছে",
+      groupList: "📋 গ্রুপের তালিকা:\n",
+      errorList: "⚠️ ত্রুটি হয়েছে নিম্নলিখিত গ্রুপে:\n",
+      noGroups: "❌ বিজ্ঞপ্তি পাঠানোর জন্য কোন গ্রুপ পাওয়া যায়নি"
     }
   },
 
-  onStart: async function ({ message, api, event, args, commandName, envCommands, threadsData, getLang, role }) {
-    const lang = getLang;
-    const { delayPerGroup } = envCommands[commandName];
+  onStart: async function ({ 
+    message, 
+    api, 
+    event, 
+    args, 
+    commandName, 
+    envCommands, 
+    threadsData, 
+    getLang 
+  }) {
+    try {
+      const lang = getLang;
+      const { delayPerGroup } = envCommands[commandName];
 
-    if (!args[0]) return message.reply(lang("missingMessage"));
-
-    const formSend = {
-      body: `${lang("notification")}\n───────────────\n${args.join(" ")}`,
-      attachment: await getStreamsFromAttachment(
-        [
-          ...event.attachments,
-          ...(event.messageReply?.attachments || [])
-        ].filter(item => ["photo", "png", "animated_image", "video", "audio"].includes(item.type))
-      )
-    };
-
-    const allThreadID = (await threadsData.getAll()).filter(
-      t => t.isGroup && t.members.find(m => m.userID == api.getCurrentUserID())?.inGroup
-    );
-
-    message.reply(lang("sendingNotification", allThreadID.length));
-
-    let sendSuccess = 0;
-    const sendError = [];
-    const waitingSend = [];
-
-    for (const thread of allThreadID) {
-      try {
-        const tid = thread.threadID;
-        waitingSend.push({
-          threadID: tid,
-          pending: api.sendMessage(formSend, tid)
-        });
-        await new Promise(res => setTimeout(res, delayPerGroup));
-      } catch (e) {
-        sendError.push({ threadIDs: [thread.threadID], errorDescription: e.message });
+      // Check if message is provided
+      if (!args[0] && event.attachments.length === 0) {
+        return message.reply(lang("missingMessage"));
       }
-    }
 
-    for (const sended of waitingSend) {
-      try {
-        await sended.pending;
-        sendSuccess++;
-      } catch (e) {
-        const { message: errorDescription } = e;
-        const existing = sendError.find(item => item.errorDescription === errorDescription);
-        if (existing) existing.threadIDs.push(sended.threadID);
-        else sendError.push({ threadIDs: [sended.threadID], errorDescription });
-      }
-    }
+      // Prepare message content
+      const notificationMessage = lang("notification") + (args.join(" ") || "");
+      const attachments = [
+        ...event.attachments,
+        ...(event.messageReply?.attachments || [])
+      ].filter(item => ["photo", "png", "animated_image", "video", "audio"].includes(item.type));
 
-    let msg = "";
-    if (sendSuccess > 0) msg += lang("sentNotification", sendSuccess) + "\n";
-    if (sendError.length > 0)
-      msg += lang(
-        "errorSendingNotification",
-        sendError.reduce((a, b) => a + b.threadIDs.length, 0),
-        sendError.map(err => `\n - ${err.errorDescription}\n  + ${err.threadIDs.join("\n  + ")}`).join("")
+      const formSend = {
+        body: notificationMessage,
+        attachment: await getStreamsFromAttachment(attachments)
+      };
+
+      // Get all groups where bot is a member
+      const allThreads = await threadsData.getAll();
+      const allThreadID = allThreads.filter(t => 
+        t.isGroup && 
+        t.members.some(m => m.userID === api.getCurrentUserID() && m.inGroup)
       );
 
-    message.reply(msg);
+      // Check if there are groups to send to
+      if (allThreadID.length === 0) {
+        return message.reply(lang("noGroups"));
+      }
+
+      // Send initial progress message
+      const progressMsg = await message.reply(lang("sendingNotification", allThreadID.length));
+
+      let sendSuccess = 0;
+      const successGroups = [];
+      const errorGroups = [];
+      const waitingSend = [];
+
+      // Send notifications with delay
+      for (const thread of allThreadID) {
+        try {
+          const sendPromise = api.sendMessage(
+            {...formSend, mentions: []}, 
+            thread.threadID
+          );
+          
+          waitingSend.push({
+            threadID: thread.threadID,
+            threadName: thread.threadName || "Unknown Group",
+            pending: sendPromise
+          });
+          
+          await new Promise(resolve => setTimeout(resolve, delayPerGroup));
+        } catch (e) {
+          errorGroups.push({
+            threadID: thread.threadID,
+            threadName: thread.threadName || "Unknown Group",
+            error: e.message
+          });
+        }
+      }
+
+      // Process results
+      for (const sended of waitingSend) {
+        try {
+          await sended.pending;
+          sendSuccess++;
+          successGroups.push({
+            id: sended.threadID,
+            name: sended.threadName
+          });
+        } catch (e) {
+          errorGroups.push({
+            threadID: sended.threadID,
+            threadName: sended.threadName,
+            error: e.message
+          });
+        }
+      }
+
+      // Prepare summary report
+      let summaryMessage = `✨ ${lang("successTitle")} ✨\n\n`;
+      summaryMessage += `✅ ${lang("sentNotification", sendSuccess)}\n`;
+      summaryMessage += `❌ ${lang("errorSendingNotification", errorGroups.length)}\n\n`;
+      
+      if (successGroups.length > 0) {
+        summaryMessage += `${lang("groupList")}`;
+        summaryMessage += successGroups.map(g => `• ${g.name} (${g.id})`).join("\n");
+      }
+      
+      if (errorGroups.length > 0) {
+        summaryMessage += `\n\n${lang("errorList")}`;
+        summaryMessage += errorGroups.map(g => 
+          `• ${g.threadName} (${g.threadID})\n   → ${g.error}`
+        ).join("\n");
+      }
+      
+      if (attachments.length > 0) {
+        summaryMessage += lang("attachmentNotice");
+      }
+
+      // Send final summary
+      await message.reply(summaryMessage);
+      await api.unsendMessage(progressMsg.messageID);
+      
+    } catch (error) {
+      console.error("Notification Command Error:", error);
+      message.reply("❌ An unexpected error occurred. Please check logs.");
+    }
   }
 };
