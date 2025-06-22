@@ -11,123 +11,195 @@ module.exports = {
   config: {
     name: "moon",
     version: "2.0",
-    author: "Mr.Smokey [Asif Mahmud]",
+    author: "Asif",
     countDown: 5,
     role: 0,
-    shortDescription: {
-      en: "View the moon image of any date",
-      bn: "চাহিদামত তারিখে চাঁদের ছবি দেখুন"
-    },
-    longDescription: {
-      en: "Shows the moon phase image on a specific date (DD/MM/YYYY format)",
-      bn: "আপনার দেওয়া তারিখ অনুযায়ী চাঁদের অবস্থা দেখাবে (DD/MM/YYYY ফরম্যাটে)"
+    description: {
+      vi: "xem ảnh mặt trăng vào đêm bạn chọn (dd/mm/yyyy)",
+      en: "view moon image on the night you choose (dd/mm/yyyy)"
     },
     category: "image",
     guide: {
-      en: "{pn} <day/month/year> [caption]",
-      bn: "{pn} <দিন/মাস/বছর> [caption(optional)]"
+      vi: "{pn} <ngày/tháng/năm>\n{pn} <ngày/tháng/năm> <caption>",
+      en: "{pn} <day/month/year>\n{pn} <day/month/year> <caption>"
+    }
+  },
+
+  langs: {
+    vi: {
+      invalidDateFormat: "Vui lòng nhập ngày/tháng/năm hợp lệ theo định dạng DD/MM/YYYY",
+      error: "Đã xảy ra lỗi không thể lấy ảnh mặt trăng của ngày %1",
+      caption: "🌕 Ảnh mặt trăng vào đêm %1"
+    },
+    en: {
+      invalidDateFormat: "Please enter a valid date in DD/MM/YYYY format",
+      error: "An error occurred while getting the moon image of %1",
+      caption: "🌕 Moon image on %1"
     }
   },
 
   onStart: async function ({ args, message, getLang }) {
-    const dateInput = args[0];
-    const date = checkDate(dateInput);
-    if (!date)
-      return message.reply("📅 Valid format use korun: DD/MM/YYYY");
-
-    const url = `https://lunaf.com/lunar-calendar/${date}`;
-    let html;
-
     try {
-      html = await axios.get(url, { httpsAgent: agent });
-    } catch (err) {
-      return message.reply(`❌ Error: Cannot fetch moon data for ${args[0]}`);
-    }
+      // Create retro terminal interface
+      const retroHeader = this.createRetroHeader();
+      message.reply(retroHeader);
 
-    const $ = cheerio.load(html.data);
-    const href = $("figure img").attr("data-ezsrcset");
-    if (!href) return message.reply("🚫 Moon image not found.");
-
-    const numberMatch = href.match(/phase-(\d+)\.png/);
-    if (!numberMatch) return message.reply("🚫 Moon phase not detected.");
-
-    const number = numberMatch[1];
-    const imgSrc = moonImages[Number(number)];
-    const { data: imgSrcBuffer } = await axios.get(imgSrc, { responseType: "arraybuffer" });
-
-    const msg = `🌙 Moon Image on ${args[0]}\n` +
-      `📖 Info: ${$($('h3').get()[0]).text()}\n` +
-      `🔎 Phase: ${$("#phimg > small").text()}\n` +
-      `🌐 Source: ${url}`;
-
-    if (args.length > 1) {
-      const caption = args.slice(1).join(" ");
-      const canvas = Canvas.createCanvas(1080, 2400);
-      const ctx = canvas.getContext("2d");
-      ctx.fillStyle = "black";
-      ctx.fillRect(0, 0, 1080, 2400);
-
-      const moon = await Canvas.loadImage(imgSrcBuffer);
-      centerImage(ctx, moon, 540, 1200, 970, 970);
-
-      ctx.font = "60px 'Kanit SemiBold'";
-      ctx.fillStyle = "white";
-      ctx.textAlign = "center";
-
-      const lines = getLines(ctx, caption, 900);
-      let y = 2095 - (lines.length * 75) / 2;
-      for (const line of lines) {
-        ctx.fillText(line, 540, y);
-        y += 75;
+      const date = checkDate(args[0]);
+      if (!date) {
+        const errorBox = this.createRetroBox("📅 INVALID DATE FORMAT", getLang("invalidDateFormat"));
+        return message.reply(errorBox);
       }
 
-      const pathSave = __dirname + "/tmp/wallMoon.png";
-      fs.ensureDirSync(__dirname + "/tmp");
-      fs.writeFileSync(pathSave, canvas.toBuffer());
+      const linkCrawl = `https://lunaf.com/lunar-calendar/${date}`;
+      
+      let html;
+      try {
+        html = await axios.get(linkCrawl, { httpsAgent: agent });
+      } catch (err) {
+        const errorBox = this.createRetroBox("🚀 CONNECTION FAILED", getLang("error", args[0]));
+        return message.reply(errorBox);
+      }
 
-      return message.reply({
-        body: msg,
-        attachment: fs.createReadStream(pathSave)
-      }, () => fs.unlinkSync(pathSave));
-    } else {
-      const stream = await getStreamFromURL(imgSrc);
-      return message.reply({ body: msg, attachment: stream });
+      const $ = cheerio.load(html.data);
+      const href = $("figure img").attr("data-ezsrcset");
+      
+      if (!href) {
+        const errorBox = this.createRetroBox("🔭 NO DATA FOUND", "Moon data not available for this date");
+        return message.reply(errorBox);
+      }
+
+      const numberMatch = href.match(/phase-(\d+)\.png/);
+      if (!numberMatch) {
+        const errorBox = this.createRetroBox("🌑 PARSE ERROR", "Failed to detect moon phase");
+        return message.reply(errorBox);
+      }
+
+      const number = numberMatch[1];
+      const imgSrc = moonImages[Number(number)];
+      
+      const moonInfo = $($('h3').get()[0]).text();
+      const phaseInfo = $("#phimg > small").text();
+      
+      // Retro-style message body
+      const msg = this.createRetroBox(
+        "🌙 MOON PHASE INFORMATION",
+        `${getLang("caption", args[0])}\n` +
+        `├─ Phase: ${phaseInfo}\n` +
+        `├─ Details: ${moonInfo}\n` +
+        `├─ Image URL: https://lunaf.com/img/moon/h-phase-${number}.png\n` +
+        `└─ Source: ${linkCrawl}`
+      );
+
+      if (args[1]) {
+        try {
+          const { data: imgSrcBuffer } = await axios.get(imgSrc, { responseType: "arraybuffer" });
+          const canvas = Canvas.createCanvas(800, 600);
+          const ctx = canvas.getContext("2d");
+          
+          // Retro terminal background
+          ctx.fillStyle = "#0a0e17";
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          
+          // Draw stars (retro terminal effect)
+          this.drawStars(ctx, canvas.width, canvas.height, 150);
+          
+          // Draw moon
+          const moon = await Canvas.loadImage(imgSrcBuffer);
+          const moonSize = 400;
+          ctx.drawImage(
+            moon, 
+            (canvas.width - moonSize) / 2, 
+            50, 
+            moonSize, 
+            moonSize
+          );
+          
+          // Draw caption in retro terminal style
+          ctx.font = "24px 'Courier New', monospace";
+          ctx.fillStyle = "#00ff00";
+          ctx.textAlign = "center";
+          
+          const caption = args.slice(1).join(" ");
+          ctx.fillText("> " + caption.toUpperCase(), canvas.width / 2, 500);
+          
+          // Draw border
+          ctx.strokeStyle = "#00ff00";
+          ctx.lineWidth = 2;
+          ctx.strokeRect(10, 10, canvas.width - 20, canvas.height - 20);
+          
+          // Save and send
+          const pathSave = __dirname + "/tmp/retroMoon.png";
+          fs.writeFileSync(pathSave, canvas.toBuffer());
+          
+          message.reply({
+            body: msg,
+            attachment: fs.createReadStream(pathSave)
+          }, () => fs.unlinkSync(pathSave));
+          
+        } catch (err) {
+          const errorBox = this.createRetroBox("🖼️ RENDER ERROR", "Failed to create moon image");
+          message.reply(errorBox);
+        }
+      } else {
+        const streamImg = await getStreamFromURL(imgSrc);
+        message.reply({
+          body: msg,
+          attachment: streamImg
+        });
+      }
+    } catch (error) {
+      const errorBox = this.createRetroBox("💥 SYSTEM FAILURE", "An unexpected error occurred");
+      message.reply(errorBox);
+    }
+  },
+
+  createRetroHeader: function() {
+    return "╔══════════════════════════════╗\n" +
+           "╟┼► MOON PHASE TERMINAL v2.0 ◄┼╢\n" +
+           "╚══════════════════════════════╝";
+  },
+
+  createRetroBox: function(title, content) {
+    const lines = content.split('\n');
+    const maxLength = Math.max(title.length, ...lines.map(l => l.length));
+    
+    let box = `╔${'═'.repeat(maxLength + 2)}╗\n`;
+    box += `║ ${title.padEnd(maxLength, ' ')} ║\n`;
+    box += `╟${'─'.repeat(maxLength + 2)}╢\n`;
+    
+    for (const line of lines) {
+      box += `║ ${line.padEnd(maxLength, ' ')} ║\n`;
+    }
+    
+    box += `╚${'═'.repeat(maxLength + 2)}╝`;
+    return box;
+  },
+
+  drawStars: function(ctx, width, height, count) {
+    ctx.fillStyle = "#ffffff";
+    for (let i = 0; i < count; i++) {
+      const x = Math.random() * width;
+      const y = Math.random() * height;
+      const radius = Math.random() * 1.5;
+      ctx.beginPath();
+      ctx.arc(x, y, radius, 0, Math.PI * 2);
+      ctx.fill();
     }
   }
 };
 
-const pathFont = __dirname + "/assets/font/Kanit-SemiBoldItalic.ttf";
-Canvas.registerFont(pathFont, { family: "Kanit SemiBold" });
-
-function getLines(ctx, text, maxWidth) {
-  const words = text.split(" ");
-  const lines = [];
-  let currentLine = words[0];
-  for (let i = 1; i < words.length; i++) {
-    const word = words[i];
-    const width = ctx.measureText(`${currentLine} ${word}`).width;
-    if (width < maxWidth) {
-      currentLine += " " + word;
-    } else {
-      lines.push(currentLine);
-      currentLine = word;
-    }
-  }
-  lines.push(currentLine);
-  return lines;
-}
-
-function centerImage(ctx, img, x, y, sizeX, sizeY) {
-  ctx.drawImage(img, x - sizeX / 2, y - sizeY / 2, sizeX, sizeY);
-}
+// Font registration
+Canvas.registerFont(__dirname + "/assets/font/Kanit-SemiBoldItalic.ttf", {
+  family: "Kanit SemiBold"
+});
 
 function checkDate(date) {
   const [day0, month0, year0] = (date || "").split('/');
-  const day = (day0 || "").padStart(2, '0');
-  const month = (month0 || "").padStart(2, '0');
+  const day = (day0 || "").length == 1 ? "0" + day0 : day0;
+  const month = (month0 || "").length == 1 ? "0" + month0 : month0;
   const year = year0 || "";
-  const formatted = `${year}/${month}/${day}`;
-  return moment(formatted, 'YYYY/MM/DD', true).isValid() ? formatted : false;
+  const newDateFormat = year + "/" + month + "/" + day;
+  return moment(newDateFormat, 'YYYY/MM/DD', true).isValid() ? newDateFormat : false;
 }
 
 const moonImages = [
