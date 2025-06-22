@@ -1,97 +1,195 @@
 const { drive, getStreamFromURL, getExtFromUrl, getTime } = global.utils;
-const checkUrlRegex = /(http(s)?:\/\/.)?(www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,6}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*)/;
+const URL_REGEX = /https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)/;
 
 module.exports = {
   config: {
     name: "setrankup",
-    version: "2.0",
-    author: "Mr.Smokey [Asif Mahmud]",
-    countDown: 0,
-    role: 0,
+    aliases: ["rankupconfig", "setuprankup"],
+    version: "3.0.0",
+    author: "NTKhang & Upgraded by ✨Asif✨",
+    countDown: 5,
+    role: 1, // Requires admin privileges
     description: {
-      vi: "Cấu hình rankup",
-      en: "Configure rankup",
-      bn: "র‍্যাংকআপ কনফিগার করুন"
+      en: "Advanced rankup configuration system",
+      vi: "Hệ thống cấu hình rankup nâng cao",
+      bn: "র‍্যাংকআপ কনফিগারেশন সিস্টেম"
     },
-    category: "owner",
+    category: "administration",
     guide: {
-      vi: `
-{pn} text <message>: Cấu hình tin nhắn khi thành viên thăng hạng
-Tham số:
-+ {userName}, {userNameTag}, {oldRank}, {currentRank}
-{pn} file <link>: Đính kèm ảnh hoặc video
-{pn} reset: Cấu hình lại mặc định`,
-      en: `
-{pn} text <message>: Configure message when a member ranks up
-Parameters:
-+ {userName}, {userNameTag}, {oldRank}, {currentRank}
-{pn} file <link>: Attach image or video
-{pn} reset: Reset to default`,
-      bn: `
-{pn} text <message>: মেম্বার র‍্যাংক আপ করলে কি মেসেজ যাবে সেট করুন
-প্যারামিটার:
-+ {userName}, {userNameTag}, {oldRank}, {currentRank}
-{pn} file <link>: ছবি বা ভিডিও অ্যাটাচ করুন
-{pn} reset: ডিফল্টে রিসেট করুন`
+      en: `📌 Command Guide:
+• {pn} text <message> - Set rankup message
+• {pn} media <url> - Set rankup media (image/video)
+• {pn} reset - Reset to default configuration
+
+🔄 Available placeholders:
+- {userName} - Member's name
+- {userNameTag} - Tagged member's name
+- {oldRank} - Previous rank
+- {currentRank} - New rank
+
+📎 Supported media: Images, Videos`,
+      bn: `📌 ব্যবহার নির্দেশিকা:
+• {pn} text <message> - র‍্যাংকআপ মেসেজ সেট করুন
+• {pn} media <url> - র‍্যাংকআপ মিডিয়া সেট করুন (ছবি/ভিডিও)
+• {pn} reset - ডিফল্ট কনফিগারেশনে রিসেট করুন
+
+🔄 ব্যবহারযোগ্য প্লেসহোল্ডার:
+- {userName} - সদস্যের নাম
+- {userNameTag} - ট্যাগ করা নাম
+- {oldRank} - পূর্ববর্তী র‍্যাংক
+- {currentRank} - নতুন র‍্যাংক
+
+📎 সমর্থিত মিডিয়া: ছবি, ভিডিও`
     }
   },
 
   langs: {
-    vi: {
-      changedMessage: "Đã thay đổi tin nhắn rankup thành: %1",
-      missingAttachment: "Bạn phải đính kèm ảnh để cấu hình ảnh rankup",
-      changedAttachment: "Đã thêm %1 tệp đính kèm vào rankup thành công"
-    },
     en: {
-      changedMessage: "Changed rankup message to: %1",
-      missingAttachment: "You must attach an image to configure the rankup image",
-      changedAttachment: "Successfully added %1 attachment(s) to rankup"
+      changedMessage: "✅ Rankup message set to:\n%1",
+      missingMedia: "⚠️ Please attach or provide a URL for the media",
+      changedMedia: "📎 Successfully set %1 media file(s) for rankup",
+      resetSuccess: "🔄 Rankup configuration reset to default",
+      invalidUrl: "❌ Invalid URL provided",
+      error: "❌ An error occurred: %1",
+      help: `📚 Need help? Use '{pn} guide' for detailed instructions`
     },
     bn: {
-      changedMessage: "র‍্যাংকআপ মেসেজ পরিবর্তন হয়েছে: %1",
-      missingAttachment: "র‍্যাংকআপের জন্য একটি ছবি বা ভিডিও অ্যাটাচ করতে হবে",
-      changedAttachment: "%1টি অ্যাটাচমেন্ট সফলভাবে যোগ করা হয়েছে"
+      changedMessage: "✅ র‍্যাংকআপ মেসেজ সেট করা হয়েছে:\n%1",
+      missingMedia: "⚠️ একটি মিডিয়া ফাইল বা URL প্রদান করুন",
+      changedMedia: "📎 %1টি মিডিয়া ফাইল সফলভাবে সেট করা হয়েছে",
+      resetSuccess: "🔄 র‍্যাংকআপ কনফিগারেশন ডিফল্টে রিসেট করা হয়েছে",
+      invalidUrl: "❌ অবৈধ URL প্রদান করা হয়েছে",
+      error: "❌ একটি ত্রুটি ঘটেছে: %1",
+      help: `📚 সাহায্য প্রয়োজন? '{pn} guide' ব্যবহার করুন বিস্তারিত নির্দেশনার জন্য`
     }
   },
 
-  onStart: async function ({ args, message, event, threadsData, getLang }) {
-    const { body, threadID, senderID } = event;
-    const inputType = args[0];
+  onStart: async function ({ 
+    message, 
+    event, 
+    args, 
+    threadsData, 
+    getLang,
+    prefix
+  }) {
+    try {
+      const { threadID, senderID, body, attachments, messageReply } = event;
+      const action = args[0]?.toLowerCase();
+      const lang = getLang;
 
-    if (inputType === "text") {
-      const newContent = body.slice(body.indexOf("text") + 5).trim();
-      await threadsData.set(threadID, newContent, "data.rankup.message");
-      return message.reply(getLang("changedMessage", newContent));
-    }
-
-    if (["file", "image", "video", "mp3"].includes(inputType)) {
-      const attachments = [...(event.attachments || []), ...(event.messageReply?.attachments || [])].filter(item => ["photo", "animated_image", "video", "audio"].includes(item.type));
-
-      if (!attachments.length && !(args[1] || '').match(checkUrlRegex))
-        return message.reply(getLang("missingAttachment"));
-
-      const data = await threadsData.get(threadID, "data", {});
-      if (!data.rankup)
-        data.rankup = {};
-      if (!data.rankup.attachments)
-        data.rankup.attachments = [];
-
-      for (const attachment of attachments) {
-        const url = attachment.url;
-        const ext = getExtFromUrl(url);
-        const fileName = `rankup_${threadID}_${senderID}_${getTime()}.${ext}`;
-        const fileData = await getStreamFromURL(url);
-        const fileInfo = await drive.uploadFile(fileName, fileData);
-        data.rankup.attachments.push(fileInfo.id);
+      if (!action || action === "help") {
+        return message.reply(lang("help").replace(/{pn}/g, prefix + this.config.name));
       }
 
-      await threadsData.set(threadID, data, "data");
-      return message.reply(getLang("changedAttachment", attachments.length));
-    }
+      const threadData = await threadsData.get(threadID);
+      if (!threadData.data.rankup) {
+        threadData.data.rankup = {};
+      }
 
-    if (inputType === "reset") {
-      await threadsData.set(threadID, {}, "data.rankup");
-      return message.reply("✅ Rankup configuration reset to default.");
+      switch (action) {
+        case "text": {
+          const newContent = body.slice(body.indexOf(args[0]) + args[0].length).trim();
+          if (!newContent) return message.reply(lang("missingMessage"));
+          
+          threadData.data.rankup.message = newContent;
+          await threadsData.set(threadID, threadData.data, "data");
+          return message.reply(lang("changedMessage", newContent));
+        }
+
+        case "media":
+        case "file": {
+          const mediaUrls = [];
+          
+          // Check attachments
+          const allAttachments = [...(attachments || []), ...(messageReply?.attachments || [])];
+          const validAttachments = allAttachments.filter(
+            item => ["photo", "animated_image", "video"].includes(item.type)
+          );
+
+          // Check URL argument
+          const urlArg = args[1];
+          if (urlArg && URL_REGEX.test(urlArg)) {
+            mediaUrls.push(urlArg);
+          }
+
+          if (validAttachments.length === 0 && mediaUrls.length === 0) {
+            return message.reply(lang("missingMedia"));
+          }
+
+          // Process attachments
+          if (!threadData.data.rankup.attachments) {
+            threadData.data.rankup.attachments = [];
+          }
+
+          // Clear existing attachments
+          if (threadData.data.rankup.attachments.length > 0) {
+            try {
+              await Promise.all(
+                threadData.data.rankup.attachments.map(fileId => drive.deleteFile(fileId))
+            );
+            } catch (error) {
+              console.error("Error deleting old files:", error);
+            }
+            threadData.data.rankup.attachments = [];
+          }
+
+          // Upload new attachments
+          for (const attachment of validAttachments) {
+            try {
+              const ext = getExtFromUrl(attachment.url);
+              const fileName = `rankup_${threadID}_${senderID}_${getTime()}.${ext}`;
+              const fileData = await getStreamFromURL(attachment.url);
+              const fileInfo = await drive.uploadFile(fileName, fileData);
+              threadData.data.rankup.attachments.push(fileInfo.id);
+            } catch (error) {
+              console.error("Error uploading attachment:", error);
+            }
+          }
+
+          // Handle URL media
+          for (const url of mediaUrls) {
+            try {
+              const ext = getExtFromUrl(url);
+              const fileName = `rankup_${threadID}_${senderID}_${getTime()}.${ext}`;
+              const fileData = await getStreamFromURL(url);
+              const fileInfo = await drive.uploadFile(fileName, fileData);
+              threadData.data.rankup.attachments.push(fileInfo.id);
+            } catch (error) {
+              console.error("Error processing URL:", error);
+            }
+          }
+
+          await threadsData.set(threadID, threadData.data, "data");
+          return message.reply(
+            lang("changedMedia", threadData.data.rankup.attachments.length)
+          );
+        }
+
+        case "reset": {
+          // Delete existing attachments
+          if (threadData.data.rankup?.attachments?.length > 0) {
+            try {
+              await Promise.all(
+                threadData.data.rankup.attachments.map(fileId => drive.deleteFile(fileId))
+            );
+            } catch (error) {
+              console.error("Error deleting files:", error);
+            }
+          }
+
+          // Reset configuration
+          delete threadData.data.rankup;
+          await threadsData.set(threadID, threadData.data, "data");
+          return message.reply(lang("resetSuccess"));
+        }
+
+        default: {
+          return message.SyntaxError();
+        }
+      }
+    } catch (error) {
+      console.error("Error in setrankup command:", error);
+      return message.reply(lang("error", error.message));
     }
   }
 };
