@@ -1,40 +1,47 @@
-const fs = require("fs");
-const path = require("path");
-const axios = require("axios"); // ✅ Fixed: use direct axios import
+const axios = require('axios');
+const fs = require('fs');
+const path = require('path');
 
 module.exports = {
   config: {
     name: "texttoimage",
-    aliases: ["midjourney", "openjourney", "text2image"],
-    version: "2.1",
-    author: "Mr.Smokey [Asif Mahmud]",
-    countDown: 5,
+    aliases: ["midjourney", "openjourney", "text2image", "aiart"],
+    version: "3.0",
+    author: "NTKhang & Asif",
+    countDown: 10, // Increased for image generation time
     role: 0,
     description: {
-      uid: "Tạo ảnh từ văn bản của bạn",
-      en: "Create image from your text"
+      en: "✨ Generate AI-powered images from text prompts ✨"
     },
-    category: "info",
+    category: "ai",
     guide: {
-      vi: "   {pn} <prompt>: tạo ảnh từ văn bản của bạn"
-        + "\n    Ví dụ: {pn} a cute cat playing guitar, digital art, 4k",
-      en: "   {pn} <prompt>: create image from your text"
-        + "\n    Example: {pn} a cute cat playing guitar, digital art, 4k"
+      en: `
+╔═══════❖•°♛°•❖═══════╗
+  🎨 AI IMAGE GENERATOR 🎨
+╚═══════❖•°♛°•❖═══════╝
+
+⚡ Usage:
+❯ {pn} <your detailed prompt>
+
+💎 Tips:
+✦ Be descriptive with your prompts
+✦ Include style references (e.g., "digital art", "photorealistic")
+✦ Specify details like lighting, colors, composition
+
+🎭 Examples:
+❯ {pn} A mystical forest with glowing mushrooms, digital art, 4k, fantasy style
+❯ {pn} Cyberpunk cityscape at night, neon lights, rain-soaked streets, cinematic
+      `
     }
   },
 
   langs: {
-    vi: {
-      syntaxError: "⚠️ Vui lòng nhập prompt",
-      error: "❗ Đã có lỗi xảy ra, vui lòng thử lại sau:\n%1",
-      serverError: "❗ Server đang quá tải, vui lòng thử lại sau",
-      imageGenFail: "❗ Không thể tạo ảnh. Vui lòng thử lại sau."
-    },
     en: {
-      syntaxError: "⚠️ Please enter prompt",
-      error: "❗ An error has occurred, please try again later:\n%1",
-      serverError: "❗ Server is overloaded, please try again later",
-      imageGenFail: "❗ Failed to generate image. Please try again later."
+      syntaxError: "🖌️ Please provide an image description",
+      processing: "⏳ Generating your AI artwork...",
+      serverError: "🌐 Server is busy. Please try again later",
+      generationError: "❌ Failed to create image. Please try a different prompt",
+      timeoutError: "⏱️ Image generation took too long. Please try again"
     }
   },
 
@@ -43,22 +50,47 @@ module.exports = {
     if (!prompt) return message.reply(getLang("syntaxError"));
 
     try {
-      const encodedPrompt = encodeURIComponent(prompt);
-      const apiUrl = `https://api.popcat.xyz/aiimage?text=${encodedPrompt}`;
+      // Send processing message
+      const processingMsg = await message.reply(getLang("processing"));
 
-      const response = await axios.get(apiUrl, { responseType: "arraybuffer" });
-      const imageBuffer = Buffer.from(response.data);
-      const imagePath = path.join(__dirname, "texttoimage_output.jpg");
-      fs.writeFileSync(imagePath, imageBuffer);
+      // Generate unique filename
+      const timestamp = Date.now();
+      const imagePath = path.join(__dirname, `aiart_${timestamp}.jpg`);
 
-      return message.reply({ attachment: fs.createReadStream(imagePath) }, () => {
-        fs.unlinkSync(imagePath); // ✅ Clean up after sending
+      // Call the AI image API
+      const response = await axios({
+        method: 'GET',
+        url: 'https://api.popcat.xyz/aiimage',
+        params: { text: prompt },
+        responseType: 'arraybuffer',
+        timeout: 30000 // 30 seconds timeout
       });
-    } catch (err) {
-      console.error("Image generation error:", err?.response?.data || err.message);
-      if (err?.response?.status === 503)
+
+      // Save the image temporarily
+      fs.writeFileSync(imagePath, response.data);
+
+      // Send the generated image
+      await message.reply({
+        body: "🎨 Your AI-generated artwork:",
+        attachment: fs.createReadStream(imagePath)
+      });
+
+      // Clean up
+      fs.unlinkSync(imagePath);
+      await api.unsendMessage(processingMsg.messageID);
+
+    } catch (error) {
+      console.error("AI Art Generation Error:", error);
+
+      if (error.code === 'ECONNABORTED') {
+        return message.reply(getLang("timeoutError"));
+      }
+      else if (error.response?.status === 503) {
         return message.reply(getLang("serverError"));
-      return message.reply(getLang("error", err?.response?.data?.error || err.message));
+      }
+      else {
+        return message.reply(getLang("generationError"));
+      }
     }
   }
 };
