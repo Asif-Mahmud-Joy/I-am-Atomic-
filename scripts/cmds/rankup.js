@@ -5,19 +5,19 @@ const { drive } = global.utils;
 module.exports = {
   config: {
     name: "rankup",
-    version: "2.0.0",
-    author: "✨ Mr.Smokey [Asif Mahmud] ✨",
+    version: "2.1.0",
+    author: "NTKhang & Modified by ✨Asif✨",
     countDown: 5,
     role: 0,
     description: {
       vi: "Bật/tắt thông báo level up",
       en: "Turn on/off level up notification",
-      bn: "Level up notification on/off korun"
+      bn: "Level up notification চালু/বন্ধ করুন"
     },
     category: "rank",
     guide: {
       en: "{pn} [on | off]",
-      bn: "{pn} on/off"
+      bn: "{pn} [on | off]"
     },
     envConfig: {
       deltaNext: 5
@@ -38,68 +38,82 @@ module.exports = {
       notiMessage: "🎉🎉 Congratulations on reaching level %1"
     },
     bn: {
-      syntaxError: "ভুল কমান্ড, শুধুমাত্র {pn} on অথবা {pn} off ব্যবহার করুন",
-      turnedOn: "Level up notification চালু করা হয়েছে",
-      turnedOff: "Level up notification বন্ধ করা হয়েছে",
-      notiMessage: "🎉🎉 অভিনন্দন! আপনি পৌঁছেছেন level %1 এ"
+      syntaxError: "ভুল সিনট্যাক্স, শুধুমাত্র {pn} on অথবা {pn} off ব্যবহার করুন",
+      turnedOn: "লেভেল আপ নোটিফিকেশন চালু করা হয়েছে",
+      turnedOff: "লেভেল আপ নোটিফিকেশন বন্ধ করা হয়েছে",
+      notiMessage: "🎉🎉 অভিনন্দন! আপনি লেভেল %1 এ পৌঁছেছেন"
     }
   },
 
   onStart: async function ({ message, event, threadsData, args, getLang }) {
     if (!["on", "off"].includes(args[0]))
       return message.reply(getLang("syntaxError"));
-    await threadsData.set(event.threadID, args[0] == "on", "settings.sendRankupMessage");
-    return message.reply(args[0] == "on" ? getLang("turnedOn") : getLang("turnedOff"));
+    
+    await threadsData.set(event.threadID, args[0] === "on", "settings.sendRankupMessage");
+    return message.reply(getLang(args[0] === "on" ? "turnedOn" : "turnedOff"));
   },
 
   onChat: async function ({ threadsData, usersData, event, message, getLang }) {
     const threadData = await threadsData.get(event.threadID);
-    const sendRankupMessage = threadData.settings.sendRankupMessage;
-    if (!sendRankupMessage)
+    if (!threadData.settings?.sendRankupMessage)
       return;
 
     const { exp } = await usersData.get(event.senderID);
     const currentLevel = expToLevel(exp);
-    if (currentLevel > expToLevel(exp - 1)) {
-      let customMessage = await threadsData.get(event.threadID, "data.rankup.message");
-      let isTag = false;
-      let userData;
-      const formMessage = {};
+    const previousLevel = expToLevel(exp - 1);
 
-      if (customMessage) {
-        userData = await usersData.get(event.senderID);
-        customMessage = customMessage
-          .replace(/{oldRank}/g, currentLevel - 1)
-          .replace(/{currentRank}/g, currentLevel);
+    if (currentLevel <= previousLevel)
+      return;
 
-        if (customMessage.includes("{userNameTag}")) {
-          isTag = true;
-          customMessage = customMessage.replace(/{userNameTag}/g, `@${userData.name}`);
-        } else {
-          customMessage = customMessage.replace(/{userName}/g, userData.name);
-        }
+    // Get custom message and attachments
+    const rankupData = threadData.data?.rankup || {};
+    let { message: customMessage, attachments: files = [] } = rankupData;
+    const userData = await usersData.get(event.senderID);
 
-        formMessage.body = customMessage;
-      } else {
-        formMessage.body = getLang("notiMessage", currentLevel);
+    // Prepare message content
+    const formMessage = {
+      body: customMessage 
+        ? this.processCustomMessage(customMessage, userData, currentLevel, previousLevel)
+        : getLang("notiMessage", currentLevel)
+    };
+
+    // Handle attachments if any
+    if (files.length > 0) {
+      try {
+        formMessage.attachment = await this.getAttachments(files);
+      } catch (error) {
+        console.error("Error loading attachments:", error);
       }
-
-      if (threadData.data.rankup?.attachments?.length > 0) {
-        const files = threadData.data.rankup.attachments;
-        const attachments = files.map(file => drive.getFile(file, "stream"));
-        formMessage.attachment = (await Promise.allSettled(attachments))
-          .filter(({ status }) => status === "fulfilled")
-          .map(({ value }) => value);
-      }
-
-      if (isTag) {
-        formMessage.mentions = [{
-          tag: `@${userData.name}`,
-          id: event.senderID
-        }];
-      }
-
-      message.reply(formMessage);
     }
+
+    // Add mention if needed
+    if (customMessage?.includes("{userNameTag}")) {
+      formMessage.mentions = [{
+        tag: `@${userData.name}`,
+        id: event.senderID
+      }];
+    }
+
+    // Send the rankup message
+    message.reply(formMessage);
+  },
+
+  // Helper function to process custom message templates
+  processCustomMessage: (message, userData, currentLevel, previousLevel) => {
+    return message
+      .replace(/{userName}/g, userData.name)
+      .replace(/{userNameTag}/g, `@${userData.name}`)
+      .replace(/{oldRank}/g, previousLevel)
+      .replace(/{currentRank}/g, currentLevel);
+  },
+
+  // Helper function to get attachments
+  getAttachments: async function(files) {
+    const attachments = await Promise.allSettled(
+      files.map(file => drive.getFile(file, "stream"))
+    );
+    return attachments
+      .filter(({ status }) => status === "fulfilled")
+      .map(({ value }) => value);
   }
 };
