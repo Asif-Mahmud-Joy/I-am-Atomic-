@@ -1,58 +1,73 @@
 /**
- * GoatBot Command Template (Upgraded & Finalized)
+ * Inspire Command - Sends a random inspirational quote
  * Author: ✨ Mr.Smokey [Asif Mahmud] ✨
- * Updated: Real-World Working with Banglish Guide
+ * Version: 1.0
  */
 
 module.exports = {
   config: {
-    name: "hello", // Unique command name
-    version: "2.0", // Updated version
-    author: "✨ Mr.Smokey [Asif Mahmud] ✨", // Author credit
-    countDown: 3, // Cooldown time in seconds
-    role: 0, // Role 0 = normal user
+    name: "inspire",
+    aliases: ["quote", "motivation"],
+    version: "1.0",
+    author: "✨ [Asif Mahmud] ✨",
+    countDown: 5,
+    role: 0,
     shortDescription: {
-      vi: "Xin chào từ bot",
-      en: "Say hello from the bot",
-      bn: "Bot theke Hello pawar jonno"
+      en: "Get inspired with a random quote",
+      vi: "Nhận câu trích dẫn ngẫu nhiên truyền cảm hứng",
+      bn: "একটি অনুপ্রেরণামূলক উক্তি পান"
     },
-    description: {
-      vi: "Bot gửi lời chào",
-      en: "Bot sends a greeting message",
-      bn: "Bot ekta greeting message pathabe"
+    longDescription: {
+      en: "Sends a random inspirational quote to motivate you",
+      vi: "Gửi một câu trích dẫn ngẫu nhiên truyền cảm hứng",
+      bn: "আপনাকে অনুপ্রাণিত করতে একটি এলোমেলো অনুপ্রেরণামূলক উক্তি পাঠায়"
     },
-    category: "utility",
+    category: "education",
     guide: {
-      vi: "{pn}",
       en: "{pn}",
+      vi: "{pn}",
       bn: "{pn}"
     }
   },
 
   langs: {
-    vi: {
-      hello: "Xin chào bạn!",
-      helloWithName: "Xin chào, Facebook ID của bạn là %1"
-    },
     en: {
-      hello: "Hello there!",
-      helloWithName: "Hello, your Facebook ID is %1"
+      loading: "🌠 Fetching an inspirational quote for you...",
+      error: "❌ Failed to get inspiration. Please try again later."
+    },
+    vi: {
+      loading: "🌠 Đang tìm câu trích dẫn truyền cảm hứng cho bạn...",
+      error: "❌ Không thể lấy cảm hứng. Vui lòng thử lại sau."
     },
     bn: {
-      hello: "Hello bhai!",
-      helloWithName: "Hello, tomar Facebook ID holo %1"
+      loading: "🌠 আপনার জন্য একটি অনুপ্রেরণামূলক উক্তি আনছি...",
+      error: "❌ অনুপ্রেরণা আনতে ব্যর্থ হয়েছে। পরে আবার চেষ্টা করুন।"
     }
   },
 
-  onStart: async function ({ api, args, message, event, getLang }) {
+  onStart: async function ({ message, getLang }) {
     try {
-      // Just say hello
-      message.reply(getLang("hello"));
-      // Uncomment below if you want to include FB ID too
-      // message.reply(getLang("helloWithName", event.senderID));
-    } catch (err) {
-      console.error("❌ Command Error:", err);
-      message.reply("⚠️ Command cholate somossa hoise. Try again pore!");
+      // Show loading message
+      message.reply(getLang("loading"));
+      
+      // Fetch random quote from API
+      const quote = await this.getRandomQuote();
+      
+      // Send the inspirational quote
+      message.reply(`✨ ${quote.text}\n\n- ${quote.author || "Unknown"}`);
+    } catch (error) {
+      console.error("Inspire Command Error:", error);
+      message.reply(getLang("error"));
     }
+  },
+
+  getRandomQuote: async function () {
+    const apiUrl = "https://type.fit/api/quotes";
+    const response = await fetch(apiUrl);
+    const quotes = await response.json();
+    
+    // Get a random quote
+    const randomIndex = Math.floor(Math.random() * quotes.length);
+    return quotes[randomIndex];
   }
 };
