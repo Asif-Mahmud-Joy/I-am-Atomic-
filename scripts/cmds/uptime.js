@@ -1,45 +1,131 @@
+const os = require('os');
+const pidusage = require('pidusage');
+const fs = require('fs');
+const moment = require('moment-timezone');
+
 module.exports = {
   config: {
     name: "uptime",
-    aliases: ["up", "upt"],
-    version: "2.0",
-    author: "Mr.Smokey[Asif Mahmud]",
+    aliases: ["up", "upt", "status"],
+    version: "3.0",
+    author: "Eren & Asif",
     role: 0,
-    shortDescription: {
-      en: "Check how long the bot has been running.",
-      bn: "বট কতক্ষণ চালু আছে দেখুন।"
+    description: {
+      en: "✨ View comprehensive system and bot statistics ✨"
     },
-    longDescription: {
-      en: "Displays the bot's total uptime since the last restart.",
-      bn: "শেষবার রিস্টার্ট হওয়ার পর থেকে বট কতক্ষণ চালু আছে তা দেখায়।"
-    },
-    category: "System",
+    category: "info",
     guide: {
-      en: "Use {p}uptime to display uptime info.",
-      bn: "{p}uptime লিখে আপটাইম দেখুন।"
+      en: `
+╔═══════❖•°♛°•❖═══════╗
+  📊 SYSTEM STATUS COMMAND 📊
+╚═══════❖•°♛°•❖═══════╝
+
+⚡ Usage:
+❯ {pn} - View detailed system stats
+
+💎 Features:
+✦ Bot & system uptime
+✦ CPU & memory usage
+✦ Disk space
+✦ User & group counts
+✦ Network status
+✦ Package dependencies
+      `
     }
   },
 
-  onStart: async function ({ api, event }) {
+  onStart: async function ({ message, usersData, threadsData }) {
     try {
-      const uptime = process.uptime();
-      const seconds = Math.floor(uptime % 60);
-      const minutes = Math.floor((uptime / 60) % 60);
-      const hours = Math.floor((uptime / 3600) % 24);
-      const days = Math.floor(uptime / 86400);
+      // Get current time in Asia/Dhaka timezone
+      const now = moment().tz('Asia/Dhaka');
+      const formatDate = now.format('YYYY-MM-DD HH:mm:ss');
 
-      const banglaDigits = num => num.toString().replace(/\d/g, d => "০১২৩৪৫৬৭৮৯"[d]);
+      // Uptime calculations
+      const uptimeBot = process.uptime();
+      const uptimeSys = os.uptime();
+      const formatUptime = (seconds) => {
+        const days = Math.floor(seconds / 86400);
+        const hours = Math.floor((seconds % 86400) / 3600);
+        const minutes = Math.floor((seconds % 3600) / 60);
+        const secs = Math.floor(seconds % 60);
+        return `${days}d ${hours}h ${minutes}m ${secs}s`;
+      };
 
-      const uptimeString = `📊 বট চালু আছে:
-📅 দিন: ${banglaDigits(days)}
-⏰ ঘণ্টা: ${banglaDigits(hours)}
-🕒 মিনিট: ${banglaDigits(minutes)}
-⏱️ সেকেন্ড: ${banglaDigits(seconds)}\n\n✨ বট চালু রাখার জন্য ধন্যবাদ!`;
+      // System resource usage
+      const usage = await pidusage(process.pid);
+      const totalRam = (os.totalmem() / 1024 / 1024 / 1024).toFixed(2);
+      const freeRam = (os.freemem() / 1024 / 1024 / 1024).toFixed(2);
+      const usedRam = (usage.memory / 1024 / 1024).toFixed(2);
+      const cpuUsage = usage.cpu.toFixed(1);
+      const cpuModel = os.cpus()[0].model.split('@')[0].trim();
+      const cpuCores = os.cpus().length;
+      const cpuSpeed = (os.cpus()[0].speed / 1000).toFixed(2);
 
-      await api.sendMessage(uptimeString, event.threadID);
+      // Package count
+      const pkgCount = Object.keys(require('../../package.json').dependencies || {}).length;
+
+      // User and thread data
+      const [users, threads] = await Promise.all([
+        usersData.getAll(),
+        threadsData.getAll()
+      ]);
+
+      // Disk space (using execSync for cross-platform compatibility)
+      let diskInfo = "N/A";
+      try {
+        if (process.platform === 'win32') {
+          diskInfo = require('child_process').execSync('wmic logicaldisk get size,freespace,caption').toString();
+        } else {
+          diskInfo = require('child_process').execSync('df -h').toString();
+        }
+      } catch (e) {
+        console.error("Disk info error:", e);
+      }
+
+      // Network interfaces
+      const networkInfo = Object.entries(os.networkInterfaces())
+        .map(([name, details]) => `${name}: ${details.find(i => i.family === 'IPv4')?.address || 'N/A'}`)
+        .join('\n');
+
+      // Prepare the status message
+      const statusMessage = `
+╔═══════❖•°♛°•❖═══════╗
+  🚀 BOT & SYSTEM STATUS
+╚═══════❖•°♛°•❖═══════╝
+
+📅 Current Time: ${formatDate} (GMT+6)
+
+⏱️ Uptime:
+├ Bot: ${formatUptime(uptimeBot)}
+└ System: ${formatUptime(uptimeSys)}
+
+💻 CPU:
+├ Model: ${cpuModel}
+├ Cores: ${cpuCores}
+├ Speed: ${cpuSpeed} GHz
+└ Usage: ${cpuUsage}%
+
+🧠 Memory:
+├ Total: ${totalRam} GB
+├ Used: ${usedRam} MB
+└ Free: ${freeRam} GB
+
+📊 Stats:
+├ Packages: ${pkgCount}
+├ Users: ${users.length}
+└ Groups: ${threads.length}
+
+🌐 Network:
+${networkInfo.split('\n').map(line => `├ ${line}`).join('\n')}
+
+💾 Disk:
+${diskInfo.split('\n').slice(0, 5).join('\n')}
+      `;
+
+      await message.reply(statusMessage);
     } catch (err) {
-      console.error("[Uptime Command Error]", err);
-      api.sendMessage("❌ দুঃখিত, আপটাইম দেখতে সমস্যা হয়েছে। পরে আবার চেষ্টা করুন।", event.threadID);
+      console.error("[UPTIME ERROR]", err);
+      await message.reply("❌ An error occurred while fetching system status. Please try again later.");
     }
   }
 };
