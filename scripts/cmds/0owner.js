@@ -1,5 +1,5 @@
 const axios = require('axios');
-const fs = require('fs');
+const fs = require('fs-extra');
 const path = require('path');
 
 module.exports = {
@@ -7,117 +7,115 @@ module.exports = {
     name: "ownerinfo",
     author: "𝐀𝐬𝐢𝐟 𝐌𝐚𝐡𝐦𝐮𝐝 🌠",
     role: 0,
-    shortDescription: "☣𝐀𝐓𝐎𝐌𝐈𝐂⚛ Owner Information",
-    longDescription: "Exclusive owner details with premium animation",
+    shortDescription: "☣️ 𝐀𝐓𝐎𝐌𝐈𝐂 𝐎𝐖𝐍𝐄𝐑 𝐈𝐍𝐅𝐎 ⚛️",
+    longDescription: "Exclusive owner profile with premium animation and atomic-themed design",
     category: "admin",
     guide: "{pn}"
   },
 
   onStart: async function ({ api, event }) {
     try {
-      // Typing animation simulation
+      // Typing indicator for premium feel
       await api.sendMessageTyping(event.threadID);
-      await new Promise(resolve => setTimeout(resolve, 2500));
-      
-      // Owner information
+      await new Promise(resolve => setTimeout(resolve, 2000));
+
+      // Owner information (enhanced)
       const owner = {
         name: '𝐀𝐬𝐢𝐟 𝐌𝐚𝐡𝐦𝐮𝐝',
-        gender: 'Male ♂️',
+        title: '⚡ Premium Developer',
+        gender: '♂️ Male',
         age: '18±',
-        height: '5+ft 📏',
-        choice: 'Islam ☪️',
-        nick: '𝐉𝐚𝐦𝐚𝐢',
-        fb: 'https://www.facebook.com/share/1HPjorq8ce/',
-        bot: '☣𝐀𝐓𝐎𝐌𝐈𝐂⚛',
-        uid: '61571630409265',
-        skills: 'JavaScript, AI Development, System Architecture',
-        status: 'Premium Developer ⚡'
+        height: '5\'8" (173cm)',
+        lifestyle: '🕋 Islamic Values',
+        hobbies: '🎧 Music | 🎮 Gaming | 📚 AI Research',
+        nickname: '🔥 Jamai 🔥',
+        contact: '🌐 https://www.facebook.com/share/1HPjorq8ce/',
+        skills: 'JavaScript | Python | AI Architecture',
+        philosophy: '"Code with purpose, build with passion"'
       };
 
-      // Download video
+      // Download premium video
       const videoUrl = 'https://files.catbox.moe/pm6rfq.mp4';
       const tmpFolder = path.join(__dirname, 'tmp');
-      if (!fs.existsSync(tmpFolder)) fs.mkdirSync(tmpFolder);
+      await fs.ensureDir(tmpFolder);
       
-      await api.sendMessage("☣️⚛️ Downloading premium content...", event.threadID);
-      
-      const videoBuffer = await axios.get(videoUrl, { 
+      const videoPath = path.join(tmpFolder, 'atomic_owner.mp4');
+      const videoResponse = await axios.get(videoUrl, {
         responseType: 'arraybuffer',
-        onDownloadProgress: progressEvent => {
-          const percent = Math.round((progressEvent.loaded * 100) / progressEvent.total);
-          console.log(`Download progress: ${percent}%`);
+        onDownloadProgress: progress => {
+          const percent = Math.floor((progress.loaded / progress.total) * 100);
+          console.log(`⬇️ Downloading: ${percent}%`);
         }
       });
-      
-      const videoPath = path.join(tmpFolder, 'owner_video.mp4');
-      fs.writeFileSync(videoPath, Buffer.from(videoBuffer.data, 'binary'));
+      await fs.writeFile(videoPath, Buffer.from(videoResponse.data));
 
-      // Current time
+      // Current timestamp
       const now = new Date();
-      const options = {
+      const timestamp = now.toLocaleString('en-US', {
         timeZone: 'Asia/Dhaka',
-        hour12: true,
-        weekday: 'long',
-        year: 'numeric',
-        month: 'short',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit'
-      };
-      const timestamp = now.toLocaleString('en-BD', options);
+        dateStyle: 'full',
+        timeStyle: 'medium'
+      });
 
-      // Atomic-styled message
+      // Atomic-styled message template
       const message = `
-☣️⚛️ *𝐀𝐓𝐎𝐌𝐈𝐂 𝐎𝐖𝐍𝐄𝐑 𝐈𝐍𝐅𝐎* ⚛️☣️
-━━━━━━━━━━━━━━━━━━━━━━━━━
+☣️⚛️ ━━━━━━━━━━━━━━━━━━━━━━━ ⚛️☣️
+          𝐀𝐓𝐎𝐌𝐈𝐂 𝐎𝐖𝐍𝐄𝐑 𝐏𝐑𝐎𝐅𝐈𝐋𝐄
+☣️⚛️ ━━━━━━━━━━━━━━━━━━━━━━━ ⚛️☣️
 
-⚡ *𝐏𝐄𝐑𝐒𝐎𝐍𝐀𝐋 𝐃𝐄𝐓𝐀𝐈𝐋𝐒*
-▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰
-📛 𝗡𝗮𝗺𝗲 » ${owner.name}
-🚹 𝗚𝗲𝗻𝗱𝗲𝗿 » ${owner.gender}
-🎂 𝗔𝗴𝗲 » ${owner.age}
-📏 𝗛𝗲𝗶𝗴𝗵𝘁 » ${owner.height}
-🐾 𝗡𝗶𝗰𝗸 » ${owner.nick}
-💫 𝗖𝗵𝗼𝗶𝗰𝗲 » ${owner.choice}
-💻 𝗦𝗸𝗶𝗹𝗹𝘀 » ${owner.skills}
-🏆 𝗦𝘁𝗮𝘁𝘂𝘀 » ${owner.status}
+⚡ 𝐂𝐎𝐑𝐄 𝐈𝐍𝐅𝐎𝐑𝐌𝐀𝐓𝐈𝐎𝐍
+▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰
+⌬ 𝗡𝗮𝗺𝗲 » ${owner.name}
+⌬ 𝗧𝗶𝘁𝗹𝗲 » ${owner.title}
+⌬ 𝗔𝗴𝗲 » ${owner.age}
+⌬ 𝗚𝗲𝗻𝗱𝗲𝗿 » ${owner.gender}
+⌬ 𝗛𝗲𝗶𝗴𝗵𝘁 » ${owner.height}
+⌬ 𝗡𝗶𝗰𝗸𝗻𝗮𝗺𝗲 » ${owner.nickname}
 
-⚡ *𝐒𝐎𝐂𝐈𝐀𝐋 & 𝐒𝐘𝐒𝐓𝐄𝐌*
-▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰
-🤖 𝗕𝗼𝘁 » ${owner.bot}
-🔗 𝗙𝗮𝗰𝗲𝗯𝗼𝗼𝗸 » ${owner.fb}
-🆔 𝗨𝗜𝗗 » ${owner.uid}
-🕓 𝗧𝗶𝗺𝗲𝘀𝘁𝗮𝗺𝗽 » ${timestamp}
+🌌 𝐋𝐈𝐅𝐄𝐒𝐓𝐘𝐋𝐄 & 𝐒𝐊𝐈𝐋𝐋𝐒
+▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰
+⌬ 𝗟𝗶𝗳𝗲𝘀𝘁𝘆𝗹𝗲 » ${owner.lifestyle}
+⌬ 𝗛𝗼𝗯𝗯𝗶𝗲𝘀 » ${owner.hobbies}
+⌬ 𝗦𝗸𝗶𝗹𝗹𝘀 » ${owner.skills}
+⌬ 𝗣𝗵𝗶𝗹𝗼𝘀𝗼𝗽𝗵𝘆 » ${owner.philosophy}
 
-━━━━━━━━━━━━━━━━━━━━━━━━━
-✨ "Stay Smoke-tastic! Bot powered by your jamai 😎"
-☣️⚛️ *𝐀𝐓𝐎𝐌𝐈𝐂 𝐒𝐘𝐒𝐓𝐄𝐌𝐒* ⚛️☣️
+🔗 𝐂𝐎𝐍𝐓𝐈𝐑𝐀𝐂𝐓
+▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰
+⌬ 𝗙𝗮𝗰𝗲𝗯𝗼𝗼𝗸 » ${owner.contact}
+⌬ 𝗧𝗶𝗺𝗲𝘀𝘁𝗮𝗺𝗽 » ${timestamp}
+
+☣️⚛️ ━━━━━━━━━━━━━━━━━━━━━━━ ⚛️☣️
+   "𝐈𝐧𝐧𝐨𝐯𝐚𝐭𝐢𝐨𝐧 𝐌𝐞𝐞𝐭𝐬 𝐄𝐥𝐞𝐠𝐚𝐧𝐜𝐞"
+☣️⚛️ ━━━━━━━━━━━━━━━━━━━━━━━ ⚛️☣️
       `;
 
+      // Send with video attachment
       await api.sendMessage({
         body: message,
         attachment: fs.createReadStream(videoPath)
-      }, event.threadID, event.messageID);
+      }, event.threadID, () => fs.unlink(videoPath));
 
-    } catch (e) {
-      console.log('☣️⚛️ Owner info error:', e.message);
-      
-      const errorMessage = `
-☣️⚛️ *𝐀𝐓𝐎𝐌𝐈𝐂 𝐄𝐑𝐑𝐎𝐑* ⚛️☣️
-━━━━━━━━━━━━━━━━━━━━━━━━━
-⚠️ System encountered an issue!
-🔧 Error: ${e.message || 'Unknown error'}
+      // Premium reaction
+      api.setMessageReaction('⚛️', event.messageID, (err) => {}, true);
 
-💡 Solutions:
-• Check your internet connection
-• Try again later
-• Contact system administrator
-━━━━━━━━━━━━━━━━━━━━━━━━━
-⚙️ Status: Service disruption
-      `.trim();
+    } catch (error) {
+      console.error('☣️ Atomic System Error:', error);
       
-      return api.sendMessage(errorMessage, event.threadID);
+      const errorTemplate = `
+☣️⚛️ 𝐀𝐓𝐎𝐌𝐈𝐂 𝐒𝐘𝐒𝐓𝐄𝐌 𝐀𝐋𝐄𝐑𝐓 ⚛️☣️
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+⚠️ Error Code: ATOMIC_OWNER_404
+🔧 Details: ${error.message}
+
+🛠️ Recommended Actions:
+• Refresh and try again
+• Check network connection
+• Contact system admin
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+⏱️ Timestamp: ${new Date().toISOString()}
+      `;
+      
+      return api.sendMessage(errorTemplate, event.threadID);
     }
   }
 };
