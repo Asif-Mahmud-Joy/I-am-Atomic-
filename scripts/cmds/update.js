@@ -1,137 +1,224 @@
 const axios = require("axios");
 const fs = require("fs-extra");
-const execSync = require("child_process").execSync;
-const dirBootLogTemp = `${__dirname}/tmp/rebootUpdated.txt`;
+const { execSync } = require("child_process");
+const path = require("path");
+
+const UPDATE_LOG_FILE = path.join(__dirname, "tmp/update_status.json");
+const COOLDOWN_MINUTES = 5;
 
 module.exports = {
   config: {
     name: "update",
-    version: "2.0",
-    author: "Mr.Smokey[Asif Mahmud]",
+    aliases: ["upgrade", "botupdate"],
+    version: "3.0",
+    author: "NTKhang & Asif",
     role: 2,
     description: {
-      en: "Check and install bot updates.",
-      bn: "বট আপডেট চেক এবং ইনস্টল করুন।"
+      en: "✨ Check and install bot updates with advanced features ✨"
     },
     category: "owner",
     guide: {
-      en: "{pn}",
-      bn: "{pn}"
+      en: `
+╔═══════❖•°♛°•❖═══════╗
+  🚀 BOT UPDATE SYSTEM 🚀
+╚═══════❖•°♛°•❖═══════╝
+
+⚡ Usage:
+❯ {pn} - Check for updates
+❯ Reply 'yes' to confirm update
+❯ React to update message to proceed
+
+💎 Features:
+✦ Version comparison
+✦ Change preview
+✦ Safety cooldown
+✦ Auto-restart option
+✦ Detailed changelog
+      `
     }
   },
 
   langs: {
     en: {
-      noUpdates: "✅ | You are already using the latest version (v%1).",
-      updatePrompt: "💫 | New update available (v%2). You are on (v%1).\n⬆️ | Files to update:\n%3%4\n\nℹ️ | Details: https://github.com/ntkhang03/Goat-Bot-V2/commits/main\n💡 | React to this message to confirm update.",
-      fileWillDelete: "\n🗑️ | These files/folders will be deleted:\n%1",
-      andMore: "...and %1 more files",
-      updateConfirmed: "🚀 | Update confirmed, processing...",
-      updateComplete: "✅ | Update done. Reply 'yes' or 'y' to restart the bot now.",
-      updateTooFast: "⭕ | Last update was just %1m %2s ago. Try again in %3m %4s.",
-      botWillRestart: "🔄 | Bot is restarting..."
-    },
-    bn: {
-      noUpdates: "✅ | আপনি ইতিমধ্যে সর্বশেষ সংস্করণ (v%1) ব্যবহার করছেন।",
-      updatePrompt: "💫 | নতুন আপডেট এসেছে (v%2)। আপনি এখন আছেন (v%1)।\n⬆️ | আপডেট হবে এই ফাইলগুলো:\n%3%4\n\nℹ️ | বিস্তারিত: https://github.com/ntkhang03/Goat-Bot-V2/commits/main\n💡 | নিশ্চিত করতে এই মেসেজে রিয়্যাক্ট দিন।",
-      fileWillDelete: "\n🗑️ | এই ফাইল/ফোল্ডারগুলো ডিলিট হবে:\n%1",
-      andMore: "...এবং আরও %1টি ফাইল",
-      updateConfirmed: "🚀 | আপডেট নিশ্চিত হয়েছে, প্রক্রিয়া চলছে...",
-      updateComplete: "✅ | আপডেট সম্পন্ন। বট এখনই রিস্টার্ট করতে চাইলে 'yes' বা 'y' রিপ্লাই দিন।",
-      updateTooFast: "⭕ | শেষ আপডেট %1 মিনিট %2 সেকেন্ড আগে হয়েছে। %3 মিনিট %4 সেকেন্ড পর আবার চেষ্টা করুন।",
-      botWillRestart: "🔄 | বট রিস্টার্ট হচ্ছে..."
+      noUpdates: "✅ You're running the latest version (v%1)",
+      updateAvailable: `🚀 Update Available!
+━━━━━━━━━━━━━━
+Current: v%1
+Latest: v%2
+
+📦 Files to update:
+%3%4
+
+🔗 Changelog: %5
+━━━━━━━━━━━━━━
+React to this message to update`,
+      filesToDelete: "\n🗑️ Files to remove:\n%1",
+      andMore: "...and %1 more",
+      updateConfirmed: "🔄 Starting update process...",
+      updateComplete: `✅ Update successful!
+━━━━━━━━━━━━━━
+Reply "yes" to restart now
+or it will auto-restart in 30s`,
+      cooldownActive: `⏳ Update Cooldown
+━━━━━━━━━━━━━━
+Last update: %1m %2s ago
+Wait: %3m %4s more`,
+      restarting: "🔄 Restarting bot...",
+      error: "❌ Update failed: %1"
     }
   },
 
-  onLoad: async function ({ api }) {
-    if (fs.existsSync(dirBootLogTemp)) {
-      const threadID = fs.readFileSync(dirBootLogTemp, "utf-8");
-      fs.removeSync(dirBootLogTemp);
-      api.sendMessage("✅ | বট সফলভাবে রিস্টার্ট হয়েছে।", threadID);
+  onLoad: function() {
+    if (fs.existsSync(UPDATE_LOG_FILE)) {
+      const { threadID, success } = fs.readJsonSync(UPDATE_LOG_FILE);
+      fs.removeSync(UPDATE_LOG_FILE);
+      
+      if (success) {
+        api.sendMessage("✅ Bot updated and restarted successfully!", threadID);
+      } else {
+        api.sendMessage("⚠️ Update completed but restart failed", threadID);
+      }
     }
   },
 
-  onStart: async function ({ message, getLang, event, commandName }) {
-    const lang = getLang();
-    const { data: { version } } = await axios.get("https://raw.githubusercontent.com/ntkhang03/Goat-Bot-V2/main/package.json");
-    const { data: versions } = await axios.get("https://raw.githubusercontent.com/ntkhang03/Goat-Bot-V2/main/versions.json");
+  onStart: async function({ message, getLang }) {
+    try {
+      const [remotePackage, versions] = await Promise.all([
+        axios.get("https://raw.githubusercontent.com/ntkhang03/Goat-Bot-V2/main/package.json"),
+        axios.get("https://raw.githubusercontent.com/ntkhang03/Goat-Bot-V2/main/versions.json")
+      ]);
 
-    const currentVersion = require("../../package.json").version;
-    if (compareVersion(version, currentVersion) < 1)
-      return message.reply(lang("noUpdates", currentVersion));
+      const currentVersion = require("../../package.json").version;
+      const latestVersion = remotePackage.data.version;
 
-    const newVersions = versions.slice(versions.findIndex(v => v.version == currentVersion) + 1);
-    let fileWillUpdate = [...new Set(newVersions.map(v => Object.keys(v.files || {})).flat())].sort().filter(f => f?.length);
-    const totalUpdate = fileWillUpdate.length;
-    fileWillUpdate = fileWillUpdate.slice(0, 10).map(file => ` - ${file}`).join("\n");
+      if (this.compareVersions(latestVersion, currentVersion) {
+        return message.reply(getLang("noUpdates", currentVersion));
+      }
 
-    let fileWillDelete = [...new Set(newVersions.map(v => Object.keys(v.deleteFiles || {}).flat()))].sort().filter(f => f?.length);
-    const totalDelete = fileWillDelete.length;
-    fileWillDelete = fileWillDelete.slice(0, 10).map(file => ` - ${file}`).join("\n");
+      const updates = this.getUpdateDetails(versions.data, currentVersion);
+      const changelog = "https://github.com/ntkhang03/Goat-Bot-V2/commits/main";
 
-    message.reply(
-      lang(
-        "updatePrompt",
+      const updateMessage = getLang(
+        "updateAvailable",
         currentVersion,
-        version,
-        fileWillUpdate + (totalUpdate > 10 ? `\n${lang("andMore", totalUpdate - 10)}` : ""),
-        totalDelete > 0 ? `\n${lang("fileWillDelete", fileWillDelete + (totalDelete > 10 ? `\n${lang("andMore", totalDelete - 10)}` : ""))}` : ""
-      ), (err, info) => {
-        if (err) return console.error(err);
+        latestVersion,
+        updates.files.slice(0, 10).map(f => `• ${f}`).join("\n"),
+        updates.files.length > 10 ? `\n${getLang("andMore", updates.files.length - 10)}` : "",
+        updates.deleteFiles.length > 0 ? getLang(
+          "filesToDelete", 
+          updates.deleteFiles.slice(0, 5).map(f => `• ${f}`).join("\n") + 
+          (updates.deleteFiles.length > 5 ? `\n${getLang("andMore", updates.deleteFiles.length - 5)}` : "")
+        : "",
+        changelog
+      );
+
+      message.reply(updateMessage, (err, info) => {
+        if (err) return console.error("[UPDATE ERROR]", err);
         global.GoatBot.onReaction.set(info.messageID, {
+          commandName: this.config.name,
           messageID: info.messageID,
-          threadID: info.threadID,
-          authorID: event.senderID,
-          commandName
+          authorID: event.senderID
         });
       });
-  },
 
-  onReaction: async function ({ message, getLang, Reaction, event, commandName }) {
-    if (event.userID != Reaction.authorID) return;
-
-    const { data: lastCommit } = await axios.get('https://api.github.com/repos/ntkhang03/Goat-Bot-V2/commits/main');
-    const lastCommitDate = new Date(lastCommit.commit.committer.date);
-    const now = new Date();
-    const diff = now - lastCommitDate;
-
-    if (diff < 5 * 60 * 1000) {
-      const minutes = Math.floor(diff / 60000);
-      const seconds = Math.floor((diff % 60000) / 1000);
-      const minutesCooldown = Math.floor((5 * 60 * 1000 - diff) / 60000);
-      const secondsCooldown = Math.floor(((5 * 60 * 1000 - diff) % 60000) / 1000);
-      return message.reply(getLang("updateTooFast", minutes, seconds, minutesCooldown, secondsCooldown));
+    } catch (err) {
+      console.error("[UPDATE CHECK ERROR]", err);
+      message.reply(getLang("error", err.message));
     }
-
-    await message.reply(getLang("updateConfirmed"));
-    execSync("node update", { stdio: "inherit" });
-    fs.writeFileSync(dirBootLogTemp, event.threadID);
-
-    message.reply(getLang("updateComplete"), (err, info) => {
-      if (err) return console.error(err);
-      global.GoatBot.onReply.set(info.messageID, {
-        messageID: info.messageID,
-        threadID: info.threadID,
-        authorID: event.senderID,
-        commandName
-      });
-    });
   },
 
-  onReply: async function ({ message, getLang, event }) {
+  onReaction: async function({ message, event, Reaction, getLang }) {
+    if (event.userID !== Reaction.authorID) return;
+
+    try {
+      const lastUpdate = await this.checkUpdateCooldown();
+      if (lastUpdate) {
+        return message.reply(getLang(
+          "cooldownActive",
+          lastUpdate.minutes,
+          lastUpdate.seconds,
+          lastUpdate.remainingMinutes,
+          lastUpdate.remainingSeconds
+        ));
+      }
+
+      await message.reply(getLang("updateConfirmed"));
+      
+      execSync("node update", { stdio: "inherit" });
+      fs.writeJsonSync(UPDATE_LOG_FILE, { 
+        threadID: event.threadID,
+        success: true 
+      });
+
+      message.reply(getLang("updateComplete"), (err, info) => {
+        if (err) return console.error("[UPDATE ERROR]", err);
+        
+        global.GoatBot.onReply.set(info.messageID, {
+          commandName: this.config.name,
+          messageID: info.messageID,
+          authorID: event.senderID
+        });
+
+        // Auto-restart after 30 seconds
+        setTimeout(() => process.exit(2), 30000);
+      });
+
+    } catch (err) {
+      console.error("[UPDATE ERROR]", err);
+      message.reply(getLang("error", err.message));
+    }
+  },
+
+  onReply: function({ message, event, getLang }) {
     if (["yes", "y"].includes(event.body?.toLowerCase())) {
-      await message.reply(getLang("botWillRestart"));
+      message.reply(getLang("restarting"));
       process.exit(2);
+    }
+  },
+
+  compareVersions: function(latest, current) {
+    const [a1, a2, a3] = latest.split(".").map(Number);
+    const [b1, b2, b3] = current.split(".").map(Number);
+    
+    return a1 === b1 && a2 === b2 && a3 === b3;
+  },
+
+  getUpdateDetails: function(versions, currentVersion) {
+    const newVersions = versions.slice(
+      versions.findIndex(v => v.version === currentVersion) + 1
+    );
+
+    return {
+      files: [...new Set(newVersions.flatMap(v => Object.keys(v.files || {})))],
+      deleteFiles: [...new Set(newVersions.flatMap(v => Object.keys(v.deleteFiles || {})))]
+    };
+  },
+
+  checkUpdateCooldown: async function() {
+    try {
+      const { data } = await axios.get(
+        "https://api.github.com/repos/ntkhang03/Goat-Bot-V2/commits/main"
+      );
+      
+      const lastCommit = new Date(data.commit.committer.date);
+      const now = new Date();
+      const diff = now - lastCommit;
+      
+      if (diff < COOLDOWN_MINUTES * 60 * 1000) {
+        const minutes = Math.floor(diff / 60000);
+        const seconds = Math.floor((diff % 60000) / 1000);
+        const remaining = COOLDOWN_MINUTES * 60 * 1000 - diff;
+        
+        return {
+          minutes,
+          seconds,
+          remainingMinutes: Math.floor(remaining / 60000),
+          remainingSeconds: Math.floor((remaining % 60000) / 1000)
+        };
+      }
+      return null;
+    } catch {
+      return null;
     }
   }
 };
-
-function compareVersion(v1, v2) {
-  const a = v1.split(".").map(n => +n);
-  const b = v2.split(".").map(n => +n);
-  for (let i = 0; i < 3; i++) {
-    if (a[i] > b[i]) return 1;
-    if (a[i] < b[i]) return -1;
-  }
-  return 0;
-}
