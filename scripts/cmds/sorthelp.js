@@ -1,48 +1,67 @@
 module.exports = {
   config: {
     name: "sorthelp",
-    version: "1.2",
-    author: "Mr.Smokey [Asif Mahmud]",
+    version: "2.0",
+    author: "Asif",
     countDown: 5,
     role: 0,
-    shortDescription: {
-      en: "Sort help list"
-    },
-    longDescription: {
-      en: "Sort help command list either by name or by category"
+    description: {
+      en: "✨ Customize how help commands are sorted ✨"
     },
     category: "system",
     guide: {
-      en: "{pn} [name | category]"
+      en: `
+╔═══════❖•°♛°•❖═══════╗
+  🎀  HELP SORTING OPTIONS  🎀
+╚═══════❖•°♛°•❖═══════╝
+
+⚡ Usage:
+❯ {pn} name - Sort commands alphabetically
+❯ {pn} category - Sort by command categories
+
+💎 Examples:
+❯ {pn} name
+❯ {pn} category
+      `
     }
   },
 
   langs: {
     en: {
-      savedName: "✅ Help list will now be sorted by command name (A-Z).",
-      savedCategory: "✅ Help list will now be sorted by command category.",
-      invalid: "❌ Please choose either 'name' or 'category'. Example: {pn} name"
-    },
-    bn: {
-      savedName: "✅ এখন help list command name অনুজাই sort হবে (A-Z)।",
-      savedCategory: "✅ এখন help list category অনুযায়ী sort হবে।",
-      invalid: "❌ দয়া করে 'name' বা 'category' লিখুন। উদাহরণ: {pn} name"
+      savedName: "✅ Help commands will now display in A-Z order",
+      savedCategory: "✅ Help commands will now group by category",
+      invalidOption: "⚠️ Please specify 'name' or 'category'",
+      currentSetting: "🔧 Current sorting: %1"
     }
   },
 
-  onStart: async function ({ message, event, args, threadsData, getLang, getText }) {
-    const lang = await threadsData.get(event.threadID, "settings.language") || "en";
-    const $t = this.langs[lang] || this.langs.en;
+  onStart: async function ({ message, event, args, threadsData, getLang }) {
+    try {
+      const option = args[0]?.toLowerCase();
+      const currentSetting = await threadsData.get(event.threadID, "settings.sortHelp");
 
-    const option = args[0]?.toLowerCase();
-    if (option === "name") {
-      await threadsData.set(event.threadID, "name", "settings.sortHelp");
-      return message.reply($t.savedName);
-    } else if (option === "category") {
-      await threadsData.set(event.threadID, "category", "settings.sortHelp");
-      return message.reply($t.savedCategory);
-    } else {
-      return message.reply($t.invalid.replace('{pn}', global.config.PREFIX + this.config.name));
+      // Show current setting if no option provided
+      if (!option) {
+        const current = currentSetting === "name" ? "by name (A-Z)" : 
+                       currentSetting === "category" ? "by category" : "not set (default)";
+        return message.reply(getLang("currentSetting", current));
+      }
+
+      // Process sorting option
+      if (option === "name") {
+        await threadsData.set(event.threadID, "name", "settings.sortHelp");
+        return message.reply(getLang("savedName"));
+      } 
+      else if (option === "category") {
+        await threadsData.set(event.threadID, "category", "settings.sortHelp");
+        return message.reply(getLang("savedCategory"));
+      }
+      else {
+        return message.reply(getLang("invalidOption"));
+      }
+    } catch (err) {
+      console.error("[SORTHELP ERROR]", err);
+      message.reply("⚠️ An error occurred while updating settings");
     }
   }
 };
