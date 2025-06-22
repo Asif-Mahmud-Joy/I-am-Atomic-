@@ -3,35 +3,27 @@ module.exports = {
     name: "inbox",
     aliases: ["in"],
     version: "1.0",
-    author: "🎩 𝐌𝐫.𝐒𝐦𝐨𝐤𝐞𝐲 • 𝐀𝐬𝐢𝐟 𝐌𝐚𝐡𝐦𝐮𝐝 🌠",
-    countDown: 10,
+    author: "𝐀𝐬𝐢𝐟 𝐌𝐚𝐡𝐦𝐮𝐝",
+    countDown: 0,
     role: 0,
-    shortDescription: {
-      en: "hello goatbot inbox no prefix file enjoy the command @Asif"
-    },
-    longDescription: {
-      en: ""
-    },
-    category: "fun",
+    shortDescription: "Send special message to inbox",
+    longDescription: "Sends a public notification and romantic private message",
+    category: "romantic",
     guide: {
-      en: ""
+      en: "{pn}"
     }
   },
-  langs: {
-    en: {
-      gg: ""
-    },
-    id: {
-      gg: ""
-    }
-  },
-  onStart: async function({ api, event, args, message }) {
+
+  onStart: async function({ api, event, message }) {
     try {
-      const query = encodeURIComponent(args.join(' '));
-      message.reply("𝐁𝐨𝐤𝐚𝐜𝐡𝐨𝐝𝐚 𝐃𝐞𝐤𝐡 𝐒𝐦𝐬 𝐃𝐢𝐬𝐢 ✅\n\n  𝐄𝐡𝐨𝐧 𝐤𝐢 𝐈𝐧𝐛𝐨𝐱 𝐂𝐡𝐞𝐤 𝐃𝐞𝐰𝐚𝐫 𝐤𝐨𝐭𝐡𝐚𝐨 𝐁𝐨𝐥𝐚 𝐋𝐚𝐠𝐛𝐞? 🙄", event.threadID);
-      api.sendMessage("𝐊𝐢𝐫𝐞 𝐁𝐨𝐤𝐚𝐜𝐡𝐨𝐝𝐚\n😒", event.senderID);
+      // Send public notification in the group
+      message.reply("𝐛𝐚𝐛𝐲 𝐜𝐡𝐞𝐜𝐤 𝐲𝐨𝐮𝐫 𝐢𝐧𝐛𝐨𝐱 😉", event.threadID);
+      
+      // Send private message to the user
+      api.sendMessage("𝐡𝐢 𝐛𝐚𝐛𝐲😘", event.senderID);
     } catch (error) {
-      console.error("Error bro: " + error);
+      // Simple error logging
+      console.error("Inbox command error:", error);
     }
   }
 };
