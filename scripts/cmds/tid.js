@@ -1,37 +1,74 @@
 module.exports = {
-	config: {
-		name: "tid",
-		version: "1.3",
-		author: "Mr.Smokey {Asif Mahmud}",
-		countDown: 3,
-		role: 0,
-		description: {
-			vi: "Xem ID nhóm chat của bạn",
-			en: "View the thread ID of your chat"
-		},
-		category: "info",
-		guide: {
-			en: "{pn}"
-		}
-	},
+  config: {
+    name: "tid",
+    aliases: ["threadid", "groupid"],
+    version: "2.0",
+    author: "NTKhang & Asif",
+    countDown: 3,
+    role: 0,
+    description: {
+      en: "✨ View detailed thread information ✨"
+    },
+    category: "info",
+    guide: {
+      en: `
+╔═══════❖•°♛°•❖═══════╗
+  📌 THREAD INFORMATION 📌
+╚═══════❖•°♛°•❖═══════╝
 
-	onStart: async function ({ message, event, api }) {
-		try {
-			const threadID = event.threadID;
-			const threadInfo = await api.getThreadInfo(threadID);
+⚡ Usage:
+❯ Simply type: {pn}
 
-			const name = threadInfo.threadName || "Unknown";
-			const participantCount = threadInfo.participantIDs?.length || 0;
+💎 Features:
+✦ Thread ID
+✦ Group name
+✦ Member count
+✦ Creation timestamp
+✦ Admin list
+      `
+    }
+  },
 
-			message.reply(
-				`\u{1F50E} Group Info:
-\u{1F197} Thread ID: ${threadID}
-\u{1F4DB} Name: ${name}
-\u{1F465} Members: ${participantCount}`
-			);
-		} catch (error) {
-			console.error("[tid] Error fetching thread info:", error);
-			message.reply("\u274C Failed to fetch thread info. Please try again later.");
-		}
-	}
+  onStart: async function ({ message, event, api, getLang }) {
+    try {
+      const threadID = event.threadID;
+      const threadInfo = await api.getThreadInfo(threadID);
+      
+      // Format creation timestamp
+      const creationDate = threadInfo.threadMetadata?.createdAt 
+        ? new Date(threadInfo.threadMetadata.createdAt).toLocaleString()
+        : "Unknown";
+      
+      // Get admin names
+      let adminList = "Not available";
+      if (threadInfo.adminIDs && threadInfo.adminIDs.length > 0) {
+        const adminNames = await Promise.all(
+          threadInfo.adminIDs.map(async admin => {
+            const userInfo = await api.getUserInfo(admin.id);
+            return userInfo[admin.id]?.name || admin.id;
+          })
+        );
+        adminList = adminNames.join("\n» ");
+      }
+
+      // Prepare the response
+      const response = `
+🔍 Thread Information:
+━━━━━━━━━━━━━━
+📌 ID: ${threadID}
+📛 Name: ${threadInfo.threadName || "Unnamed Group"}
+👥 Members: ${threadInfo.participantIDs.length}
+📅 Created: ${creationDate}
+
+🛡️ Admins:
+» ${adminList}
+━━━━━━━━━━━━━━
+`;
+
+      return message.reply(response);
+    } catch (error) {
+      console.error("[TID COMMAND ERROR]", error);
+      return message.reply("⚠️ An error occurred while fetching thread information. Please try again later.");
+    }
+  }
 };
