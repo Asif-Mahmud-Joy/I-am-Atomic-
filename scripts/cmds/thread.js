@@ -3,114 +3,170 @@ const { getTime } = global.utils;
 module.exports = {
   config: {
     name: "thread",
-    version: "1.5",
-    author: "Mr.Smokey {Asif Mahmud}",
+    aliases: ["group", "threadmgmt"],
+    version: "2.0",
+    author: "NTKhang & Asif",
     countDown: 5,
-    role: 0,
+    role: 2, // Admin+ only
     description: {
-      vi: "Quản lý các nhóm chat trong hệ thống bot",
-      en: "Manage group chat in bot system",
-      bn: "Bot system-er moddhe group chat manage korun"
+      en: "✨ Advanced thread management system ✨"
     },
-    category: "owner",
+    category: "admin",
     guide: {
-      vi: "   {pn} [find | -f | search | -s] <tên cần tìm>: tìm kiếm nhóm chat trong dữ liệu bot bằng tên"
-        + "\n   {pn} [ban | -b] [<tid> | để trống] <reason>: dùng để cấm nhóm mang id <tid> hoặc nhóm hiện tại sử dụng bot"
-        + "\n   {pn} unban [<tid> | để trống] để bỏ cấm nhóm mang id <tid> hoặc nhóm hiện tại",
-      en: "   {pn} [find | -f | search | -s] <name to find>: search group chat in bot data by name"
-        + "\n   {pn} [ban | -b] [<tid> | leave blank] <reason>: use to ban group with id <tid> or current group"
-        + "\n   {pn} unban [<tid> | leave blank] to unban group with id <tid> or current group",
-      bn: "   {pn} [find | -f | search | -s] <nam khojen>: bot-er data-te group khojen"
-        + "\n   {pn} [ban | -b] [<tid> | blank rakhun] <karon>: kono group ke ban korun"
-        + "\n   {pn} unban [<tid> | blank] group-er ban tulun"
-        + "\n   {pn} info [<tid>] group-er full info dekha"
+      en: `
+╔═══════❖•°♛°•❖═══════╗
+  🛡️ THREAD MANAGEMENT 🛡️
+╚═══════❖•°♛°•❖═══════╝
+
+⚡ Commands:
+❯ {pn} find <name> - Search groups by name
+❯ {pn} find -j <name> - Search joined groups
+❯ {pn} ban [tid] <reason> - Ban a group
+❯ {pn} unban [tid] - Unban a group
+❯ {pn} info [tid] - View group info
+
+💎 Examples:
+❯ {pn} find Anime Lovers
+❯ {pn} ban 123456789 Spam
+❯ {pn} info
+      `
     }
   },
 
   langs: {
-    bn: {
-      noPermission: "Apnar ei feature bebohar korar permission nai",
-      found: "🔎 %1 group khuje paoa geche keyword: \"%2\" diye:\n%3",
-      notFound: "❌ Kon group paoa jai nai keyword: \"%1\" diye",
-      hasBanned: "Group [%1 | %2] ager thekei ban kora ache:\n» Karon: %3\n» Shomoy: %4",
-      banned: "Group [%1 | %2] ke ban kora holo.\n» Karon: %3\n» Shomoy: %4",
-      notBanned: "Group [%1 | %2] ban kora nai",
-      unbanned: "Group [%1 | %2] er ban tulya holo",
-      missingReason: "Ban-er karon deya lagbe",
-      info: "» Box ID: %1\n» Nam: %2\n» Tori er din: %3\n» Mot member: %4\n» Chele: %5 jon\n» Meye: %6 jon\n» Mot message: %7%8"
+    en: {
+      noPermission: "⛔ You don't have permission to use this command",
+      found: "🔍 Found %1 groups matching \"%2\":\n%3",
+      notFound: "❌ No groups found for \"%1\"",
+      hasBanned: "🚫 Group [%1 | %2] is already banned\n» Reason: %3\n» Date: %4",
+      banned: "🔨 Banned group [%1 | %2]\n» Reason: %3\n» Date: %4",
+      notBanned: "✅ Group [%1 | %2] is not banned",
+      unbanned: "🔓 Unbanned group [%1 | %2]",
+      missingReason: "⚠️ Please provide a ban reason",
+      info: `📊 Group Info:
+» ID: %1
+» Name: %2
+» Created: %3
+» Members: %4
+  👨 Male: %5
+  👩 Female: %6
+» Messages: %7%8`,
+      error: "❌ An error occurred: %1"
     }
   },
 
-  onStart: async function ({ args, threadsData, message, role, event, getLang }) {
-    const type = args[0];
-    if (role < 2 && ["find", "search", "-f", "-s", "ban", "-b", "unban", "-u"].includes(type)) {
-      return message.reply(getLang("noPermission"));
-    }
+  onStart: async function ({ args, threadsData, message, event, getLang }) {
+    try {
+      const type = args[0]?.toLowerCase();
+      const subType = args[1]?.toLowerCase();
 
-    switch (type) {
-      case "find":
-      case "search":
-      case "-f":
-      case "-s": {
-        let allThread = await threadsData.getAll();
-        let keyword = args.slice(1).join(" ");
-        if (["-j", "-join"].includes(args[1])) {
-          allThread = allThread.filter(thread => thread.members.some(m => m.userID == global.GoatBot.botID && m.inGroup));
-          keyword = args.slice(2).join(" ");
+      switch (type) {
+        case "find":
+        case "search":
+        case "-f":
+        case "-s": {
+          const isJoined = ['-j', '-join'].includes(subType);
+          const keyword = isJoined ? args.slice(2).join(" ") : args.slice(1).join(" ");
+          
+          if (!keyword) return message.reply("🔍 Please provide a search keyword");
+          
+          let allThreads = await threadsData.getAll();
+          if (isJoined) {
+            allThreads = allThreads.filter(t => 
+              t.members.some(m => m.userID == global.GoatBot.botID && m.inGroup)
+            );
+          }
+          
+          const results = allThreads.filter(t => 
+            t.threadID.length > 15 && 
+            t.threadName?.toLowerCase().includes(keyword.toLowerCase())
+          );
+          
+          if (results.length === 0) {
+            return message.reply(getLang("notFound", keyword));
+          }
+          
+          const resultText = results.map(t => 
+            `├ Name: ${t.threadName}\n└ ID: ${t.threadID}`
+          ).join("\n\n");
+          
+          return message.reply(getLang("found", results.length, keyword, resultText));
         }
-        const result = allThread.filter(t => t.threadID.length > 15 && (t.threadName || "").toLowerCase().includes(keyword.toLowerCase()));
-        const resultText = result.reduce((i, t) => i += `\n├ Name: ${t.threadName}\n└ ID: ${t.threadID}`, "");
-        const msg = result.length > 0 ? getLang("found", result.length, keyword, resultText) : getLang("notFound", keyword);
-        return message.reply(msg);
-      }
 
-      case "ban":
-      case "-b": {
-        let tid, reason;
-        if (!isNaN(args[1])) {
-          tid = args[1];
-          reason = args.slice(2).join(" ");
-        } else {
-          tid = event.threadID;
-          reason = args.slice(1).join(" ");
+        case "ban":
+        case "-b": {
+          let tid, reason;
+          if (!isNaN(args[1])) {
+            tid = args[1];
+            reason = args.slice(2).join(" ");
+          } else {
+            tid = event.threadID;
+            reason = args.slice(1).join(" ");
+          }
+          
+          if (!reason) return message.reply(getLang("missingReason"));
+          
+          const thread = await threadsData.get(tid);
+          if (thread.banned?.status) {
+            return message.reply(getLang("hasBanned", tid, thread.threadName, 
+              thread.banned.reason, thread.banned.date));
+          }
+          
+          const time = getTime("DD/MM/YYYY HH:mm:ss");
+          await threadsData.set(tid, {
+            banned: { status: true, reason, date: time }
+          });
+          
+          return message.reply(getLang("banned", tid, thread.threadName, reason, time));
         }
-        if (!reason) return message.reply(getLang("missingReason"));
-        reason = reason.replace(/\s+/g, ' ');
-        const threadData = await threadsData.get(tid);
-        const name = threadData.threadName || "Unknown";
-        if (threadData?.banned?.status)
-          return message.reply(getLang("hasBanned", tid, name, threadData.banned.reason, threadData.banned.date));
-        const time = getTime("DD/MM/YYYY HH:mm:ss");
-        await threadsData.set(tid, { banned: { status: true, reason, date: time } });
-        return message.reply(getLang("banned", tid, name, reason, time));
-      }
 
-      case "unban":
-      case "-u": {
-        let tid = !isNaN(args[1]) ? args[1] : event.threadID;
-        const threadData = await threadsData.get(tid);
-        const name = threadData.threadName || "Unknown";
-        if (!threadData?.banned?.status)
-          return message.reply(getLang("notBanned", tid, name));
-        await threadsData.set(tid, { banned: {} });
-        return message.reply(getLang("unbanned", tid, name));
-      }
+        case "unban":
+        case "-u": {
+          const tid = !isNaN(args[1]) ? args[1] : event.threadID;
+          const thread = await threadsData.get(tid);
+          
+          if (!thread.banned?.status) {
+            return message.reply(getLang("notBanned", tid, thread.threadName));
+          }
+          
+          await threadsData.set(tid, { banned: {} });
+          return message.reply(getLang("unbanned", tid, thread.threadName));
+        }
 
-      case "info":
-      case "-i": {
-        let tid = !isNaN(args[1]) ? args[1] : event.threadID;
-        const threadData = await threadsData.get(tid);
-        const createdDate = getTime(threadData.createdAt, "DD/MM/YYYY HH:mm:ss");
-        const members = Object.values(threadData.members).filter(m => m.inGroup);
-        const totalBoy = members.filter(m => m.gender === "MALE").length;
-        const totalGirl = members.filter(m => m.gender === "FEMALE").length;
-        const totalMessage = members.reduce((i, m) => i + m.count, 0);
-        const infoBanned = threadData?.banned?.status ? `\n- Banned: true\n- Reason: ${threadData.banned.reason}\n- Time: ${threadData.banned.date}` : "";
-        return message.reply(getLang("info", threadData.threadID, threadData.threadName, createdDate, members.length, totalBoy, totalGirl, totalMessage, infoBanned));
-      }
+        case "info":
+        case "-i": {
+          const tid = !isNaN(args[1]) ? args[1] : event.threadID;
+          const thread = await threadsData.get(tid);
+          
+          const members = Object.values(thread.members).filter(m => m.inGroup);
+          const stats = {
+            total: members.length,
+            male: members.filter(m => m.gender === "MALE").length,
+            female: members.filter(m => m.gender === "FEMALE").length,
+            messages: members.reduce((sum, m) => sum + m.count, 0)
+          };
+          
+          const banInfo = thread.banned?.status ? 
+            `\n» Ban Reason: ${thread.banned.reason}\n» Ban Date: ${thread.banned.date}` : "";
+          
+          return message.reply(getLang("info",
+            thread.threadID,
+            thread.threadName,
+            getTime(thread.createdAt, "DD/MM/YYYY HH:mm:ss"),
+            stats.total,
+            stats.male,
+            stats.female,
+            stats.messages,
+            banInfo
+          ));
+        }
 
-      default:
-        return message.SyntaxError();
+        default:
+          return message.SyntaxError();
+      }
+    } catch (err) {
+      console.error("[THREAD CMD ERROR]", err);
+      return message.reply(getLang("error", err.message));
     }
   }
 };
